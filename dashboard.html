@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 20px;
+        }
+
+        button {
+            background: #00ff00;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #008800;
+        }
+
+        .log {
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>[ K-OS_DASHBOARD ]</h1>
+    <p>UNIT_01: @Ami_Fantaisie</p>
+    <button onclick="sendGlitch()">INJECTER_GLITCH</button>
+    <button onclick="sendGlitch('Cookie')">Cibler Cookie</button>
+
+    <button onclick="sendGlitch('AmiFantaisie')">Cibler AmiFantaisie</button>
+
+    <button onclick="sendGlitch('ALL')">Cibler Tout le Monde</button>
+    <div class="log" id="status">Statut: En attente...</div>
+
+    <script>
+        const bc = new BroadcastChannel('relog_channel');
+        function sendGlitch(targetName) {
+            bc.postMessage({
+                action: "GLITCH",
+                target: targetName // On envoie le nom du membre ciblé !
+            });
+        }
+    </script>
+</body>
+
+</html>

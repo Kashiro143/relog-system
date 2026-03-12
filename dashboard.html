@@ -23,30 +23,31 @@
     <div class="status" id="log">READY_FOR_INJECTION...</div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
-            authDomain: "relog-system.firebaseapp.com",
-            projectId: "relog-system",
-            storageBucket: "relog-system.firebasestorage.app",
-            messagingSenderId: "869109824129",
-            appId: "1:869109824129:web:98565e8e25708461ef6b80"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
+        authDomain: "relog-system.firebaseapp.com",
+        databaseURL: "https://relog-system-default-rtdb.europe-west1.firebasedatabase.app/", // URL AJOUTÉE
+        projectId: "relog-system",
+        storageBucket: "relog-system.firebasestorage.app",
+        messagingSenderId: "869109824129",
+        appId: "1:869109824129:web:98565e8e25708461ef6b80"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        window.sendSignal = function(targetName) {
-            set(ref(db, 'commands'), {
-                action: "GLITCH",
-                target: targetName,
-                timestamp: Date.now()
-            }).then(() => {
-                document.getElementById('log').innerText = "Logs: SIGNAL_SENT_TO_" + targetName + " [" + new Date().toLocaleTimeString() + "]";
-            });
-        }
-    </script>
+    window.sendSignal = function(targetName) {
+        set(ref(db, 'commands'), {
+            action: "GLITCH",
+            target: targetName,
+            timestamp: Date.now()
+        }).then(() => {
+            document.getElementById('log').innerText = "Logs: SIGNAL_SENT_TO_" + targetName;
+        });
+    }
+</script>
 </body>
 </html>

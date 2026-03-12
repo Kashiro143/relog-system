@@ -22,39 +22,33 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Ta config sécurisée
-        const firebaseConfig = {
-            apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
-            authDomain: "relog-system.firebaseapp.com",
-            projectId: "relog-system",
-            storageBucket: "relog-system.firebasestorage.app",
-            messagingSenderId: "869109824129",
-            appId: "1:869109824129:web:98565e8e25708461ef6b80"
-            // Note : L'URL de ta base de données est déduite du projectId par Firebase
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
+        authDomain: "relog-system.firebaseapp.com",
+        databaseURL: "https://relog-system-default-rtdb.europe-west1.firebasedatabase.app/", // URL AJOUTÉE
+        projectId: "relog-system",
+        storageBucket: "relog-system.firebasestorage.app",
+        messagingSenderId: "869109824129",
+        appId: "1:869109824129:web:98565e8e25708461ef6b80"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        // Détection de l'utilisateur dans l'URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentUser = urlParams.get('user') || 'GUEST';
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUser = urlParams.get('user') || 'GUEST';
 
-        // ÉCOUTE DU SIGNAL EN TEMPS RÉEL
-        const commandRef = ref(db, 'commands');
-        onValue(commandRef, (snapshot) => {
-            const data = snapshot.val();
-            // On vérifie si la commande est pour nous ou pour tout le monde
-            if (data && (data.target === currentUser || data.target === "ALL")) {
-                const screen = document.getElementById('glitch-screen');
-                screen.style.display = 'flex';
-                // L'effet dure 3 secondes
-                setTimeout(() => { screen.style.display = 'none'; }, 3000);
-            }
-        });
-    </script>
+    onValue(ref(db, 'commands'), (snapshot) => {
+        const data = snapshot.val();
+        if (data && (data.target === currentUser || data.target === "ALL")) {
+            const screen = document.getElementById('glitch-screen');
+            screen.style.display = 'flex';
+            setTimeout(() => { screen.style.display = 'none'; }, 3000);
+        }
+    });
+</script>
 </body>
 </html>

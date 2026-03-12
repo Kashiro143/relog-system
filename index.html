@@ -1,65 +1,60 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta charset="UTF-8">
     <style>
-    body { margin: 0; overflow: hidden; background: transparent; font-family: 'Courier New', monospace; }
-    
-    #glitch-screen {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(0, 20, 0, 0.8);
-        border: 2px solid #00ff00;
-        box-sizing: border-box;
-        justify-content: center; align-items: center;
-        flex-direction: column;
-        color: #00ff00;
-        text-shadow: 0 0 10px #00ff00;
-        z-index: 9999;
-    }
-
-    .scanline {
-        width: 100%; height: 2px; background: rgba(0, 255, 0, 0.1);
-        position: absolute; animation: scan 3s linear infinite;
-    }
-
-    @keyframes scan { from { top: 0; } to { top: 100%; } }
-
-    .glitch-text { font-size: 2.5rem; font-weight: bold; letter-spacing: 5px; }
-</style>
+        body { margin: 0; overflow: hidden; background: transparent; font-family: 'Courier New', monospace; }
+        #glitch-screen {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 20, 0, 0.8); border: 4px solid #00ff00; box-sizing: border-box;
+            justify-content: center; align-items: center; flex-direction: column;
+            color: #00ff00; text-shadow: 0 0 10px #00ff00; z-index: 9999;
+        }
+        .scanline { width: 100%; height: 2px; background: rgba(0, 255, 0, 0.2); position: absolute; animation: scan 3s linear infinite; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+        .glitch-text { font-size: 3rem; font-weight: bold; letter-spacing: 5px; text-align: center; }
+    </style>
 </head>
 <body>
-    <div id="glitch-screen">SYSTEM_INJECTION: [RE:Log]</div>
-        <div id="glitch">SYSTEM_INJECTION: [RE:Log]</div>
-    <script>
-     // On récupère le nom du streamer dans l'URL (ex: overlay.html?user=Cookie)
-const urlParams = new URLSearchParams(window.location.search);
-const currentUser = urlParams.get('user') || 'GUEST';
+    <div id="glitch-screen">
+        <div class="scanline"></div>
+        <div class="glitch-text">[RE:Log_INJECTION]<br>SYSTEM_OVERRIDE</div>
+    </div>
 
-const bc = new BroadcastChannel('relog_channel');
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-bc.onmessage = (event) => {
-    // On vérifie si l'ordre t'est destiné OU s'il est global
-    if (event.data.target === currentUser || event.data.target === "ALL") {
-        triggerEffect(event.data.action);
-    }
-};
+        // Ta config sécurisée
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
+            authDomain: "relog-system.firebaseapp.com",
+            projectId: "relog-system",
+            storageBucket: "relog-system.firebasestorage.app",
+            messagingSenderId: "869109824129",
+            appId: "1:869109824129:web:98565e8e25708461ef6b80"
+            // Note : L'URL de ta base de données est déduite du projectId par Firebase
+        };
 
-function triggerEffect(action) {
-    const screen = document.getElementById('glitch-screen');
-    
-    // Si c'est un membre "Fantaisie", on peut changer la couleur ici !
-    if (currentUser === "AmiFantaisie") {
-        screen.style.color = "purple";
-        screen.style.borderColor = "purple";
-        screen.innerHTML = "✨ MAGIC_BREACH_DETECTED ✨";
-    } else {
-        screen.innerHTML = `<div class="scanline"></div><div class="glitch-text">[K-OS_INJECTION_LOG]</div>`;
-    }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-    screen.style.display = 'flex';
-    setTimeout(() => { screen.style.display = 'none'; }, 3000);
-}
+        // Détection de l'utilisateur dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentUser = urlParams.get('user') || 'GUEST';
+
+        // ÉCOUTE DU SIGNAL EN TEMPS RÉEL
+        const commandRef = ref(db, 'commands');
+        onValue(commandRef, (snapshot) => {
+            const data = snapshot.val();
+            // On vérifie si la commande est pour nous ou pour tout le monde
+            if (data && (data.target === currentUser || data.target === "ALL")) {
+                const screen = document.getElementById('glitch-screen');
+                screen.style.display = 'flex';
+                // L'effet dure 3 secondes
+                setTimeout(() => { screen.style.display = 'none'; }, 3000);
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,56 +1,52 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
+    <meta charset="UTF-8">
     <style>
-        body {
-            background: #0a0a0a;
-            color: #00ff00;
-            font-family: monospace;
-            padding: 20px;
+        body { background: #0a0a0a; color: #00ff00; font-family: monospace; padding: 40px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 600px; }
+        button { 
+            background: #111; color: #00ff00; border: 1px solid #00ff00; padding: 20px;
+            font-size: 1.2rem; cursor: pointer; transition: 0.3s;
         }
-
-        button {
-            background: #00ff00;
-            border: none;
-            padding: 10px 20px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        button:hover {
-            background: #008800;
-        }
-
-        .log {
-            margin-top: 20px;
-            color: #888;
-            font-size: 0.8rem;
-        }
+        button:hover { background: #00ff00; color: #000; box-shadow: 0 0 20px #00ff00; }
+        .status { margin-top: 30px; border-top: 1px solid #333; padding-top: 10px; color: #555; }
     </style>
 </head>
-
 <body>
-    <h1>[ K-OS_DASHBOARD ]</h1>
-    <p>UNIT_01: @Ami_Fantaisie</p>
-    <button onclick="sendGlitch()">INJECTER_GLITCH</button>
-    <button onclick="sendGlitch('Cookie')">Cibler Cookie</button>
+    <h1>[ K-OS_CORE_COMMANDER ]</h1>
+    <div class="grid">
+        <button onclick="sendSignal('Cookie')">CIBLER: COOKIE</button>
+        <button onclick="sendSignal('AmiFantaisie')">CIBLER: FANTAISIE</button>
+        <button onclick="sendSignal('ALL')">GLOBAL_BROADCAST</button>
+    </div>
+    <div class="status" id="log">READY_FOR_INJECTION...</div>
 
-    <button onclick="sendGlitch('AmiFantaisie')">Cibler AmiFantaisie</button>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    <button onclick="sendGlitch('ALL')">Cibler Tout le Monde</button>
-    <div class="log" id="status">Statut: En attente...</div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
+            authDomain: "relog-system.firebaseapp.com",
+            projectId: "relog-system",
+            storageBucket: "relog-system.firebasestorage.app",
+            messagingSenderId: "869109824129",
+            appId: "1:869109824129:web:98565e8e25708461ef6b80"
+        };
 
-    <script>
-        const bc = new BroadcastChannel('relog_channel');
-        function sendGlitch(targetName) {
-            bc.postMessage({
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.sendSignal = function(targetName) {
+            set(ref(db, 'commands'), {
                 action: "GLITCH",
-                target: targetName // On envoie le nom du membre ciblé !
+                target: targetName,
+                timestamp: Date.now()
+            }).then(() => {
+                document.getElementById('log').innerText = "Logs: SIGNAL_SENT_TO_" + targetName + " [" + new Date().toLocaleTimeString() + "]";
             });
         }
     </script>
 </body>
-
 </html>

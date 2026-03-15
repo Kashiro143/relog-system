@@ -1,53 +1,302 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
+    <title>K-OS_Terminal v5.0 // Hybrid_Core</title>
     <style>
-        body { background: #0a0a0a; color: #00ff00; font-family: monospace; padding: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 600px; }
-        button { 
-            background: #111; color: #00ff00; border: 1px solid #00ff00; padding: 20px;
-            font-size: 1.2rem; cursor: pointer; transition: 0.3s;
+        :root {
+            --cyan: #00d4ff;
+            --dark-bg: #000a12;
+            --red: #ff0055;
+            --orange: #ffaa00;
         }
-        button:hover { background: #00ff00; color: #000; box-shadow: 0 0 20px #00ff00; }
-        .status { margin-top: 30px; border-top: 1px solid #333; padding-top: 10px; color: #555; }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--cyan);
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background: radial-gradient(circle at center, #001a33 0%, #000 100%);
+        }
+
+        body::after {
+            content: " ";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 2px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .hologram-card {
+            background: rgba(0, 30, 60, 0.4);
+            border: 1px solid var(--cyan);
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            margin: 10px;
+            clip-path: polygon(0 0, 95% 0, 100% 20px, 100% 100%, 5% 100%, 0 85%);
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .grid-monitor {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        button {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            transition: 0.2s;
+            border: 1px solid var(--cyan);
+        }
+
+        button:hover {
+            background: var(--cyan);
+            color: #000;
+            box-shadow: 0 0 15px var(--cyan);
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 10px 25px;
+            font-weight: bold;
+            opacity: 0.5;
+            border-bottom: 3px solid transparent;
+            color: var(--cyan);
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            opacity: 1;
+            border-bottom: 3px solid var(--cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        input,
+        select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--cyan);
+            color: white;
+            padding: 10px;
+        }
+
+        #pokemmo-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000b14;
+            border: 2px solid var(--cyan);
+            padding: 20px;
+            z-index: 2000;
+            width: 450px;
+            box-shadow: 0 0 30px #00d4ff55;
+        }
     </style>
 </head>
+
 <body>
-    <h1>[ K-OS_CORE_COMMANDER ]</h1>
-    <div class="grid">
-        <button onclick="sendSignal('Cookie')">CIBLER: COOKIE</button>
-        <button onclick="sendSignal('AmiFantaisie')">CIBLER: FANTAISIE</button>
-        <button onclick="sendSignal('ALL')">GLOBAL_BROADCAST</button>
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('hack')">SYSTEM_HACK</button>
+        <button class="tab-btn" onclick="showTab('pokemmo')">POKEMMO_NUZLOCKE</button>
     </div>
-    <div class="status" id="log">READY_FOR_INJECTION...</div>
+
+    <div id="tab-hack" class="tab-content active">
+        <div class="hologram-card" style="border-color: var(--red);">
+            <h3 style="color:var(--red); margin:0 0 10px 0;">VOICE_INJECTION_PROTOCOL</h3>
+            <div style="display:flex; gap:10px;">
+                <select id="tts-sender"></select>
+                <select id="tts-target">
+                    <option value="ALL">ALL_SYSTEMS</option>
+                </select>
+                <input type="text" id="tts-input" placeholder="Message..." style="flex-grow:1;">
+                <button onclick="sendTTS()" style="color:var(--red); border-color:var(--red);">EXECUTE</button>
+            </div>
+        </div>
+        <div class="grid-monitor" id="hack-grid"></div>
+    </div>
+
+    <div id="tab-pokemmo" class="tab-content">
+        <div class="grid-monitor" id="pokemmo-grid"></div>
+        <div class="hologram-card" style="border-color: var(--orange);">
+            <h3>QUIZZ_SYSTEM</h3>
+            <input type="text" id="quiz-q" placeholder="Question..." style="width:70%;">
+            <button onclick="sendQuiz()">LANCER LE QUIZZ</button>
+            <button onclick="stopQuiz()" style="color:var(--red); border-color:var(--red); margin-left:10px;">ARRÊTER LE
+                QUIZZ</button>
+            <div id="quiz-results" style="margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <div id="pokemmo-modal">
+        <h2 id="target-player-name">UNIT</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;" id="slots-admin-container"></div>
+        <hr style="border:1px solid #222; margin:15px 0;">
+        <p>SCORE: <span id="player-points-display">0</span></p>
+        <button onclick="changePoints(1)">+ POINT</button>
+        <button onclick="changePoints(-1)">- POINT</button>
+        <button onclick="closePokeModal()" style="width:100%; margin-top:10px;">FERMER</button>
+    </div>
 
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { firebaseConfig } from './config.js';
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
-        authDomain: "relog-system.firebaseapp.com",
-        databaseURL: "https://relog-system-default-rtdb.europe-west1.firebasedatabase.app/", // URL AJOUTÉE
-        projectId: "relog-system",
-        storageBucket: "relog-system.firebasestorage.app",
-        messagingSenderId: "869109824129",
-        appId: "1:869109824129:web:98565e8e25708461ef6b80"
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let activeTarget = "";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+        window.showTab = (id) => {
+            document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            event.currentTarget.classList.add('active');
+        };
 
-    window.sendSignal = function(targetName) {
-        set(ref(db, 'commands'), {
-            action: "GLITCH",
-            target: targetName,
-            timestamp: Date.now()
-        }).then(() => {
-            document.getElementById('log').innerText = "Logs: SIGNAL_SENT_TO_" + targetName;
+        onValue(ref(db, 'settings/profiles'), (snap) => {
+            const players = snap.val() || {};
+            const hackGrid = document.getElementById('hack-grid');
+            const pokeGrid = document.getElementById('pokemmo-grid');
+            const tTarget = document.getElementById('tts-target');
+            const tSender = document.getElementById('tts-sender');
+
+            hackGrid.innerHTML = ""; pokeGrid.innerHTML = "";
+            tTarget.innerHTML = '<option value="ALL">ALL_SYSTEMS</option>';
+            tSender.innerHTML = "";
+
+            Object.keys(players).forEach(name => {
+                tTarget.innerHTML += `<option value="${name}">${name}</option>`;
+                tSender.innerHTML += `<option value="${name}">${name}</option>`;
+
+                hackGrid.innerHTML += `
+                    <div class="hologram-card">
+                        <b>${name.toUpperCase()}</b>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
+                            <button onclick="trigger('${name}', 'GLITCH')">Glitch</button>
+                            <button onclick="trigger('${name}', 'SOUND')">Ping</button>
+                            <button onclick="trigger('${name}', 'ERROR')">Error</button>
+                        </div>
+                    </div>`;
+
+                pokeGrid.innerHTML += `
+                    <div class="hologram-card" onclick="openPokeModal('${name}')">
+                        <b>${name.toUpperCase()}</b><br>Points: ${players[name].points || 0}
+                    </div>`;
+            });
         });
-    }
-</script>
+
+        window.trigger = (target, action) => set(ref(db, 'commands'), { target, action, t: Date.now() });
+        window.sendTTS = () => {
+            const m = document.getElementById('tts-input').value;
+            const t = document.getElementById('tts-target').value;
+            const s = document.getElementById('tts-sender').value;
+            if (m) set(ref(db, 'commands'), { action: "TTS", target: t, sender: s, message: m, t: Date.now() });
+            document.getElementById('tts-input').value = "";
+        };
+
+        window.openPokeModal = (name) => {
+            activeTarget = name;
+            document.getElementById('target-player-name').innerText = name;
+            document.getElementById('pokemmo-modal').style.display = 'block';
+            refreshModalSlots();
+        };
+
+        window.toggleSlot = (num) => {
+            const slotRef = ref(db, `pokemmo/slots/${activeTarget}/${num}`);
+            get(slotRef).then(s => {
+                let count = (s.val()?.deathCount || 0);
+                let next = (count + 1) % 4;
+                set(slotRef, { deathCount: next, timestamp: Date.now(), type: next === 3 ? "PERMA" : next > 0 ? "TEMP" : "ALIVE", duration: next === 1 ? 600 : next === 2 ? 1200 : 0 });
+                setTimeout(refreshModalSlots, 100);
+            });
+        };
+
+        function refreshModalSlots() {
+            const container = document.getElementById('slots-admin-container');
+            get(ref(db, `pokemmo/slots/${activeTarget}`)).then(s => {
+                const data = s.val() || {};
+                container.innerHTML = "";
+                for (let i = 1; i <= 6; i++) {
+                    const c = data[i]?.deathCount || 0;
+                    const txt = ["VIVANT", "MORT 1", "MORT 2", "PERMA"][c];
+                    container.innerHTML += `<button onclick="toggleSlot(${i})">S${i}: ${txt}</button>`;
+                }
+            });
+            get(ref(db, `settings/profiles/${activeTarget}/points`)).then(s => document.getElementById('player-points-display').innerText = s.val() || 0);
+        }
+
+        window.changePoints = (v) => {
+            const pRef = ref(db, `settings/profiles/${activeTarget}/points`);
+            get(pRef).then(s => set(pRef, (s.val() || 0) + v).then(refreshModalSlots));
+        };
+
+        window.sendQuiz = () => {
+            const quizInput = document.getElementById('quiz-q');
+            const questionText = quizInput.value;
+
+            if (questionText.trim() !== "") {
+                set(ref(db, 'pokemmo/quizz'), {
+                    question: questionText,
+                    responses: {},
+                    t: Date.now(),
+                    active: true // Bien s'assurer que c'est true
+                }).then(() => {
+                    quizInput.value = "";
+                    // Pas besoin de refresh, les autres pages réagiront seules
+                });
+            }
+        };
+
+        window.stopQuiz = () => {
+            // On passe active à false pour cacher l'overlay chez tout le monde
+            set(ref(db, 'pokemmo/quizz'), {
+                active: false,
+                question: "",
+                responses: {},
+                t: Date.now()
+            }).then(() => {
+                alert("Quizz terminé et retiré de l'écran.");
+            });
+        };
+
+        onValue(ref(db, 'pokemmo/quizz/responses'), (snap) => {
+            const res = snap.val() || {};
+            const div = document.getElementById('quiz-results');
+            div.innerHTML = "<b>RÉPONSES EN DIRECT :</b><br>";
+            Object.keys(res).forEach(u => {
+                div.innerHTML += `<div style="color:white; margin-bottom:5px;">> ${u} : <span style="color:var(--orange)">${res[u]}</span></div>`;
+            });
+        });
+
+        window.closePokeModal = () => document.getElementById('pokemmo-modal').style.display = 'none';
+    </script>
 </body>
+
 </html>

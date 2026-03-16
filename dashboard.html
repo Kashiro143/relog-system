@@ -180,35 +180,44 @@
             event.currentTarget.classList.add('active');
         };
 
-        onValue(ref(db, 'settings/profiles'), (snap) => {
-            const players = snap.val() || {};
-            const hackGrid = document.getElementById('hack-grid');
+        onValue(ref(db, 'settings/profiles'), (snapshot) => {
+            const profiles = snapshot.val() || {};
+            const ttsTarget = document.getElementById('tts-target');
+            const ttsSender = document.getElementById('tts-sender');
+            const grid = document.getElementById('hack-grid');
             const pokeGrid = document.getElementById('pokemmo-grid');
-            const tTarget = document.getElementById('tts-target');
-            const tSender = document.getElementById('tts-sender');
 
-            hackGrid.innerHTML = ""; pokeGrid.innerHTML = "";
-            tTarget.innerHTML = '<option value="ALL">ALL_SYSTEMS</option>';
-            tSender.innerHTML = "";
+            // On vide pour éviter les doublons à chaque mise à jour
+            ttsTarget.innerHTML = '<option value="ALL">ALL_SYSTEMS</option>';
+            ttsSender.innerHTML = '';
+            grid.innerHTML = '';
+            if (pokeGrid) pokeGrid.innerHTML = '';
 
-            Object.keys(players).forEach(name => {
-                tTarget.innerHTML += `<option value="${name}">${name}</option>`;
-                tSender.innerHTML += `<option value="${name}">${name}</option>`;
+            Object.keys(profiles).forEach(name => {
+                // Ajout aux listes déroulantes
+                ttsTarget.innerHTML += `<option value="${name}">${name.toUpperCase()}</option>`;
+                ttsSender.innerHTML += `<option value="${name}">SENDER: ${name.toUpperCase()}</option>`;
 
-                hackGrid.innerHTML += `
-                    <div class="hologram-card">
-                        <b>${name.toUpperCase()}</b>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
-                            <button onclick="trigger('${name}', 'GLITCH')">Glitch</button>
-                            <button onclick="trigger('${name}', 'SOUND')">Ping</button>
-                            <button onclick="trigger('${name}', 'ERROR')">Error</button>
-                        </div>
-                    </div>`;
+                // Ajout des cartes de contrôle Glitch/Ping
+                grid.innerHTML += `
+            <div class="hologram-card">
+                <div style="font-weight:bold; border-bottom:1px solid rgba(0,212,255,0.3); margin-bottom:10px;">
+                    ${name.toUpperCase()}
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+                    <button onclick="trigger('${name}', 'GLITCH')">Glitch</button>
+                    <button onclick="trigger('${name}', 'SOUND')">Ping</button>
+                </div>
+            </div>`;
 
-                pokeGrid.innerHTML += `
-                    <div class="hologram-card" onclick="openPokeModal('${name}')">
-                        <b>${name.toUpperCase()}</b><br>Points: ${players[name].points || 0}
-                    </div>`;
+                // Ajout à la grille PokéMMO (pour ouvrir le modal des points)
+                if (pokeGrid) {
+                    pokeGrid.innerHTML += `
+                <div class="hologram-card" onclick="openPokeModal('${name}')" style="cursor:pointer; border-color:var(--orange);">
+                    <b>${name.toUpperCase()}</b><br>
+                    <small>Points: ${profiles[name].points || 0}</small>
+                </div>`;
+                }
             });
         });
 

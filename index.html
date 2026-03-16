@@ -237,15 +237,19 @@
             const overlay = document.getElementById('quiz-overlay');
             const text = document.getElementById('quiz-question-text');
 
-            // On vérifie explicitement active === true
+            if (!overlay || !text) return; // Sécurité si les éléments n'existent pas encore
+
             if (quiz && quiz.active === true && quiz.question) {
                 text.innerText = quiz.question;
                 overlay.style.display = 'block';
+                // Optionnel : ajouter une petite classe d'animation pour éviter le pop brutal
+                overlay.classList.add('fade-in');
             } else {
                 overlay.style.display = 'none';
+                text.innerText = "";
             }
         }, (error) => {
-            console.error("Erreur Firebase Index:", error);
+            console.error("Erreur Firebase Quiz:", error);
         });
     </script>
 </body>

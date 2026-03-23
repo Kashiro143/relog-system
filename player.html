@@ -115,7 +115,7 @@
 
         window.toggleMySlot = (num) => {
             const slotRef = ref(db, `pokemmo/slots/${user}/${num}`);
-            const DEATH_TIMERS = [600, 1200];
+            const DEATH_TIMERS = [900, 1800];
             get(slotRef).then(s => {
                 let current = s.val() || { deathCount: 0 };
                 let next = (current.deathCount + 1) % 4;

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+    :root { --neon: #00d4ff; --text: #ffffff; }
+    body { margin: 0; background: transparent; overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; }
+    
+    #master-container { 
+        position: absolute; display: flex; flex-direction: column; gap: 8px; 
+        transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); 
+    }
+
+    .pkmn-card {
+        width: 260px; height: 60px; background: rgba(10, 11, 13, 0.9);
+        border-left: 4px solid var(--neon); display: flex; align-items: center;
+        padding: 0 10px; color: var(--text); border-radius: 0 8px 8px 0;
+        box-shadow: 4px 4px 10px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+    }
+
+    .pkmn-img {
+        width: 55px; height: 55px; object-fit: contain;
+        filter: drop-shadow(0 0 3px var(--neon)); z-index: 2;
+        margin-right: 5px; animation: pkmnPulse 3s infinite ease-in-out;
+    }
+
+    /* Animation glitch déclenchée par JS */
+    .glitch-trigger { animation: glitchEffect 0.3s ease-in-out; }
+
+    @keyframes pkmnPulse {
+        0%, 100% { transform: scale(1) translateY(0); }
+        50% { transform: scale(1.05) translateY(-1px); }
+    }
+
+    @keyframes glitchEffect {
+        0% { transform: translate(2px,2px); filter: hue-rotate(90deg) brightness(1.5); }
+        50% { transform: translate(-3px,-1px); filter: contrast(2); }
+        100% { transform: translate(0); filter: none; }
+    }
+
+    .pkmn-info { 
+        flex: 1; display: flex; flex-direction: column; justify-content: center; 
+        margin-left: 10px; min-width: 0; z-index: 2; 
+    }
+
+    .main-name { 
+        font-weight: 800; font-size: 16px; text-transform: uppercase; 
+        color: var(--text) !important; line-height: 1.2;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; 
+    }
+
+    .species-sub { 
+        font-size: 10px; opacity: 0.7; font-style: italic; 
+        color: var(--text) !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+    }
+
+    /* --- STATUTS --- */
+    .status-1::after, .status-2::after, .status-3::after {
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+        font-size: 10px; font-weight: 900; padding: 2px 4px; border-radius: 3px;
+        background: rgba(0, 0, 0, 0.6); z-index: 5;
+    }
+
+    .status-1 { border-left-color: #ffa500 !important; }
+    .status-1 .pkmn-img { filter: grayscale(0.7) sepia(1) hue-rotate(15deg); opacity: 0.8; }
+    .status-1::after { content: "15 MIN"; color: #ffa500; border: 1px solid #ffa500; }
+
+    .status-2 { border-left-color: #ff4500 !important; }
+    .status-2 .pkmn-img { filter: grayscale(0.7) sepia(1) hue-rotate(330deg); opacity: 0.8; }
+    .status-2::after { content: "30 MIN"; color: #ff4500; border: 1px solid #ff4500; }
+
+    .status-3 { border-left-color: #ff0000 !important; background: rgba(30, 0, 0, 0.9) !important; }
+    .status-3 .pkmn-img { filter: grayscale(1) brightness(0.4); }
+    .status-3 .main-name { color: #666 !important; }
+    .status-3::after { content: "DÉCÉDÉ"; color: #ff0000; border: 1px solid #ff0000; }
+</style>
+</head>
+
+<body>
+
+    <div id="master-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { firebaseConfig } from "../../config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const user = new URLSearchParams(window.location.search).get('u');
+        const container = document.getElementById('master-container');
+        let prevTeamState = {};
+
+        // 1. ÉCOUTER LE LAYOUT (Position, Taille ET Couleurs)
+        onValue(ref(db, `live_data/${user}/pokemmo/layout`), (snap) => {
+            const l = snap.val() || { x: 20, y: 20, s: 1, colorNeon: "#00d4ff", colorText: "#ffffff" };
+
+            // Position et Taille (existant)
+            container.style.left = l.x + "px";
+            container.style.top = l.y + "px";
+            container.style.transform = `scale(${l.s})`;
+            container.style.transformOrigin = "top left";
+
+            // NOUVEAU : Mise à jour des variables CSS
+            // On applique les couleurs directement sur le conteneur maître
+            document.documentElement.style.setProperty('--neon', l.colorNeon);
+            document.documentElement.style.setProperty('--text', l.colorText);
+        });
+
+        // Génère l'URL pour le sprite animé N&B (Gen 5)
+        function getAnimatedSpriteUrl(pokemonId) {
+            if (!pokemonId || pokemonId === 0) return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+
+            // URL PokeAPI pour les sprites animés de la Gen 5 (Noir/Blanc)
+            // Structure: .../sprites/pokemon/versions/generation-v/black-white/animated/[id].gif
+            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${pokemonId}.gif`;
+        }
+        // 2. ÉCOUTER L'ÉQUIPE ET L'ORDRE
+        onValue(ref(db, `live_data/${user}/pokemmo`), (snap) => {
+            const data = snap.val() || {};
+            const team = data.team || {};
+            const order = data.order || {};
+
+            renderOverlay(team, order);
+        });
+
+        function renderOverlay(team, order) {
+            container.innerHTML = "";
+            
+            const sortedIds = [1, 2, 3, 4, 5, 6].sort((a, b) => (order[a] ?? a) - (order[b] ?? b));
+
+            sortedIds.forEach(id => {
+                const p = team[id];
+                if(!p || (!p.pokemonId && !p.nickname)) return;
+
+                // Détection du changement de statut pour le glitch
+                const oldStatus = prevTeamState[id] ? prevTeamState[id].status : 0;
+                const newStatus = p.status || 0;
+                const shouldGlitch = (newStatus !== oldStatus) && newStatus !== 0;
+
+                const card = document.createElement('div');
+                card.className = `pkmn-card status-${newStatus}`;
+                
+                const animatedImageUrl = getAnimatedSpriteUrl(p.pokemonId);
+
+                card.innerHTML = `
+                    <img src="${animatedImageUrl}" 
+                        class="pkmn-img ${shouldGlitch ? 'glitch-trigger' : ''}" 
+                        onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId || 0}.png';">
+                    <div class="pkmn-info">
+                        <div class="main-name">${p.nickname || p.pokemonName || "???"}</div>
+                        <div class="species-sub">${p.nickname ? p.pokemonName : ""}</div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+
+                // Une fois l'animation terminée, on pourrait techniquement laisser la classe 
+                // car le prochain render recréera l'élément sans la classe.
+            });
+
+            // On sauvegarde l'état actuel pour la prochaine mise à jour
+            prevTeamState = JSON.parse(JSON.stringify(team));
+        }
+    </script>
+</body>
+
+</html>

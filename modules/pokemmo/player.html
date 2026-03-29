@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-OS // TERMINAL POKEMMO</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --neon: #00d4ff;
+            --bg: #0a0b0d;
+            --panel: #141619;
+            --danger: #ff4757;
+        }
+
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 15px;
+            padding-bottom: 180px;
+        }
+
+        .header {
+            border-bottom: 1px solid var(--neon);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            color: var(--neon);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 15px 0;
+        }
+
+        /* --- SLOTS --- */
+        #pokemon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slot-card {
+            background: var(--panel);
+            border: 1px solid #23272e;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: grab;
+            position: relative;
+        }
+
+        .slot-img {
+            width: 60px;
+            height: 60px;
+            background: #000;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .slot-inputs {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .slot-inputs input {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .slot-inputs input.nickname {
+            font-weight: bold;
+            color: var(--neon);
+            border-bottom: 1px solid #333;
+        }
+
+        /* --- STATUS --- */
+        .status-btn {
+            width: 80px;
+            padding: 10px 5px;
+            border-radius: 6px;
+            border: none;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .st-0 {
+            background: #00ff8822;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+
+        .st-1 {
+            background: #ffa50022;
+            color: #ffa500;
+            border: 1px solid #ffa500;
+        }
+
+        .st-2 {
+            background: #ff450022;
+            color: #ff4500;
+            border: 1px solid #ff4500;
+        }
+
+        .st-3 {
+            background: #ff000022;
+            color: #ff0000;
+            border: 1px solid #ff0000;
+        }
+
+        /* --- LAYOUT EDITOR --- */
+        #open-config {
+            background: transparent;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        /* Sidebar */
+        .config-sidebar {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            /* Caché à droite */
+            width: 300px;
+            height: 100%;
+            background: #141619;
+            border-left: 2px solid var(--neon);
+            z-index: 1001;
+            transition: 0.3s ease-in-out;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-sidebar.active {
+            right: 0;
+            /* Entre en scène */
+        }
+
+        /* Voile de fond */
+        #overlay-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+        }
+
+        .sidebar-content input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        /* parti chrono */
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .slot-timer {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--neon);
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        /* On change la couleur si c'est prêt */
+        .slot-timer:contains("PRÊT !") {
+            color: #00ff00;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2 style="margin:0; font-size: 1.2rem;">K-OS <span style="font-weight:300">NUZLOCKE</span></h2>
+        <button id="open-config" onclick="toggleConfig(true)">⚙️ RÉGLAGES</button>
+    </div>
+
+    <div class="section-title">Équipe Actuelle (Drag & Drop)</div>
+    <div id="pokemon-list">
+        <p id="loading-txt">Chargement du Pokedex Français...</p>
+    </div>
+
+    <div id="config-sidebar" class="config-sidebar">
+        <div class="sidebar-header">
+            <span class="section-title" style="margin:0">Configuration Overlay</span>
+            <button onclick="toggleConfig(false)" class="close-btn">×</button>
+        </div>
+
+        <div class="sidebar-content">
+            <label>POSITION X</label>
+            <input type="range" min="0" max="1920" id="range-x" oninput="updateLayout()">
+
+            <label>POSITION Y</label>
+            <input type="range" min="0" max="1080" id="range-y" oninput="updateLayout()">
+
+            <label>TAILLE (SCALE)</label>
+            <input type="range" min="0.5" max="2" step="0.1" id="range-s" oninput="updateLayout()">
+
+            <div class="color-grid">
+                <div>
+                    <label>COULEUR ACCENT</label>
+                    <input type="color" id="color-neon" oninput="updateLayoutColors()">
+                </div>
+                <div>
+                    <label>COULEUR POLICE</label>
+                    <input type="color" id="color-text" oninput="updateLayoutColors()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay-bg" onclick="toggleConfig(false)"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { firebaseConfig } from "../../config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const user = new URLSearchParams(window.location.search).get('u');
+
+        let pokemonFR = {}; // Dictionnaire NomFR -> NomEN
+        const statusLabels = ["EN VIE", "15 MIN", "30 MIN", "PERMA"];
+
+        // 1. CHARGER LES TRADUCTIONS DEPUIS UNE SOURCE FIABLE (700+ Pokémons)
+        async function loadPokedex() {
+            try {
+                // Source ultra-complète (ID, noms FR, EN, DE, etc.)
+                const res = await fetch('https://raw.githubusercontent.com/fanzeyi/Pokemon-DB/master/pokedex.json');
+                const data = await res.json();
+
+                data.forEach(p => {
+                    // Dans ce JSON, le nom FR est dans p.name.french
+                    if (p.name && p.name.french) {
+                        const nameFR = p.name.french.toLowerCase();
+                        const nameEN = p.name.english.toLowerCase();
+
+                        // On nettoie les noms (certains ont des espaces ou des tirets bizarres)
+                        // Ex: "Mime au Sr." -> "mr-mime"
+                        pokemonFR[nameFR] = nameEN.replace(" ", "-").replace(".", "");
+                    }
+                });
+
+                // Correctifs manuels pour les cas particuliers de l'API (PokeAPI est stricte)
+                pokemonFR["grotadmorv"] = "muk";
+                pokemonFR["roucool"] = "pidgey";
+                pokemonFR["m. mime"] = "mr-mime";
+
+                if (document.getElementById('loading-txt')) {
+                    document.getElementById('loading-txt').remove();
+                }
+                initApp();
+                console.log("Pokedex FR chargé avec succès !");
+            } catch (e) {
+                console.error("Erreur Pokedex : ", e);
+            }
+        }
+
+        window.toggleConfig = (show) => {
+            const sidebar = document.getElementById('config-sidebar');
+            const bg = document.getElementById('overlay-bg');
+
+            if (show) {
+                sidebar.classList.add('active');
+                bg.style.display = 'block';
+            } else {
+                sidebar.classList.remove('active');
+                bg.style.display = 'none';
+            }
+        };
+
+        function initApp() {
+            // Écouter l'équipe
+            onValue(ref(db, `live_data/${user}/pokemmo/team`), (snap) => {
+                const team = snap.val() || {};
+                onValue(ref(db, `live_data/${user}/pokemmo/order`), (orderSnap) => {
+                    renderUI(team, orderSnap.val() || {});
+                }, { onlyOnce: true });
+            });
+
+            // Init Sortable
+            Sortable.create(document.getElementById('pokemon-list'), {
+                animation: 150,
+                onEnd: () => {
+                    const newOrder = {};
+                    document.querySelectorAll('.slot-card').forEach((el, i) => { newOrder[el.dataset.id] = i; });
+                    set(ref(db, `live_data/${user}/pokemmo/order`), newOrder);
+                }
+            });
+        }
+
+        function renderUI(team, order) {
+            const list = document.getElementById('pokemon-list');
+            list.innerHTML = "";
+
+            // On trie les IDs (1 à 6) selon l'ordre défini par le Drag & Drop
+            const sortedIds = [1, 2, 3, 4, 5, 6].sort((a, b) => (order[a] ?? a) - (order[b] ?? b));
+
+            sortedIds.forEach(id => {
+                // Sécurité : Si le Pokémon n'existe pas ou s'il manque des propriétés
+                const p = team[id] || {};
+                const pStatus = p.status !== undefined ? p.status : 0; // Force 0 si undefined
+                const pName = p.pokemonName || "";
+                const pNickname = p.nickname || "";
+                const pId = p.pokemonId || 0;
+                const timeRemaining = getRemainingTime(p.timestamp, p.status);
+
+                const div = document.createElement('div');
+                div.className = "slot-card";
+                div.dataset.id = id;
+                div.innerHTML = `
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pId}.png" 
+                    class="slot-img" onerror="this.src='...'">
+                
+                <div class="slot-inputs">
+                    <input type="text" class="nickname" value="${pNickname}" onchange="updateVal(${id}, 'nickname', this.value)">
+                    <input type="text" value="${pName}" onchange="searchPokemon(${id}, this.value)">
+                </div>
+
+                <div class="status-container">
+                    <button class="status-btn st-${pStatus}" onclick="cycleStatus(${id}, ${pStatus})">
+                        ${statusLabels[pStatus] || "EN VIE"}
+                    </button>
+                    <div id="timer-${id}" class="slot-timer">${timeRemaining}</div>
+                </div>
+            `;
+                list.appendChild(div);
+            });
+        }
+
+        window.searchPokemon = async (id, val) => {
+            const frName = val.toLowerCase().trim();
+            if (!frName) return;
+
+            const apiName = pokemonFR[frName] || frName;
+
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${apiName}`);
+                if (!res.ok) throw new Error("Non trouvé");
+                const data = await res.json();
+
+                // On utilise 'update' pour ne pas écraser le reste, 
+                // mais on s'assure que le statut est défini s'il n'existe pas
+                const slotRef = ref(db, `live_data/${user}/pokemmo/team/${id}`);
+
+                update(slotRef, {
+                    pokemonId: data.id,
+                    pokemonName: val,
+                    status: 0,
+                    history: 0, // Nouveau Pokémon = 0 blessure
+                    timestamp: null
+                });
+
+                console.log(`[K-OS] ${val} (ID: ${data.id}) ajouté au slot ${id}`);
+            } catch (e) {
+                console.error(e);
+                alert("Pokémon non trouvé. Vérifiez l'orthographe (ex: Dracaufeu).");
+            }
+        };
+
+        window.updateVal = (id, field, val) => {
+            update(ref(db, `live_data/${user}/pokemmo/team/${id}`), { [field]: val });
+        };
+
+        window.cycleStatus = (id, current) => {
+            const slotRef = ref(db, `live_data/${user}/pokemmo/team/${id}`);
+
+            // On récupère les données actuelles pour checker l'historique
+            onValue(slotRef, (snap) => {
+                const p = snap.val() || {};
+                let next = 0;
+                let newHistory = p.history || 0;
+
+                if (current === 0) { // Il était EN VIE
+                    if (p.history === 1) {
+                        next = 2; // Déjà blessé une fois -> direct 30 MIN
+                    } else {
+                        next = 1; // Première fois -> 15 MIN
+                    }
+                } else if (current === 1) { // Il était à 15 MIN
+                    next = 2;
+                    newHistory = 1; // On enregistre qu'il a connu le palier 15
+                } else if (current === 2) { // Il était à 30 MIN
+                    next = 3; // MORT PERMA
+                    newHistory = 1;
+                } else {
+                    next = 0; // Reset (optionnel, pour boucler depuis MORT)
+                    newHistory = 0;
+                }
+
+                update(slotRef, {
+                    status: next,
+                    timestamp: Date.now(),
+                    history: newHistory
+                });
+            }, { onlyOnce: true });
+        };
+
+        // --- GESTION DU LAYOUT ---
+
+        // Mise à jour de la position et taille
+        window.updateLayout = () => {
+            update(ref(db, `live_data/${user}/pokemmo/layout`), {
+                x: document.getElementById('range-x').value,
+                y: document.getElementById('range-y').value,
+                s: document.getElementById('range-s').value
+            });
+        };
+
+        // Mise à jour des couleurs
+        window.updateLayoutColors = () => {
+            update(ref(db, `live_data/${user}/pokemmo/layout`), {
+                colorNeon: document.getElementById('color-neon').value,
+                colorText: document.getElementById('color-text').value
+            });
+        };
+
+        // CHARGEMENT INITIAL UNIQUE (Position + Couleurs)
+        onValue(ref(db, `live_data/${user}/pokemmo/layout`), (s) => {
+            if (s.exists()) {
+                const l = s.val();
+                // On remplit tous les champs d'un coup
+                document.getElementById('range-x').value = l.x || 20;
+                document.getElementById('range-y').value = l.y || 20;
+                document.getElementById('range-s').value = l.s || 1;
+                document.getElementById('color-neon').value = l.colorNeon || "#00d4ff";
+                document.getElementById('color-text').value = l.colorText || "#ffffff";
+            }
+        }, { onlyOnce: true });
+
+        // Lancement du Pokedex
+        loadPokedex();
+
+        // --- LOGIQUE DES TIMERS ---
+
+        // Calcule le texte du temps restant
+        function getRemainingTime(timestamp, status) {
+            if (!timestamp || (status !== 1 && status !== 2)) return "";
+
+            const duration = status === 1 ? 15 * 60 * 1000 : 30 * 60 * 1000;
+            const elapsed = Date.now() - timestamp;
+            const remaining = duration - elapsed;
+
+            if (remaining <= 0) return "PRÊT !";
+
+            const mins = Math.floor(remaining / 60000);
+            const secs = Math.floor((remaining % 60000) / 1000);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Boucle de vérification automatique (toutes les secondes)
+        setInterval(() => {
+            // On récupère les données actuelles depuis Firebase (ou une variable locale si tu en as une)
+            // Pour être performant, on utilise les données déjà présentes dans le DOM ou une variable globale
+            onValue(ref(db, `live_data/${user}/pokemmo/team`), (snap) => {
+                const team = snap.val();
+                if (!team) return;
+
+                Object.keys(team).forEach(id => {
+                    const p = team[id];
+                    if (!p.timestamp || (p.status !== 1 && p.status !== 2)) return;
+
+                    const duration = p.status === 1 ? 15 * 60 * 1000 : 30 * 60 * 1000;
+                    const elapsed = Date.now() - p.timestamp;
+
+                    // SI LE TEMPS EST ÉCOULÉ -> ON RESET LE STATUT À 0 (EN VIE)
+                    if (elapsed >= duration) {
+                        console.log(`[K-OS] Retour en vie pour ${id}, historique sauvegardé.`);
+                        update(ref(db, `live_data/${user}/pokemmo/team/${id}`), {
+                            status: 0,
+                            timestamp: null,
+                            history: 1 // On force l'historique à 1 pour que le prochain clic aille à 30min
+                        });
+                    } else {
+                        // Sinon, on met juste à jour l'affichage du petit timer
+                        const timerEl = document.getElementById(`timer-${id}`);
+                        if (timerEl) timerEl.innerText = getRemainingTime(p.timestamp, p.status);
+                    }
+                });
+            }, { onlyOnce: true });
+        }, 1000);
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>K-OS // MASTER_NODE</title>
+    <style>
+        :root {
+            --bg-dark: #0a0b0d;
+            --panel-bg: #141619;
+            --accent-neon: #00d4ff;
+            --accent-low: rgba(0, 212, 255, 0.1);
+            --text-main: #e0e6ed;
+            --status-online: #00ff88;
+            --status-offline: #ff4757;
+            --border: #23272e;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* --- SIDEBAR : LISTE DES ACTEURS --- */
+        #sidebar {
+            width: 280px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #sidebar h3 {
+            padding: 20px;
+            margin: 0;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            color: var(--accent-neon);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-row {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-row:hover {
+            background: var(--accent-low);
+        }
+
+        .user-row.selected {
+            background: var(--accent-low);
+            border-left: 4px solid var(--accent-neon);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .online {
+            background: var(--status-online);
+            box-shadow: 0 0 8px var(--status-online);
+            animation: pulse 2s infinite;
+        }
+
+        .offline {
+            background: var(--status-offline);
+            opacity: 0.5;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* --- MAIN CONTENT : ZONE DE COMMANDE --- */
+        #main-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--panel-bg);
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 300;
+        }
+
+        #target-display {
+            font-weight: 800;
+            color: var(--accent-neon);
+        }
+
+        #control-zone {
+            padding: 40px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* --- BOUTONS ET ÉLÉMENTS UI --- */
+        .cmd-group {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .cmd-group h4 {
+            margin: 0 0 15px 0;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #636e72;
+        }
+
+        .cmd-btn {
+            background: #1e2126;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .cmd-btn:hover {
+            border-color: var(--accent-neon);
+            color: var(--accent-neon);
+            background: var(--accent-low);
+        }
+
+        .cmd-btn.active {
+            background: var(--accent-neon);
+            color: black;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        /* --- STYLES POKÉMON DANS LE MASTER NODE --- */
+        .pokemon-grid-master {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pkmn-slot-master {
+            background: #1e2126;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .pkmn-slot-master img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+
+        .slot-name {
+            font-size: 0.85rem;
+            font-weight: 800;
+            margin: 5px 0;
+            color: var(--accent-neon);
+            text-align: center;
+        }
+
+        .slot-timer-master {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ff4757;
+            margin-bottom: 8px;
+            height: 20px;
+            /* Évite le saut de mise en page */
+        }
+
+        .history-indicator {
+            font-size: 9px;
+            background: #ffa500;
+            color: black;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .master-status-btn {
+            width: 100%;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* Couleurs des boutons de statut */
+        .btn-st-0 {
+            background: #00ff88;
+            color: #000;
+        }
+
+        /* Vie */
+        .btn-st-1 {
+            background: #ffa500;
+            color: #000;
+        }
+
+        /* 15m */
+        .btn-st-2 {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        /* 30m */
+        .btn-st-3 {
+            background: #555;
+            color: #fff;
+        }
+
+        /* Mort */
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <h3 style="color:var(--neon)">[ ACTEURS_SYNC ]</h3>
+        <div id="user-list">
+        </div>
+        <div id="link-hub" style="margin-top: auto; padding: 20px; border-top: 1px solid var(--border); display: none;">
+            <h4 style="font-size: 0.7rem; color: #636e72; text-transform: uppercase; margin-bottom: 10px;">Liens</h4>
+
+            <label style="font-size: 10px; color: var(--accent-neon);">Terminal PLAYER</label>
+            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <input type="text" id="link-player" readonly
+                    style="flex: 1; background: #000; border: 1px solid var(--border); color: #888; font-size: 10px; padding: 5px;">
+                <button onclick="copyLink('link-player')"
+                    style="background: var(--border); border: none; color: white; cursor: pointer; padding: 0 10px;">📋</button>
+            </div>
+
+            <label style="font-size: 10px; color: var(--accent-neon);">Overlay</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="link-overlay" readonly
+                    style="flex: 1; background: #000; border: 1px solid var(--border); color: #888; font-size: 10px; padding: 5px;">
+                <button onclick="copyLink('link-overlay')"
+                    style="background: var(--border); border: none; color: white; cursor: pointer; padding: 0 10px;">📋</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-stage">
+        <header>
+            <div>
+                CIBLE: <span id="target-display" style="color:var(--neon)">AUCUNE</span>
+                <div id="target-mode-display" class="mode-chip">---</div>
+            </div>
+            <div id="global-actions">
+                <button onclick="setModeForAll()" style="font-size: 10px;">FORCE_GLOBAL_MODE</button>
+            </div>
+        </header>
+
+        <div id="control-zone">
+            <p id="empty-msg" style="color:#444; grid-column: 1/-1; text-align: center; margin-top: 100px;">SÉLECTIONNEZ
+                UN ACTEUR POUR AGIR</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { firebaseConfig } from "./config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- VARIABLES GLOBALES ---
+        window.selectedUser = null;
+
+        // --- 1. ÉCOUTER LES UTILISATEURS ---
+        onValue(ref(db, 'registry/users'), (snap) => {
+            const users = snap.val();
+            const list = document.getElementById('user-list');
+            list.innerHTML = "";
+            for (let id in users) {
+                const u = users[id];
+                const div = document.createElement('div');
+                div.className = `user-row ${window.selectedUser === id ? 'selected' : ''}`;
+                div.onclick = () => window.selectTarget(id, u);
+                div.innerHTML = `<strong>${u.name}</strong><br><small>${u.currentMode || 'Idle'}</small>`;
+                list.appendChild(div);
+            }
+        });
+
+        // --- 2. SÉLECTIONNER UN JOUEUR (Attaché à window) ---
+        window.selectTarget = (id, data) => {
+            window.selectedUser = id;
+            document.getElementById('target-display').innerText = id.toUpperCase();
+            renderControls(data.currentMode);
+        };
+
+        // --- 3. CHANGER LE MODE (Attaché à window) ---
+        window.setPlayerMode = (modeId) => {
+            if (!window.selectedUser) return alert("Choisis un joueur !");
+
+            const updates = {};
+            updates[`registry/users/${window.selectedUser}/currentMode`] = modeId;
+            updates[`users/${window.selectedUser}/currentMode`] = modeId;
+
+            update(ref(db), updates).then(() => {
+                console.log("Mode mis à jour :", modeId);
+                // On force le rafraîchissement local des boutons
+                renderControls(modeId);
+            });
+        };
+
+        // --- 4. ENVOYER UNE ACTION (Attaché à window) ---
+        window.sendAction = (type, value) => {
+            if (!window.selectedUser) return;
+            set(ref(db, `live_data/${window.selectedUser}/actions/${type}`), {
+                val: value, timestamp: Date.now()
+            });
+        };
+
+        // --- 5. RENDU DES BOUTONS ---
+        function renderControls(modeId) {
+    const zone = document.getElementById('control-zone');
+    zone.innerHTML = "";
+
+    // 1. BLOC DE CHANGEMENT DE MODE
+    const modeGroup = document.createElement('div');
+    modeGroup.className = "cmd-group";
+    modeGroup.innerHTML = `
+        <h4>Univers Actuel</h4>
+        <button onclick="setPlayerMode('pokemmo')" class="cmd-btn ${modeId === 'pokemmo' ? 'active' : ''}">POKEMMO</button>
+        <button onclick="setPlayerMode('podcast')" class="cmd-btn ${modeId === 'podcast' ? 'active' : ''}">PODCAST</button>
+        <button onclick="setPlayerMode('idle')" class="cmd-btn ${modeId === 'idle' ? 'active' : ''}">IDLE / RESET</button>
+    `;
+    zone.appendChild(modeGroup);
+
+    // 2. BLOC D'ACTIONS SPÉCIFIQUES
+    if (modeId === 'pokemmo') {
+        // Injection dynamique du CSS PokéMMO (si pas déjà présent)
+        if (!document.getElementById('pokemmo-style')) {
+            const link = document.createElement('link');
+            link.id = 'pokemmo-style';
+            link.rel = 'stylesheet';
+            link.href = './css/pokemmo.css';
+            document.head.appendChild(link);
+        }
+
+        const actionGroup = document.createElement('div');
+        actionGroup.className = "cmd-group";
+        actionGroup.innerHTML = `
+            <h4>Gestion de l'équipe PokéMMO</h4>
+            <div class="pokemon-grid-master" id="pkmn-master-grid">
+                <p style="color:#666; font-size:10px;">Chargement de l'équipe...</p>
+            </div>
+            <hr>
+            <h4>Commandes Globales</h4>
+            <button onclick="window.sendAction('heal', true)" class="cmd-btn">✨ SOIGNER TOUT</button>
+            <button onclick="window.sendAction('glitch', true)" class="cmd-btn">📺 EFFET GLITCH</button>
+        `;
+        zone.appendChild(actionGroup);
+
+        // Écoute en temps réel de l'équipe pour le Master Node
+        const teamRef = ref(db, `live_data/${window.selectedUser}/pokemmo/team`);
+        onValue(teamRef, (snap) => {
+            const team = snap.val() || {};
+            const grid = document.getElementById('pkmn-master-grid');
+            if (!grid) return; // Sécurité si on change de mode entre temps
+            
+            grid.innerHTML = "";
+            const labels = ["EN VIE", "15 MIN", "30 MIN", "MORT"];
+
+            for (let i = 1; i <= 6; i++) {
+                const p = team[i] || {};
+                const slot = document.createElement('div');
+                slot.className = "pkmn-slot-master";
+                
+                slot.innerHTML = `
+                    ${p.history === 1 ? '<div class="history-badge">⚠️ FATIGUÉ</div>' : ''}
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemonId || 0}.png" 
+                         onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                    <div class="slot-name">${p.nickname || p.pokemonName || "VIDE"}</div>
+                    <div id="tm-${i}" class="slot-timer-master"></div>
+                    <button class="master-status-btn btn-st-${p.status || 0}" 
+                            onclick="masterCycleStatus(${i}, ${p.status || 0})">
+                        ${labels[p.status || 0] || "INCONNU"}
+                    </button>
+                `;
+                grid.appendChild(slot);
+            }
+        });
+
+    } else {
+        zone.innerHTML += `<p style="opacity:0.3; text-align:center; margin-top:40px;">Sélectionnez un univers pour afficher les commandes</p>`;
+    }
+}
+
+        // Fonction pour générer les liens dynamiquement
+        window.selectTarget = (id, data) => {
+            window.selectedUser = id;
+
+            // Mise à jour de l'affichage
+            document.getElementById('target-display').innerText = id.toUpperCase();
+
+            // Génération des liens (détecte l'URL actuelle de ton site/serveur)
+            const baseUrl = window.location.origin + window.location.pathname.replace('master.html', '');
+            document.getElementById('link-player').value = `${baseUrl}player.html?u=${id}`;
+            document.getElementById('link-overlay').value = `${baseUrl}overlay.html?u=${id}`;
+
+            // Afficher le hub de liens
+            document.getElementById('link-hub').style.display = 'block';
+
+            renderControls(data.currentMode);
+        };
+
+        // Fonction utilitaire pour copier dans le presse-papier
+        window.copyLink = (inputId) => {
+            const copyText = document.getElementById(inputId);
+            copyText.select();
+            document.execCommand("copy");
+
+            // Petit feedback visuel
+            const btn = copyText.nextElementSibling;
+            const originalText = btn.innerText;
+            btn.innerText = "✅";
+            setTimeout(() => { btn.innerText = originalText; }, 1000);
+        };
+
+        window.masterCycleStatus = (slotId, currentStatus) => {
+            if (!window.selectedUser) return;
+            const slotRef = ref(db, `live_data/${window.selectedUser}/pokemmo/team/${slotId}`);
+
+            onValue(slotRef, (snap) => {
+                const p = snap.val() || {};
+                let next = 0;
+                let newHistory = p.history || 0;
+
+                // Logique de fatigue : Vie -> (15 ou 30) -> 30 -> Mort
+                if (currentStatus === 0) {
+                    next = (p.history === 1) ? 2 : 1;
+                } else if (currentStatus === 1) {
+                    next = 2; newHistory = 1;
+                } else if (currentStatus === 2) {
+                    next = 3; newHistory = 1;
+                } else {
+                    next = 0; newHistory = 0; // Reset
+                }
+
+                update(slotRef, {
+                    status: next,
+                    timestamp: Date.now(),
+                    history: newHistory
+                });
+            }, { onlyOnce: true });
+        }
+
+        setInterval(() => {
+            if (!window.selectedUser) return;
+
+            onValue(ref(db, `live_data/${window.selectedUser}/pokemmo/team`), (snap) => {
+                const team = snap.val() || {};
+                for (let i = 1; i <= 6; i++) {
+                    const p = team[i];
+                    const timerEl = document.getElementById(`tm-${i}`);
+                    if (!timerEl || !p || !p.timestamp) {
+                        if (timerEl) timerEl.innerText = "";
+                        continue;
+                    }
+
+                    if (p.status === 1 || p.status === 2) {
+                        const duration = p.status === 1 ? 15 * 60 * 1000 : 30 * 60 * 1000;
+                        const remaining = duration - (Date.now() - p.timestamp);
+
+                        if (remaining <= 0) {
+                            // AUTO-RESSURECTION
+                            update(ref(db, `live_data/${window.selectedUser}/pokemmo/team/${i}`), {
+                                status: 0, timestamp: null, history: 1
+                            });
+                        } else {
+                            const m = Math.floor(remaining / 60000);
+                            const s = Math.floor((remaining % 60000) / 1000);
+                            timerEl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                        }
+                    } else {
+                        timerEl.innerText = "";
+                    }
+                }
+            }, { onlyOnce: true });
+        }, 1000);
+
+
+    </script>
+</body>
+
+</html>

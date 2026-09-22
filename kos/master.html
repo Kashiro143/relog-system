@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>K-OS // MASTER</title>
+    <link rel="stylesheet" href="/src/theme.css" />
+    <style>
+      body { display: flex; height: 100vh; }
+      #sidebar { width: 280px; background: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+      #sidebar h3 { padding: 20px; margin: 0; font-size: 0.8rem; letter-spacing: 2px; color: var(--accent-neon); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+      .actor-row { padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+      .actor-row:hover, .actor-row.selected { background: var(--accent-low); }
+      .actor-row.selected { border-left: 3px solid var(--accent-neon); }
+      #stage { flex: 1; display: flex; flex-direction: column; }
+      header { background: var(--panel-bg); padding: 18px 32px; border-bottom: 1px solid var(--border); }
+      header .target { font-weight: 800; color: var(--accent-neon); }
+      #control-zone { padding: 32px; flex: 1; overflow-y: auto; }
+      #link-hub { margin-top: auto; padding: 20px; border-top: 1px solid var(--border); display: none; }
+      #link-hub label { display: block; font-size: 10px; color: var(--accent-neon); margin-top: 8px; }
+      #link-hub .row { display: flex; gap: 5px; margin-top: 4px; }
+      #link-hub input { flex: 1; font-size: 10px; color: #888; }
+      .empty { color: #444; text-align: center; margin-top: 100px; }
+    </style>
+  </head>
+  <body>
+    <aside id="sidebar">
+      <h3>Acteurs_sync</h3>
+      <div id="actor-list"></div>
+      <div id="link-hub">
+        <label>Overlay</label>
+        <div class="row"><input id="link-overlay" readonly /><button data-copy="link-overlay">📋</button></div>
+        <label>Player</label>
+        <div class="row"><input id="link-player" readonly /><button data-copy="link-player">📋</button></div>
+      </div>
+    </aside>
+    <main id="stage">
+      <header>CIBLE : <span class="target" id="target-display">AUCUNE</span></header>
+      <div id="control-zone"><p class="empty">Sélectionnez un acteur pour agir</p></div>
+    </main>
+
+    <script type="module" src="/src/pages/master.ts"></script>
+  </body>
+</html>

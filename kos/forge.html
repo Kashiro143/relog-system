@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>K-OS // FORGE</title>
+    <link rel="stylesheet" href="/src/theme.css" />
+    <style>
+      body { padding: 30px; }
+      h1 { color: var(--accent-neon); font-weight: 300; letter-spacing: 2px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+      .panel label { display: block; font-size: 0.75rem; color: var(--text-dim); margin: 12px 0 4px; text-transform: uppercase; }
+      .panel input, .panel select { width: 100%; }
+      .panel > button { width: 100%; margin-top: 16px; }
+      .list-item { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg-alt); border-left: 3px solid var(--accent-neon); padding: 10px 14px; border-radius: 4px; margin-top: 8px; }
+      .list-item .del { width: auto; flex: none; background: var(--status-offline); color: white; padding: 4px 10px; font-size: 0.75rem; }
+      .checks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 0.8rem; }
+      .checks label { display: flex; align-items: center; gap: 6px; text-transform: none; color: var(--text-main); }
+    </style>
+  </head>
+  <body>
+    <h1>K-OS // FORGE_ADMIN</h1>
+    <div class="grid">
+      <section class="panel" id="actor-panel">
+        <h3>Acteurs (Re:log)</h3>
+        <label>ID unique</label>
+        <input id="actor-id" placeholder="ex: kashiro" />
+        <label>Nom affiché</label>
+        <input id="actor-name" placeholder="ex: Kashiro" />
+        <label>Couleur</label>
+        <input id="actor-color" type="color" value="#00d4ff" />
+        <label>Permissions</label>
+        <div class="checks" id="actor-perms"></div>
+        <button id="actor-create">Forger l'acteur</button>
+        <div id="actor-list"></div>
+      </section>
+
+      <section class="panel" id="mode-panel">
+        <h3>Modes / univers</h3>
+        <label>ID du mode</label>
+        <input id="mode-id" placeholder="ex: pokemmo" />
+        <label>Nom affiché</label>
+        <input id="mode-label" placeholder="ex: PokéMMO Nuzlocke" />
+        <label>URL overlay</label>
+        <input id="mode-overlay" placeholder="/modules/boot/overlay.html" />
+        <label>URL player</label>
+        <input id="mode-player" placeholder="/modules/boot/player.html" />
+        <button id="mode-create">Forger le mode</button>
+        <div id="mode-list"></div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/pages/forge.ts"></script>
+  </body>
+</html>

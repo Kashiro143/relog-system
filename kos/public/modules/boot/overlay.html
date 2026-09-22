@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>K-OS // BOOT MODULE</title>
+    <style>
+      :root {
+        --skin-bg: transparent;
+        --skin-fg: #00ff88;
+        --skin-font: "Consolas", monospace;
+        --skin-border: none;
+      }
+      /* Preset "classic" (défaut) : terminal vert phosphore, plein lore virus */
+      /* Preset "techwear" (?skin=techwear) : HUD minimal, sobre */
+      html.techwear {
+        --skin-fg: #e0e6ed;
+        --skin-font: "Segoe UI", sans-serif;
+        --skin-border: 2px solid #00d4ff;
+      }
+      html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; height: 100%; }
+      #boot {
+        position: absolute; bottom: 60px; left: 60px; max-width: 900px;
+        font-family: var(--skin-font); color: var(--skin-fg);
+        font-size: 22px; line-height: 1.5; white-space: pre-wrap;
+        border-left: var(--skin-border); padding-left: 16px;
+        text-shadow: 0 0 6px currentColor;
+      }
+      .cursor { display: inline-block; width: 10px; background: currentColor; animation: blink 1s steps(1) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+    </style>
+  </head>
+  <body>
+    <pre id="boot"></pre>
+    <script>
+      const params = new URLSearchParams(location.search);
+      if (params.get("skin") === "techwear") document.documentElement.classList.add("techwear");
+      const actor = params.get("u") || "GUEST";
+
+      const linesBySkin = {
+        classic: [
+          `> K-OS :: CONNEXION ÉTABLIE AVEC ${actor.toUpperCase()}`,
+          "> Signature virale Re:log détectée...",
+          "> Prise de contrôle progressive du terminal.",
+          "> [ENTITÉ ACTIVE] en attente d'instructions du Master.",
+        ],
+        techwear: [
+          `LINK :: ${actor.toUpperCase()}`,
+          "STATUS :: SYNCED",
+          "AWAITING MASTER INPUT_",
+        ],
+      };
+      const lines = params.get("skin") === "techwear" ? linesBySkin.techwear : linesBySkin.classic;
+
+      const boot = document.getElementById("boot");
+      let full = "";
+      let li = 0, ci = 0;
+
+      function typeNext() {
+        if (li >= lines.length) {
+          boot.innerHTML = full + '<span class="cursor">&nbsp;</span>';
+          return;
+        }
+        const line = lines[li];
+        if (ci <= line.length) {
+          boot.textContent = full + line.slice(0, ci);
+          ci++;
+          setTimeout(typeNext, 22);
+        } else {
+          full += line + "\n";
+          li++;
+          ci = 0;
+          setTimeout(typeNext, 250);
+        }
+      }
+      typeNext();
+    </script>
+  </body>
+</html>

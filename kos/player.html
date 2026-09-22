@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K-OS // PLAYER</title>
+    <link rel="stylesheet" href="/src/theme.css" />
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+      #module-container { width: 100%; height: 100%; border: none; display: block; }
+      #status-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: var(--border); z-index: 100; }
+      #status-indicator { width: 0%; height: 100%; background: var(--accent-neon); transition: width 0.5s, background 0.3s; }
+      #status-indicator.online { background: var(--status-online); width: 100%; }
+    </style>
+  </head>
+  <body data-role="player">
+    <div id="status-bar"><div id="status-indicator"></div></div>
+    <iframe id="module-container" src="about:blank"></iframe>
+    <script type="module" src="/src/pages/player.ts"></script>
+  </body>
+</html>

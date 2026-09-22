@@ -1,11 +1,13 @@
-import { watchArchives, saveArchive, deleteArchive, dispatchLive, resetLive } from "./data";
+import { watchArchives, dispatchLive, resetLive } from "./data";
 import type { Archive, Skin } from "./data";
-import { armConfirmDelete, flashError } from "../../ui/dialogs";
+import { renderArchiveLibrary } from "./archiveLibrary";
 
+const ACTOR_ID = "Kashiro";
+
+/** Page dédiée de Kashiro : bibliothèque (éditable) + boucle "starting soon" + envoi rapide sur son propre overlay. */
 export function renderTerminalPanel(container: HTMLElement) {
   let archives: Record<string, Archive> = {};
   let queue: string[] = [];
-  let editingId: string | null = null;
   let skin: Skin = "classic";
   let isLooping = false;
   let isRunning = false;
@@ -13,21 +15,20 @@ export function renderTerminalPanel(container: HTMLElement) {
 
   container.innerHTML = `
     <div class="panel" style="margin-bottom:16px;">
-      <h4>Message rapide</h4>
+      <h4>Message rapide (sur mon overlay)</h4>
       <textarea id="term-quick-text" placeholder="Message à injecter en direct..." rows="3" style="width:100%; margin-bottom:8px; font-family:var(--font-mono); background:#000; color:var(--text-main); border:1px solid var(--border); border-radius:4px; padding:8px;"></textarea>
       <label style="font-size:0.8rem; display:flex; align-items:center; gap:6px; margin-bottom:10px;">
         <input type="checkbox" id="term-quick-raid" /> Mode RAID (glitch)
       </label>
-      <button id="term-quick-send" style="width:100%;">Envoyer en live</button>
+      <button id="term-quick-send" style="width:100%;">Envoyer</button>
     </div>
 
     <div class="panel" style="margin-bottom:16px;">
-      <h4>Archives (lore)</h4>
-      <div id="term-archive-list"></div>
-      <button id="term-new-archive" style="width:100%; margin-top:10px; border-style:dashed;">+ Nouveau protocole</button>
+      <h4>Archives (lore) — bibliothèque partagée</h4>
+      <div id="term-archive-lib"></div>
     </div>
 
-    <div class="panel" style="margin-bottom:16px;">
+    <div class="panel">
       <h4>Séquenceur — boucle "Starting soon"</h4>
       <div id="term-queue" style="min-height:40px; border:1px solid var(--border); border-radius:4px; padding:8px; margin-bottom:10px;"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -41,69 +42,19 @@ export function renderTerminalPanel(container: HTMLElement) {
       </div>
       <button id="term-reset" style="width:100%; margin-top:10px; color:var(--status-offline); border-color:var(--status-offline);">Effacer l'écran</button>
     </div>
-
-    <div class="panel" id="term-editor-panel">
-      <h4 id="term-editor-title">Nouveau protocole</h4>
-      <input id="term-ed-id" placeholder="ID (ex: 01_boot_core)" style="width:100%; margin-bottom:8px;" />
-      <input id="term-ed-label" placeholder="Nom affiché" style="width:100%; margin-bottom:8px;" />
-      <textarea id="term-ed-text" placeholder="Texte à afficher (une ligne = une ligne tapée)" rows="4" style="width:100%; margin-bottom:8px; font-family:var(--font-mono); background:#000; color:var(--text-main); border:1px solid var(--border); border-radius:4px; padding:8px;"></textarea>
-      <label style="font-size:0.8rem; display:flex; align-items:center; gap:6px; margin-bottom:10px;">
-        <input type="checkbox" id="term-ed-raid" /> Déclenche le mode RAID (glitch)
-      </label>
-      <button id="term-ed-save" style="width:100%;">Enregistrer</button>
-    </div>
   `;
 
   const quickText = container.querySelector<HTMLTextAreaElement>("#term-quick-text")!;
   const quickRaid = container.querySelector<HTMLInputElement>("#term-quick-raid")!;
-  const archiveList = container.querySelector<HTMLElement>("#term-archive-list")!;
   const queueList = container.querySelector<HTMLElement>("#term-queue")!;
   const playBtn = container.querySelector<HTMLButtonElement>("#term-play")!;
   const loopBtn = container.querySelector<HTMLButtonElement>("#term-loop")!;
   const skinSelect = container.querySelector<HTMLSelectElement>("#term-skin")!;
-  const editorTitle = container.querySelector<HTMLElement>("#term-editor-title")!;
-  const edId = container.querySelector<HTMLInputElement>("#term-ed-id")!;
-  const edLabel = container.querySelector<HTMLInputElement>("#term-ed-label")!;
-  const edText = container.querySelector<HTMLTextAreaElement>("#term-ed-text")!;
-  const edRaid = container.querySelector<HTMLInputElement>("#term-ed-raid")!;
 
   container.querySelector("#term-quick-send")!.addEventListener("click", () => {
     if (!quickText.value.trim()) return;
-    dispatchLive({ type: "TYPE", text: quickText.value, raid: quickRaid.checked, skin });
+    dispatchLive(ACTOR_ID, { type: "TYPE", text: quickText.value, raid: quickRaid.checked, skin });
   });
-
-  function renderArchives() {
-    archiveList.innerHTML = Object.values(archives)
-      .map(
-        (a) => `
-        <div class="list-item" data-id="${a.id}">
-          <span>${a.raid ? "🚨 " : ""}${a.label || a.id}</span>
-          <span style="display:flex; gap:6px;">
-            <button class="term-fire" data-id="${a.id}" style="width:auto; padding:4px 8px; font-size:0.7rem;">▶</button>
-            <button class="term-queue-add" data-id="${a.id}" style="width:auto; padding:4px 8px; font-size:0.7rem;">+file</button>
-            <button class="term-edit" data-id="${a.id}" style="width:auto; padding:4px 8px; font-size:0.7rem;">✎</button>
-            <button class="term-del" data-id="${a.id}" style="width:auto; padding:4px 8px; font-size:0.7rem; background:var(--status-offline); color:white;">×</button>
-          </span>
-        </div>`,
-      )
-      .join("") || `<p style="color:var(--text-dim); font-size:0.8rem;">Aucune archive — créez le premier protocole.</p>`;
-
-    archiveList.querySelectorAll<HTMLButtonElement>(".term-fire").forEach((btn) =>
-      btn.addEventListener("click", () => fireArchive(btn.dataset.id!)),
-    );
-    archiveList.querySelectorAll<HTMLButtonElement>(".term-queue-add").forEach((btn) =>
-      btn.addEventListener("click", () => {
-        queue.push(btn.dataset.id!);
-        renderQueue();
-      }),
-    );
-    archiveList.querySelectorAll<HTMLButtonElement>(".term-edit").forEach((btn) =>
-      btn.addEventListener("click", () => openEditor(btn.dataset.id!)),
-    );
-    archiveList.querySelectorAll<HTMLButtonElement>(".term-del").forEach((btn) =>
-      armConfirmDelete(btn, () => deleteArchive(btn.dataset.id!)),
-    );
-  }
 
   function renderQueue() {
     queueList.innerHTML =
@@ -115,7 +66,7 @@ export function renderTerminalPanel(container: HTMLElement) {
           <button class="term-queue-rm" data-i="${i}" style="width:auto; padding:2px 8px;">×</button>
         </div>`,
         )
-        .join("") || `<p style="color:var(--text-dim); font-size:0.8rem; margin:0;">File vide — ajoutez des protocoles depuis la liste.</p>`;
+        .join("") || `<p style="color:var(--text-dim); font-size:0.8rem; margin:0;">File vide — ajoutez des protocoles depuis la bibliothèque.</p>`;
 
     queueList.querySelectorAll<HTMLButtonElement>(".term-queue-rm").forEach((btn) =>
       btn.addEventListener("click", () => {
@@ -125,30 +76,13 @@ export function renderTerminalPanel(container: HTMLElement) {
     );
   }
 
-  function fireArchive(id: string) {
-    const archive = archives[id];
-    if (!archive) return;
-    dispatchLive({ type: "TYPE", text: archive.text, raid: archive.raid, skin });
-  }
-
-  function openEditor(id: string | null) {
-    editingId = id;
-    const archive = id ? archives[id] : null;
-    editorTitle.textContent = archive ? `Modifier : ${archive.id}` : "Nouveau protocole";
-    edId.value = archive?.id ?? "";
-    edId.disabled = Boolean(archive);
-    edLabel.value = archive?.label ?? "";
-    edText.value = archive?.text ?? "";
-    edRaid.checked = archive?.raid ?? false;
-  }
-
-  container.querySelector("#term-new-archive")!.addEventListener("click", () => openEditor(null));
-
-  container.querySelector("#term-ed-save")!.addEventListener("click", () => {
-    const id = editingId ?? edId.value.trim();
-    if (!id) return flashError(container.querySelector("#term-editor-panel")!, "ID requis.");
-    saveArchive({ id, label: edLabel.value || id, text: edText.value, raid: edRaid.checked });
-    openEditor(null);
+  renderArchiveLibrary(container.querySelector("#term-archive-lib")!, {
+    editable: true,
+    onFire: (archive) => dispatchLive(ACTOR_ID, { type: "TYPE", text: archive.text, raid: archive.raid, skin }),
+    onQueueAdd: (archive) => {
+      queue.push(archive.id);
+      renderQueue();
+    },
   });
 
   playBtn.addEventListener("click", () => runSequence());
@@ -163,7 +97,7 @@ export function renderTerminalPanel(container: HTMLElement) {
     loopBtn.textContent = `Boucle : ${isLooping ? "ON" : "OFF"}`;
   });
   skinSelect.addEventListener("change", () => (skin = skinSelect.value as Skin));
-  container.querySelector("#term-reset")!.addEventListener("click", () => resetLive());
+  container.querySelector("#term-reset")!.addEventListener("click", () => resetLive(ACTOR_ID));
 
   async function runSequence() {
     if (isRunning || queue.length === 0) return;
@@ -175,7 +109,7 @@ export function renderTerminalPanel(container: HTMLElement) {
         if (myRun !== runToken) return;
         const archive = archives[id];
         if (!archive) continue;
-        dispatchLive({ type: "TYPE", text: archive.text, raid: archive.raid, skin });
+        dispatchLive(ACTOR_ID, { type: "TYPE", text: archive.text, raid: archive.raid, skin });
         const waitMs = archive.text.length * 40 + 2500;
         await new Promise((r) => setTimeout(r, waitMs));
       }
@@ -186,7 +120,6 @@ export function renderTerminalPanel(container: HTMLElement) {
 
   watchArchives((data) => {
     archives = data;
-    renderArchives();
     renderQueue();
   });
 }

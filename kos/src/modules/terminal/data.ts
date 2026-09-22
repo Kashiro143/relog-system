@@ -2,9 +2,11 @@ import { ref, onValue, set, remove } from "firebase/database";
 import type { Unsubscribe } from "firebase/database";
 import { db } from "../../firebase";
 
-// Outil solo : ce module n'appartient qu'à Kashiro (pas de sélection
-// d'acteur, pas de passage par le registre Forge/Master). Voir la Forge
-// pour les modes partagés par le groupe (ex: PokeMMO).
+// La bibliothèque d'archives (lore) est un contenu partagé, écrit par
+// Kashiro. Le flux "live" (le message actuellement affiché) est en
+// revanche par acteur : Kashiro peut envoyer un signal vers l'overlay
+// de n'importe quel membre du Re:log (le virus s'infiltre ailleurs),
+// et sa propre boucle "starting soon" cible simplement son propre id.
 
 export interface Archive {
   id: string;
@@ -24,7 +26,6 @@ export interface LiveState {
 }
 
 const EMPTY_LIVE: LiveState = { text: "", raid: false, type: "RESET", skin: "classic", timestamp: 0 };
-const LIVE_PATH = "terminal/live";
 
 export function watchArchives(callback: (archives: Record<string, Archive>) => void): Unsubscribe {
   return onValue(ref(db, "terminal/archives"), (snap) => callback(snap.val() ?? {}));
@@ -38,15 +39,15 @@ export function deleteArchive(id: string) {
   return remove(ref(db, `terminal/archives/${id}`));
 }
 
-export function watchLive(callback: (state: LiveState) => void): Unsubscribe {
-  return onValue(ref(db, LIVE_PATH), (snap) => callback(snap.val() ?? EMPTY_LIVE));
+export function watchLive(actorId: string, callback: (state: LiveState) => void): Unsubscribe {
+  return onValue(ref(db, `terminal/live/${actorId}`), (snap) => callback(snap.val() ?? EMPTY_LIVE));
 }
 
-export function dispatchLive(patch: Partial<Omit<LiveState, "timestamp">>) {
+export function dispatchLive(actorId: string, patch: Partial<Omit<LiveState, "timestamp">>) {
   const state: LiveState = { ...EMPTY_LIVE, ...patch, timestamp: Date.now() };
-  return set(ref(db, LIVE_PATH), state);
+  return set(ref(db, `terminal/live/${actorId}`), state);
 }
 
-export function resetLive() {
-  return dispatchLive({ type: "RESET", text: "", raid: false });
+export function resetLive(actorId: string) {
+  return dispatchLive(actorId, { type: "RESET", text: "", raid: false });
 }

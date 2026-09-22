@@ -1,6 +1,7 @@
 import "../theme.css";
 import { watchActors, watchModes, setActorMode } from "../registry";
 import type { Actor, ModuleDefinition } from "../types";
+import { renderMasterSignalPanel } from "../modules/terminal/masterSignal";
 
 let selectedActorId: string | null = null;
 let actors: Record<string, Actor> = {};
@@ -54,7 +55,8 @@ function renderControls() {
     <div class="panel" style="margin-bottom:16px;">
       <h4>Univers actuel</h4>
       ${modeButtons || '<p style="color:var(--text-dim)">Aucun mode forgé — utilisez la Forge.</p>'}
-    </div>`;
+    </div>
+    <div id="signal-panel"></div>`;
 
   controlZone.querySelectorAll<HTMLButtonElement>(".mode-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -62,6 +64,8 @@ function renderControls() {
       setActorMode(selectedActorId, btn.dataset.mode!);
     });
   });
+
+  renderMasterSignalPanel(document.getElementById("signal-panel")!, selectedActorId);
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {

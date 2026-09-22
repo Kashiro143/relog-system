@@ -69,7 +69,7 @@ async function typeLine(el: HTMLElement, text: string, charDelay: number) {
   }
 }
 
-export function mountTerminalDisplay(root: HTMLElement) {
+export function mountTerminalDisplay(root: HTMLElement, actorId: string) {
   injectStyleOnce();
   root.classList.add("kos-term-root", "skin-classic");
   root.innerHTML = `
@@ -120,5 +120,5 @@ export function mountTerminalDisplay(root: HTMLElement) {
     }
   }
 
-  watchLive(render);
+  watchLive(actorId, render);
 }

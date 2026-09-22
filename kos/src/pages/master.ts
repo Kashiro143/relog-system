@@ -1,6 +1,7 @@
 import "../theme.css";
 import { watchActors, watchModes, setActorMode } from "../registry";
 import type { Actor, ModuleDefinition } from "../types";
+import { renderTerminalPanel } from "../modules/terminal/masterPanel";
 
 let selectedActorId: string | null = null;
 let actors: Record<string, Actor> = {};
@@ -51,10 +52,11 @@ function renderControls() {
     .join("");
 
   controlZone.innerHTML = `
-    <div class="panel">
+    <div class="panel" style="margin-bottom:16px;">
       <h4>Univers actuel</h4>
       ${modeButtons || '<p style="color:var(--text-dim)">Aucun mode forgé — utilisez la Forge.</p>'}
-    </div>`;
+    </div>
+    <div id="module-controls"></div>`;
 
   controlZone.querySelectorAll<HTMLButtonElement>(".mode-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -62,6 +64,11 @@ function renderControls() {
       setActorMode(selectedActorId, btn.dataset.mode!);
     });
   });
+
+  const moduleControls = document.getElementById("module-controls")!;
+  if (actor?.currentMode === "terminal" && selectedActorId) {
+    renderTerminalPanel(moduleControls, selectedActorId);
+  }
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {

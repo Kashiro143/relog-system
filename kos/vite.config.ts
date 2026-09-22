@@ -12,6 +12,8 @@ export default defineConfig({
         master: resolve(root, "master.html"),
         overlay: resolve(root, "overlay.html"),
         player: resolve(root, "player.html"),
+        terminalOverlay: resolve(root, "modules/terminal/overlay.html"),
+        terminalPlayer: resolve(root, "modules/terminal/player.html"),
       },
     },
   },

@@ -2,40 +2,7 @@ import "../theme.css";
 import { watchActors, watchModes, createActor, deleteActor, createMode, deleteMode } from "../registry";
 import type { Permissions } from "../types";
 import { PERMISSION_TYPES } from "../permissions";
-
-// OBS Browser Source (et ce navigateur de prévisualisation) n'affichent pas
-// fiablement les dialogues natifs alert()/confirm() : on utilise nos propres
-// équivalents inline plutôt que de dépendre de l'API navigateur.
-function flashError(anchor: HTMLElement, message: string) {
-  const existing = anchor.querySelector<HTMLElement>(".field-error");
-  if (existing) existing.remove();
-  const el = document.createElement("div");
-  el.className = "field-error";
-  el.textContent = message;
-  el.style.cssText = "color:var(--status-offline); font-size:0.75rem; margin-top:4px;";
-  anchor.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-function armConfirmDelete(btn: HTMLButtonElement, onConfirm: () => void) {
-  let armed = false;
-  let resetTimer: ReturnType<typeof setTimeout>;
-  btn.addEventListener("click", () => {
-    if (!armed) {
-      armed = true;
-      btn.textContent = "Confirmer ?";
-      btn.style.background = "#fff";
-      resetTimer = setTimeout(() => {
-        armed = false;
-        btn.textContent = "×";
-        btn.style.background = "";
-      }, 3000);
-      return;
-    }
-    clearTimeout(resetTimer);
-    onConfirm();
-  });
-}
+import { flashError, armConfirmDelete } from "../ui/dialogs";
 
 const permsContainer = document.getElementById("actor-perms")!;
 permsContainer.innerHTML = PERMISSION_TYPES.map(

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; padding: 0; background: transparent; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+
+        .entity-container { position: relative; width: 250px; height: 250px; }
+
+        /* L'IMAGE PAR DÉFAUT */
+        .avatar { 
+            width: 100%; height: 100%; object-fit: contain; 
+            transition: transform 0.1s;
+        }
+
+        /* ON CACHE L'IMAGE DE TALK PAR DÉFAUT */
+        .img-talk { display: none; }
+
+        /* EFFET VHS POUR SAITHO */
+        .mode-vhs { image-rendering: pixelated; filter: contrast(1.2) sepia(0.2); }
+
+        /* QUAND LA CLASSE 'SPEAKING' EST AJOUTÉE */
+        .speaking .img-idle { display: none; }
+        .speaking .img-talk { 
+            display: block; 
+            transform: scale(1.1) translateY(-10px);
+            filter: drop-shadow(0 0 15px #0FF);
+        }
+
+        /* ON CACHE LE WIDGET DISCORD MAIS ON LE LAISSE ACTIF */
+        #discord-bridge {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0; /* On le rend invisible mais présent */
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="entity" class="entity-container mode-vhs">
+        <img src="saitho_smug.png" class="avatar img-idle">
+        <img src="saitho_talk.png" class="avatar img-talk">
+    </div>
+
+    <iframe id="discord-bridge" src="https://streamkit.discord.com/overlay/voice/SERVER_ID/CHANNEL_ID?icon=true&online=true&logo=white&text_color=%23ffffff&text_size=14&text_outline_color=%23000000&text_outline_size=0&text_shadow_color=%23000000&text_shadow_size=0&bg_color=%231e2124&bg_opacity=0.95&bg_shadow_color=%23000000&bg_shadow_size=0&invite_code=INVITE_CODE&limit_speaking=false&small_avatars=false&hide_names=false&fade_chat=0&streamer_avatar_first=false"></iframe>
+
+    <script>
+        const TARGET_ID = "DISCORD_USER_ID"; // ID de Saitho
+        const entity = document.getElementById('entity');
+
+        // On utilise un intervalle pour checker les changements dans l'iframe
+        // Note: Cela ne fonctionne QUE si tu lances le fichier via un serveur local (Live Server)
+        // ou si tu configures OBS correctement.
+        
+        window.addEventListener('message', function(event) {
+            // Discord Streamkit envoie parfois des messages, mais la méthode 
+            // la plus sûre dans OBS est de surveiller les changements d'état.
+        });
+
+        // Version de secours : Si le CORS bloque, on utilise le fait que 
+        // OBS permet d'injecter du CSS personnalisé.
+    </script>
+</body>
+</html>

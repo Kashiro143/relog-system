@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KASHIRO_IDLE_TERMINAL</title>
+    <style>
+        body {
+            background: transparent;
+            color: rgba(0, 255, 255, 0.8);
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            text-shadow: 0 0 5px #00FFFF;
+            overflow: hidden;
+            transition: filter 0.3s ease;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #idle-term {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 90%;
+            line-height: 1.4;
+        }
+
+        /* --- EFFET DE GLITCH (RAID) UNIQUEMENT --- */
+        .glitch-mode {
+            animation: shake 0.2s infinite;
+            filter: hue-rotate(110deg) contrast(180%) brightness(1.3) !important;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-4px, 4px); }
+            50% { transform: translate(4px, -4px); }
+            75% { transform: translate(-4px, -4px); }
+            100% { transform: translate(4px, 4px); }
+        }
+
+        /* L'effet d'écran (body::after) a été supprimé ici */
+    </style>
+</head>
+<body>
+    <div id="idle-term"></div>
+
+    <script>
+        const term = document.getElementById('idle-term');
+        let currentText = "";
+        let isWriting = false;
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kashiro_trigger') {
+                const type = localStorage.getItem('kashiro_type');
+                const cmd = localStorage.getItem('kashiro_cmd') || "";
+
+                if (type === 'RESET') {
+                    term.innerHTML = "";
+                    document.body.classList.remove('glitch-mode');
+                } else {
+                    currentText = cmd;
+
+                    if (currentText.toUpperCase().includes("RAID")) {
+                        document.body.classList.add('glitch-mode');
+                        setTimeout(() => {
+                            document.body.classList.remove('glitch-mode');
+                        }, 12000);
+                    } else {
+                        document.body.classList.remove('glitch-mode');
+                    }
+
+                    runSequence();
+                }
+            }
+        });
+
+        async function runSequence() {
+            if (isWriting) return; 
+            isWriting = true;
+
+            term.innerHTML = "";
+            const lines = currentText.split('\n');
+            
+            for (let line of lines) {
+                let d = document.createElement('div');
+                term.appendChild(d);
+                
+                for (let c of line) {
+                    d.innerHTML += c;
+                    await new Promise(r => setTimeout(r, 25));
+                }
+                await new Promise(r => setTimeout(r, 150));
+            }
+            
+            isWriting = false;
+
+            if (localStorage.getItem('kashiro_loop') === 'true') {
+                await new Promise(r => setTimeout(r, 5000));
+                if (!isWriting) runSequence();
+            }
+        }
+    </script>
+</body>
+</html>

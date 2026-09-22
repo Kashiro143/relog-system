@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Réglages du Chatbox</title>
+<link href="https://fonts.googleapis.com/css?family=Tomorrow:400,600,700&family=Poppins:400,600,700&family=Bebas+Neue&family=Share+Tech+Mono&family=Press+Start+2P&family=Comfortaa:400,600,700&family=Inter:400,600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0f1220;
+    color: #e8e8f0;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  #panel {
+    width: 400px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: #171a2b;
+  }
+
+  #panel-header {
+    padding: 20px 24px 0;
+  }
+
+  #panel-header h1 {
+    font-size: 18px;
+    margin: 0 0 16px;
+  }
+
+  #tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    border-bottom: 1px solid #2a2e45;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: #8b8fb3;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 10px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+
+  .tab-btn.active {
+    color: #17E8FF;
+    border-bottom-color: #17E8FF;
+  }
+
+  #tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  fieldset {
+    border: 1px solid #2a2e45;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 12px 14px 16px;
+  }
+
+  legend {
+    padding: 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b8fb3;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    margin: 10px 0;
+  }
+
+  input[type="text"], input[type="number"], select {
+    width: 140px;
+    background: #0f1220;
+    border: 1px solid #2a2e45;
+    border-radius: 5px;
+    color: #e8e8f0;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  input[type="color"] {
+    width: 40px;
+    height: 28px;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #17E8FF;
+    cursor: pointer;
+  }
+
+  #panel-footer {
+    padding: 16px 24px 20px;
+    border-top: 1px solid #2a2e45;
+  }
+
+  #save {
+    width: 100%;
+    padding: 12px;
+    background: #17E8FF;
+    color: #0f1220;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  #save:hover { opacity: 0.9; }
+
+  #replay {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    background: transparent;
+    color: #17E8FF;
+    border: 1px solid #17E8FF;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  #replay:hover { background: rgba(23,232,255,0.1); }
+
+  #instructions {
+    margin-top: 12px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #8b8fb3;
+  }
+
+  #status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6bffb0;
+    min-height: 16px;
+  }
+
+  /* --- Cartes de profil par rôle --- */
+  .role-card {
+    border: 1px solid #2a2e45;
+    border-left: 4px solid #17E8FF;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    background: #14172a;
+  }
+
+  .role-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .role-card-title {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .role-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #8b8fb3;
+    margin: 0;
+  }
+
+  /* --- Aperçu --- */
+  #preview-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 30px;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg, #2b2f4a 25%, transparent 25%) -20px 0/ 40px 40px,
+      linear-gradient(225deg, #2b2f4a 25%, transparent 25%) -20px 0/ 40px 40px,
+      linear-gradient(315deg, #2b2f4a 25%, transparent 25%) 0px 0/ 40px 40px,
+      linear-gradient(45deg, #2b2f4a 25%, #1a1d30 25%) 0px 0/ 40px 40px;
+  }
+
+  #preview-wrap.justify-right { justify-content: flex-end; }
+  #preview-wrap.align-top { align-items: flex-start; }
+
+  #preview-box { width: 100%; max-width: 520px; isolation: isolate; }
+
+  #preview-log { display: flex; flex-direction: column; }
+  #preview-log.pos-top { flex-direction: column-reverse; }
+  #preview-log > div {
+    margin-bottom: var(--box-spacing, 15px);
+    opacity: 0;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+    font-family: 'Tomorrow', sans-serif;
+  }
+
+  @keyframes anim-slide-in {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes anim-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes anim-pop-in {
+    0%   { opacity: 0; transform: scale(0.7); }
+    70%  { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  #preview-log > div.anim-slide.show { animation: anim-slide-in 0.5s ease forwards; }
+  #preview-log > div.anim-fade.show  { animation: anim-fade-in 0.5s ease forwards; }
+  #preview-log > div.anim-pop.show   { animation: anim-pop-in 0.45s cubic-bezier(.34,1.56,.64,1) forwards; }
+  #preview-log > div.anim-typewriter.show { animation: anim-fade-in 0.3s ease forwards; }
+
+  .tw-token { display: inline-block; opacity: 0; animation: anim-fade-in 0.2s ease forwards; }
+
+  .wrapper { margin: 15px; }
+  .meta { display: inline-flex; align-items: center; margin-bottom: -1px; }
+  .badge { width: 18px; height: 18px; margin: 0 2px 0 0; }
+  .username_box {
+    display: inline-flex; align-items: center; margin: 0 0 0 8px;
+    padding: 4px 5px 6px; background: var(--accent-color, #17E8FF); z-index: 1;
+    border-radius: var(--box-radius, 0px);
+  }
+  .name {
+    color: var(--text-color, #140E63); font-weight: 600;
+    font-size: var(--username-font-size, 16pt); letter-spacing: 1px;
+    padding: 2px 8px 0 8px; text-transform: uppercase;
+  }
+  .new-tag {
+    display: inline-block; background: var(--text-color, #140E63); color: var(--accent-color, #17E8FF);
+    font-size: 0.55em; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px;
+    border-radius: 3px; margin-right: 4px; text-transform: uppercase;
+  }
+  .triangle {
+    width: 0; height: 0; border-style: solid;
+    border-width: 39px 0 0 30px;
+    border-color: transparent transparent transparent var(--accent-color, #17E8FF);
+  }
+  .fancy_message_box { display: flex; align-items: center; margin: 0 0 0 8px; }
+  .message_box {
+    padding: 13px 19px 15px 19px;
+    background: linear-gradient(132deg, var(--gradient-color-1, #E8F4FF) 44%, var(--gradient-color-2, #A8D8FF) 100%);
+    border: 1px solid var(--accent-color, #17E8FF);
+    border-radius: var(--box-radius, 0px);
+    box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25);
+    position: relative; z-index: -1; margin-bottom: 8px;
+  }
+  @keyframes mention-pulse {
+    0%, 100% { box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25); }
+    50%      { box-shadow: 0 0 26px 6px var(--accent-color, #17E8FF); }
+  }
+  .message_box.mention { animation: mention-pulse 1.1s ease-in-out 2; }
+  body.show-sparkle .message_box::after {
+    content: "";
+    background: url(https://media.discordapp.net/attachments/981579056594173993/1377777048659038229/emoji__sparkles__1.png?format=webp&quality=lossless) no-repeat;
+    background-size: contain; width: 30px; height: 30px;
+    position: absolute; top: -20px; right: 15px;
+  }
+  .message {
+    display: block; color: var(--text-color, #140E63); font-weight: 600;
+    font-size: var(--message-font-size, 16pt); letter-spacing: 0.9px; word-wrap: break-word;
+  }
+  .message_box.only-emotes { padding: 15px 15px 0px 15px; }
+  .badge-emoji {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; margin: 0 2px 0 0; font-size: 12px;
+  }
+  .preview-emote { font-size: 1.6em; line-height: 1; vertical-align: middle; }
+  .only-emotes .preview-emote { font-size: 2.6em; }
+
+  #reactions-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .floating-emote {
+    position: absolute; font-size: 32px; bottom: 40px;
+    animation: float-up 2.2s ease-out forwards;
+  }
+  @keyframes float-up {
+    0%   { opacity: 0; transform: translateY(0) scale(0.6); }
+    15%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-220px) scale(1.3); }
+  }
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div id="panel-header">
+    <h1>🎛️ Réglages du Chatbox</h1>
+  </div>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="general">Général</button>
+    <button class="tab-btn" data-tab="style">Style</button>
+    <button class="tab-btn" data-tab="emotes">Émotes &amp; badges</button>
+    <button class="tab-btn" data-tab="effects">Animations &amp; effets</button>
+    <button class="tab-btn" data-tab="roles">Profils par rôle</button>
+  </div>
+
+  <div id="tab-content">
+
+    <div class="tab-panel active" data-tab="general">
+      <fieldset>
+        <legend>Connexion</legend>
+        <label>Chaîne Twitch <input type="text" id="channel"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Affichage</legend>
+        <label>Taille pseudo (pt) <input type="number" id="usernameFontSize" min="8" max="40"></label>
+        <label>Taille message (pt) <input type="number" id="messageFontSize" min="8" max="40"></label>
+        <label>Espacement (px) <input type="number" id="boxSpacing" min="0" max="60"></label>
+        <label>Couleur d'accent <input type="color" id="accentColor"></label>
+        <label>Couleur du texte <input type="color" id="textColor"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Messages</legend>
+        <label>Limiter le nombre affiché <input type="checkbox" id="limitEnabled"></label>
+        <label>Nombre max <input type="number" id="limitCount" min="1" max="500"></label>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" data-tab="style">
+      <fieldset>
+        <legend>Position à l'écran</legend>
+        <label>Emplacement du chat
+          <select id="position">
+            <option value="bottom-left">Bas gauche (défaut)</option>
+            <option value="bottom-right">Bas droite</option>
+            <option value="top-left">Haut gauche</option>
+            <option value="top-right">Haut droite</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Forme &amp; fond des bulles</legend>
+        <label>Coins arrondis (px) <input type="number" id="boxRadius" min="0" max="30"></label>
+        <label>Dégradé — couleur 1 <input type="color" id="gradientColor1"></label>
+        <label>Dégradé — couleur 2 <input type="color" id="gradientColor2"></label>
+        <label>Décoration étincelle <input type="checkbox" id="showSparkle"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Police &amp; texte</legend>
+        <label>Police par défaut
+          <select id="defaultFont" class="font-select"></select>
+        </label>
+        <label>Texte du tag "Nouveau" <input type="text" id="newUserTagText"></label>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" data-tab="emotes">
+      <fieldset>
+        <legend>Émotes &amp; badges</legend>
+        <label>Badges Twitch <input type="checkbox" id="showBadges"></label>
+        <label>BetterTTV (BTTV) <input type="checkbox" id="showBTTV"></label>
+        <label>FrankerFaceZ (FFZ) <input type="checkbox" id="showFFZ"></label>
+        <label>7TV <input type="checkbox" id="show7TV"></label>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" data-tab="effects">
+      <fieldset>
+        <legend>Animations &amp; effets</legend>
+        <label>Style d'animation
+          <select id="animationStyle">
+            <option value="slide">Glissement</option>
+            <option value="fade">Fondu</option>
+            <option value="pop">Pop</option>
+            <option value="typewriter">Machine à écrire</option>
+          </select>
+        </label>
+        <label>Effet sur mention (@toi) <input type="checkbox" id="mentionHighlight"></label>
+        <label>Réactions flottantes (émotes) <input type="checkbox" id="floatingReactions"></label>
+        <label>Tag "Nouveau" 1er message <input type="checkbox" id="newUserTag"></label>
+        <label>Durée du tag (s) <input type="number" id="newUserTagDuration" min="1" max="30"></label>
+        <label>Masquer si inactif
+          <select id="autoHide">
+            <option value="never">Jamais</option>
+            <option value="30">30 secondes</option>
+            <option value="60">1 minute</option>
+            <option value="120">2 minutes</option>
+          </select>
+        </label>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" data-tab="roles">
+      <div class="role-card" id="card-broadcaster">
+        <div class="role-card-header">
+          <span class="role-card-title">👑 Streamer</span>
+          <label class="role-toggle"><input type="checkbox" id="role_broadcaster_enabled"> Activé</label>
+        </div>
+        <label>Couleur d'accent <input type="color" id="role_broadcaster_color"></label>
+        <label>Couleur du pseudo <input type="color" id="role_broadcaster_textColor"></label>
+        <label>Police
+          <select id="role_broadcaster_font" class="font-select"></select>
+        </label>
+      </div>
+
+      <div class="role-card" id="card-moderator">
+        <div class="role-card-header">
+          <span class="role-card-title">⚔️ Modérateur</span>
+          <label class="role-toggle"><input type="checkbox" id="role_moderator_enabled"> Activé</label>
+        </div>
+        <label>Couleur d'accent <input type="color" id="role_moderator_color"></label>
+        <label>Couleur du pseudo <input type="color" id="role_moderator_textColor"></label>
+        <label>Police
+          <select id="role_moderator_font" class="font-select"></select>
+        </label>
+      </div>
+
+      <div class="role-card" id="card-vip">
+        <div class="role-card-header">
+          <span class="role-card-title">♦ VIP</span>
+          <label class="role-toggle"><input type="checkbox" id="role_vip_enabled"> Activé</label>
+        </div>
+        <label>Couleur d'accent <input type="color" id="role_vip_color"></label>
+        <label>Couleur du pseudo <input type="color" id="role_vip_textColor"></label>
+        <label>Police
+          <select id="role_vip_font" class="font-select"></select>
+        </label>
+      </div>
+
+      <div class="role-card" id="card-subscriber">
+        <div class="role-card-header">
+          <span class="role-card-title">⭐ Abonné</span>
+          <label class="role-toggle"><input type="checkbox" id="role_subscriber_enabled"> Activé</label>
+        </div>
+        <label>Couleur d'accent <input type="color" id="role_subscriber_color"></label>
+        <label>Couleur du pseudo <input type="color" id="role_subscriber_textColor"></label>
+        <label>Police
+          <select id="role_subscriber_font" class="font-select"></select>
+        </label>
+      </div>
+
+      <div style="font-size:11px;color:#8b8fb3;margin-top:4px;line-height:1.4;">
+        Priorité si plusieurs badges : Streamer &gt; Modérateur &gt; VIP &gt; Abonné &gt; style par défaut (onglet Général).
+        Désactive un profil pour qu'il retombe sur le style par défaut.
+      </div>
+    </div>
+
+  </div>
+
+  <div id="panel-footer">
+    <button id="save">💾 Enregistrer config.js</button>
+    <button id="replay">🔁 Rejouer l'aperçu</button>
+    <div id="status"></div>
+    <div id="instructions">
+      Le clic ci-dessus télécharge un fichier <code>config.js</code> à jour.
+      Déplace-le dans ce même dossier en écrasant l'ancien, puis fais
+      "Refresh cache of current page" sur la source du chatbox dans OBS.
+    </div>
+  </div>
+</div>
+
+<div id="preview-wrap">
+  <div id="preview-box">
+    <div id="preview-log"></div>
+  </div>
+  <div id="reactions-layer"></div>
+</div>
+
+<!-- Charge les valeurs actuelles depuis config.js (doit être dans le même dossier) -->
+<script src="config.js"></script>
+<script>
+(function () {
+  const CFG = window.CHATBOX_CONFIG || {};
+
+  const FONTS = ["Tomorrow", "Poppins", "Bebas Neue", "Share Tech Mono", "Press Start 2P", "Comfortaa"];
+  const ROLE_KEYS = ["broadcaster", "moderator", "vip", "subscriber"];
+
+  const DEFAULTS = {
+    channel: "kashiro143",
+    limitEnabled: true,
+    limitCount: 50,
+    usernameFontSize: 16,
+    messageFontSize: 16,
+    boxSpacing: 15,
+    accentColor: "#17E8FF",
+    textColor: "#140E63",
+    defaultFont: "Tomorrow",
+    boxRadius: 0,
+    gradientColor1: "#E8F4FF",
+    gradientColor2: "#A8D8FF",
+    showSparkle: true,
+    position: "bottom-left",
+    showBadges: true,
+    showBTTV: true,
+    showFFZ: true,
+    show7TV: true,
+    animationStyle: "slide",
+    mentionHighlight: true,
+    floatingReactions: true,
+    newUserTag: true,
+    newUserTagText: "Nouveau",
+    newUserTagDuration: 4,
+    autoHide: "never",
+    roleProfiles: {
+      broadcaster: { enabled: true, color: "#FF6EC7", textColor: "#3D0066", font: "Tomorrow" },
+      moderator:   { enabled: true, color: "#00C2FF", textColor: "#052940", font: "Tomorrow" },
+      vip:         { enabled: true, color: "#FFD166", textColor: "#5C2E00", font: "Tomorrow" },
+      subscriber:  { enabled: true, color: "#6BFFB0", textColor: "#023B1D", font: "Tomorrow" }
+    }
+  };
+
+  const values = Object.assign({}, DEFAULTS, CFG);
+  const roleProfileValues = {};
+  ROLE_KEYS.forEach(r => {
+    roleProfileValues[r] = Object.assign({}, DEFAULTS.roleProfiles[r], (CFG.roleProfiles && CFG.roleProfiles[r]) || {});
+  });
+
+  const fields = ["channel", "limitEnabled", "limitCount", "usernameFontSize",
+    "messageFontSize", "boxSpacing", "accentColor", "textColor",
+    "defaultFont", "boxRadius", "gradientColor1", "gradientColor2", "showSparkle", "position",
+    "showBadges", "showBTTV", "showFFZ", "show7TV",
+    "animationStyle", "mentionHighlight", "floatingReactions",
+    "newUserTag", "newUserTagText", "newUserTagDuration", "autoHide"];
+
+  const el = id => document.getElementById(id);
+
+  // --- Onglets ---
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelector(`.tab-panel[data-tab="${btn.dataset.tab}"]`).classList.add("active");
+    });
+  });
+
+  // --- Remplit les <select> de police pour chaque profil de rôle ---
+  document.querySelectorAll(".font-select").forEach(sel => {
+    FONTS.forEach(f => {
+      const opt = document.createElement("option");
+      opt.value = f;
+      opt.textContent = f === "Tomorrow" ? `${f} (défaut)` : f;
+      sel.appendChild(opt);
+    });
+  });
+
+  // --- Messages de test pour l'aperçu ---
+  function sampleMessages() {
+    const chan = el("channel").value || "kashiro143";
+    return [
+      { user: "Kashiro", color: "#3D0066", badges: ["👑"], text: "Voici un aperçu du chat en direct !", onlyEmotes: false, isNew: false, role: "broadcaster" },
+      { user: "Modo_Aya", color: "#052940", badges: ["⚔️"], text: `Salut @${chan}, bon stream !`, onlyEmotes: false, isNew: false, mention: true, role: "moderator" },
+      { user: "VIP_Chris", color: "#5C2E00", badges: ["♦"], text: "Toujours au top ce stream 👀", onlyEmotes: false, isNew: false, role: "vip" },
+      { user: "SubDeLannee", color: "#023B1D", badges: ["⭐"], text: "C'est vraiment un beau gameplay, continue comme ça tu gères trop bien cette phase du jeu !", onlyEmotes: false, isNew: false, role: "subscriber" },
+      { user: "ViewerLambda", color: "#8B8FB3", badges: [], text: "gg easy", onlyEmotes: false, isNew: false, role: null },
+      { user: "HypeTrain", color: "#FF4D4D", badges: [], text: "🔥 🔥 🔥", onlyEmotes: true, isNew: false, role: null },
+      { user: "NouveauViewer", color: "#0A4D2E", badges: [], text: "c'est quoi le jeu ?", onlyEmotes: false, isNew: true, role: null }
+    ];
+  }
+
+  function escapePreviewHtml(s) {
+    const d = document.createElement("div");
+    d.innerText = s;
+    return d.innerHTML;
+  }
+
+  function spawnFloatingReaction(emoji) {
+    if (!el("floatingReactions").checked) return;
+    const layer = el("reactions-layer");
+    const span = document.createElement("span");
+    span.textContent = emoji;
+    span.className = "floating-emote";
+    span.style.left = (15 + Math.random() * 65) + "%";
+    layer.appendChild(span);
+    span.addEventListener("animationend", () => span.remove());
+  }
+
+  function getRoleProfile(role) {
+    if (!role) return null;
+    return {
+      enabled: el(`role_${role}_enabled`).checked,
+      color: el(`role_${role}_color`).value,
+      textColor: el(`role_${role}_textColor`).value,
+      font: el(`role_${role}_font`).value
+    };
+  }
+
+  function renderSampleMessages() {
+    const log = el("preview-log");
+    log.innerHTML = "";
+    const style = el("animationStyle").value;
+
+    sampleMessages().forEach((m, idx) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = `wrapper anim-${style}`;
+
+      let nameColor = m.color;
+      if (m.role) {
+        const profile = getRoleProfile(m.role);
+        if (profile && profile.enabled) {
+          wrapper.style.setProperty("--accent-color", profile.color);
+          if (profile.font) wrapper.style.fontFamily = `'${profile.font}', 'Helvetica Neue', sans-serif`;
+          if (profile.textColor) nameColor = profile.textColor;
+        }
+      }
+
+      const badgesHtml = el("showBadges").checked
+        ? m.badges.map(b => `<span class="badge-emoji">${b}</span>`).join("")
+        : "";
+
+      const tagText = el("newUserTagText").value || "Nouveau";
+      const newTagHtml = (el("newUserTag").checked && m.isNew) ? `<span class="new-tag">${escapePreviewHtml(tagText)}</span>` : "";
+
+      let messageHtml;
+      if (m.onlyEmotes) {
+        messageHtml = m.text.split(" ").map(e => `<span class="preview-emote">${e}</span>`).join(" ");
+      } else if (style === "typewriter") {
+        messageHtml = m.text.split(" ").map((w, i) =>
+          `<span class="tw-token" style="animation-delay:${i * 90}ms">${escapePreviewHtml(w)}</span>`
+        ).join(" ");
+      } else {
+        messageHtml = escapePreviewHtml(m.text);
+      }
+
+      const mentionClass = (el("mentionHighlight").checked && m.mention) ? " mention" : "";
+
+      wrapper.innerHTML = `
+        <div class="meta">
+          <div class="username_box">
+            <span class="badges">${badgesHtml}</span>
+            ${newTagHtml}
+            <span class="name" style="color:${nameColor}">${escapePreviewHtml(m.user)}</span>
+          </div>
+          <div class="triangle"></div>
+        </div>
+        <div class="fancy_message_box">
+          <div class="message_box${m.onlyEmotes ? " only-emotes" : ""}${mentionClass}">
+            <span class="message">${messageHtml}</span>
+          </div>
+        </div>
+      `;
+      log.appendChild(wrapper);
+
+      setTimeout(() => {
+        wrapper.classList.add("show");
+        if (m.onlyEmotes) spawnFloatingReaction("🔥");
+      }, 30 + idx * 40);
+    });
+  }
+
+  function updateRoleCardBorders() {
+    ROLE_KEYS.forEach(r => {
+      document.getElementById(`card-${r}`).style.borderLeftColor = el(`role_${r}_color`).value;
+    });
+  }
+
+  function loadIntoForm() {
+    fields.forEach(f => {
+      const input = el(f);
+      if (input.type === "checkbox") input.checked = !!values[f];
+      else input.value = values[f];
+    });
+    ROLE_KEYS.forEach(r => {
+      el(`role_${r}_enabled`).checked = !!roleProfileValues[r].enabled;
+      el(`role_${r}_color`).value = roleProfileValues[r].color;
+      el(`role_${r}_textColor`).value = roleProfileValues[r].textColor;
+      el(`role_${r}_font`).value = roleProfileValues[r].font;
+    });
+    updateRoleCardBorders();
+  }
+
+  function applyPreview() {
+    const root = document.documentElement.style;
+    root.setProperty("--username-font-size", el("usernameFontSize").value + "pt");
+    root.setProperty("--message-font-size", el("messageFontSize").value + "pt");
+    root.setProperty("--box-spacing", el("boxSpacing").value + "px");
+    root.setProperty("--accent-color", el("accentColor").value);
+    root.setProperty("--text-color", el("textColor").value);
+    root.setProperty("--box-radius", el("boxRadius").value + "px");
+    root.setProperty("--gradient-color-1", el("gradientColor1").value);
+    root.setProperty("--gradient-color-2", el("gradientColor2").value);
+
+    el("preview-log").style.fontFamily = `'${el("defaultFont").value}', 'Helvetica Neue', sans-serif`;
+    document.body.classList.toggle("show-sparkle", el("showSparkle").checked);
+
+    const pos = el("position").value;
+    el("preview-wrap").classList.toggle("justify-right", pos.endsWith("right"));
+    el("preview-wrap").classList.toggle("align-top", pos.startsWith("top"));
+    el("preview-log").classList.toggle("pos-top", pos.startsWith("top"));
+  }
+
+  function collect() {
+    const out = {};
+    fields.forEach(f => {
+      const input = el(f);
+      if (input.type === "checkbox") out[f] = input.checked;
+      else if (input.type === "number") out[f] = Number(input.value);
+      else out[f] = input.value;
+    });
+    out.roleProfiles = {};
+    ROLE_KEYS.forEach(r => {
+      out.roleProfiles[r] = {
+        enabled: el(`role_${r}_enabled`).checked,
+        color: el(`role_${r}_color`).value,
+        textColor: el(`role_${r}_textColor`).value,
+        font: el(`role_${r}_font`).value
+      };
+    });
+    return out;
+  }
+
+  function generateConfigJs(cfg) {
+    const roleBlock = ROLE_KEYS.map(r =>
+      `    ${r}: { enabled: ${cfg.roleProfiles[r].enabled}, color: "${cfg.roleProfiles[r].color}", textColor: "${cfg.roleProfiles[r].textColor}", font: "${cfg.roleProfiles[r].font}" }`
+    ).join(",\n");
+    return `// ===================== CONFIGURATION DU CHATBOX =====================
+// Modifie ces valeurs directement ici, ou utilise config-panel.html
+// pour une interface visuelle avec aperçu en direct.
+// N'oublie pas de garder ce fichier dans le même dossier que le chatbox.
+// =======================================================================
+
+window.CHATBOX_CONFIG = {
+  channel: "${cfg.channel}",
+
+  limitEnabled: ${cfg.limitEnabled},
+  limitCount: ${cfg.limitCount},
+
+  usernameFontSize: ${cfg.usernameFontSize},
+  messageFontSize: ${cfg.messageFontSize},
+  boxSpacing: ${cfg.boxSpacing},
+
+  accentColor: "${cfg.accentColor}",
+  textColor: "${cfg.textColor}",
+
+  defaultFont: "${cfg.defaultFont}",
+  boxRadius: ${cfg.boxRadius},
+  gradientColor1: "${cfg.gradientColor1}",
+  gradientColor2: "${cfg.gradientColor2}",
+  showSparkle: ${cfg.showSparkle},
+
+  position: "${cfg.position}",
+
+  showBadges: ${cfg.showBadges},
+  showBTTV: ${cfg.showBTTV},
+  showFFZ: ${cfg.showFFZ},
+  show7TV: ${cfg.show7TV},
+
+  animationStyle: "${cfg.animationStyle}",
+
+  mentionHighlight: ${cfg.mentionHighlight},
+  floatingReactions: ${cfg.floatingReactions},
+
+  newUserTag: ${cfg.newUserTag},
+  newUserTagText: "${cfg.newUserTagText}",
+  newUserTagDuration: ${cfg.newUserTagDuration},
+
+  autoHide: "${cfg.autoHide}",
+
+  roleProfiles: {
+${roleBlock}
+  }
+};
+`;
+  }
+
+  loadIntoForm();
+  applyPreview();
+  renderSampleMessages();
+
+  fields.forEach(f => el(f).addEventListener("input", applyPreview));
+  ["showBadges", "mentionHighlight", "newUserTag", "newUserTagText", "animationStyle", "channel", "position", "defaultFont", "showSparkle"].forEach(f =>
+    el(f).addEventListener("input", renderSampleMessages)
+  );
+
+  ROLE_KEYS.forEach(r => {
+    ["enabled", "color", "textColor", "font"].forEach(prop => {
+      el(`role_${r}_${prop}`).addEventListener("input", () => {
+        if (prop === "color") updateRoleCardBorders();
+        renderSampleMessages();
+      });
+    });
+  });
+
+  el("replay").addEventListener("click", renderSampleMessages);
+
+  el("save").addEventListener("click", () => {
+    const cfg = collect();
+    const content = generateConfigJs(cfg);
+    const blob = new Blob([content], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "config.js";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    el("status").textContent = "✓ Téléchargé — déplace le fichier dans le dossier du chatbox.";
+    setTimeout(() => el("status").textContent = "", 4000);
+  });
+})();
+</script>
+</body>
+</html>

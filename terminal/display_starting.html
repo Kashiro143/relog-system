@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background: transparent; color: #00FFFF; font-family: 'Courier New', monospace; font-size: 32px; text-shadow: 0 0 12px #00FFFF; overflow: hidden; }
+        #terminal { padding: 60px; line-height: 1.5; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+    <script>
+        const term = document.getElementById('terminal');
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kashiro_trigger') {
+                const type = localStorage.getItem('kashiro_type');
+                if (type === 'RESET') { 
+                    term.innerHTML = ""; // Correction : Vide l'écran au Reset
+                } else if (type === 'TYPE') {
+                    typeWriter(localStorage.getItem('kashiro_cmd'));
+                }
+            }
+        });
+
+        async function typeWriter(text) {
+            term.innerHTML = "";
+            const lines = text.split('\n');
+            for (let line of lines) {
+                let d = document.createElement('div');
+                term.appendChild(d);
+                for (let c of line) {
+                    d.innerHTML += c;
+                    await new Promise(r => setTimeout(r, 35));
+                }
+                await new Promise(r => setTimeout(r, 400));
+            }
+        }
+    </script>
+</body>
+</html>

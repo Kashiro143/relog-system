@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>K-OS // Design Studio & Library</title>
+    <style>
+        :root { --cyan: #00d4ff; --red: #ff4b2b; --dark: #080808; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; }
+
+        /* Sidebar */
+        #sidebar { width: 280px; border-right: 1px solid #333; padding: 20px; background: #0c0c0c; overflow-y: auto; }
+        .vignette { 
+            background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; gap: 12px; border: 1px solid transparent; 
+        }
+        .vignette:hover { border-color: var(--cyan); }
+        .vignette.active { border-color: var(--cyan); background: rgba(0, 212, 255, 0.1); }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--cyan); }
+
+        /* Main Content */
+        #editor { flex: 1; padding: 30px; overflow-y: auto; display: none; }
+        .grid { display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
+
+        label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+        input, select, textarea { background: #161616; color: white; border: 1px solid #333; padding: 10px; width: 100%; margin-bottom: 20px; border-radius: 4px; }
+        textarea { height: 100px; font-family: 'Courier New', monospace; font-size: 12px; }
+        
+        /* Preset Selector Row */
+        .preset-row { display: flex; gap: 10px; align-items: flex-start; }
+        .btn-del-preset { background: #333; color: var(--red); border: 1px solid var(--red); padding: 9px; cursor: pointer; border-radius: 4px; }
+        .btn-del-preset:hover { background: var(--red); color: white; }
+
+        /* Preview */
+        #preview-box { 
+            border: 1px solid #333; padding: 40px; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            min-height: 150px; display: flex; align-items: center; justify-content: center; text-align: center;
+        }
+
+        .btn { background: var(--cyan); border: none; padding: 12px; color: black; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; }
+        .btn-outline { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); margin-bottom: 20px; }
+        .save-preset-zone { border: 1px dashed #444; padding: 15px; margin-top: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h3 style="color:var(--cyan)">SYSTEM_UNITS</h3>
+    <button class="btn btn-outline" onclick="createNewUser()">+ NOUVEAU MEMBRE</button>
+    <div id="user-list"></div>
+</div>
+
+<div id="editor">
+    <h2 id="current-user-title">EDITION</h2>
+    <div class="grid">
+        <div class="controls">
+            <label>Couleur du signal</label>
+            <input type="color" id="user-color" oninput="updatePreview()">
+
+            <label>Choisir un Style (Preset)</label>
+            <div class="preset-row">
+                <select id="user-preset" onchange="loadPresetToEditor()">
+                    </select>
+                <button class="btn-del-preset" title="Supprimer ce preset" onclick="deletePreset()">✕</button>
+            </div>
+
+            <div class="save-preset-zone">
+                <label>Personnaliser le CSS (Style Unique)</label>
+                <textarea id="user-css" oninput="updatePreview()"></textarea>
+                <button class="btn" style="background:#f1c40f; font-size:11px;" onclick="saveAsNewPreset()">SAUVEGARDER COMME NOUVEAU PRESET</button>
+            </div>
+            
+            <button class="btn" style="margin-top:20px;" onclick="saveUserProfile()">APPLIQUER AU MEMBRE</button>
+            <button onclick="deleteUser()" style="background:none; border:none; color:#666; font-size:10px; cursor:pointer; margin-top:10px; text-decoration:underline;">Supprimer ce membre du système</button>
+        </div>
+
+        <div class="preview-zone">
+            <label>Visualisation Live</label>
+            <div id="preview-box">
+                <div id="preview-render">Aperçu du message</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    let currentUser = null;
+    let allPresets = {};
+
+    // 1. ÉCOUTER LES PRESETS
+    onValue(ref(db, 'settings/presets'), (snap) => {
+        allPresets = snap.val() || {};
+        updatePresetDropdown();
+    });
+
+    // 2. ÉCOUTER LES MEMBRES
+    onValue(ref(db, 'settings/profiles'), (snap) => {
+        const users = snap.val() || {};
+        const container = document.getElementById('user-list');
+        container.innerHTML = "";
+        Object.keys(users).forEach(name => {
+            const div = document.createElement('div');
+            div.className = `vignette ${currentUser === name ? 'active' : ''}`;
+            div.onclick = () => selectUser(name, users[name]);
+            div.innerHTML = `<div class="avatar" style="background:${users[name].color}"></div> <span>${name}</span>`;
+            container.appendChild(div);
+        });
+    });
+
+    function updatePresetDropdown() {
+        const select = document.getElementById('user-preset');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- Sélectionner un preset --</option>';
+        Object.keys(allPresets).forEach(pName => {
+            select.innerHTML += `<option value="${pName}">${pName}</option>`;
+        });
+        if(currentVal && allPresets[currentVal]) select.value = currentVal;
+    }
+
+    window.selectUser = (name, data) => {
+        currentUser = name;
+        document.getElementById('editor').style.display = 'block';
+        document.getElementById('current-user-title').innerText = "UNIT: " + name;
+        document.getElementById('user-color').value = data.color || "#00d4ff";
+        document.getElementById('user-preset').value = data.presetName || "";
+        document.getElementById('user-css').value = data.customCSS || "";
+        updatePreview();
+    };
+
+    window.loadPresetToEditor = () => {
+        const presetName = document.getElementById('user-preset').value;
+        if(presetName && allPresets[presetName]) {
+            document.getElementById('user-css').value = allPresets[presetName];
+            updatePreview();
+        }
+    };
+
+    window.updatePreview = () => {
+        const color = document.getElementById('user-color').value;
+        const css = document.getElementById('user-css').value;
+        const render = document.getElementById('preview-render');
+        render.style.cssText = css + ` color:${color}; border-color:${color};`;
+    };
+
+    // --- SUPPRESSION PRESET ---
+    window.deletePreset = () => {
+        const presetName = document.getElementById('user-preset').value;
+        if(!presetName) return alert("Sélectionnez un preset à supprimer.");
+        if(confirm(`Voulez-vous vraiment supprimer le style "${presetName}" de la bibliothèque ?`)) {
+            remove(ref(db, `settings/presets/${presetName}`));
+        }
+    };
+
+    window.saveAsNewPreset = () => {
+        const pName = prompt("Nom du nouveau style ?");
+        const css = document.getElementById('user-css').value;
+        if(pName && css) {
+            set(ref(db, `settings/presets/${pName}`), css);
+        }
+    };
+
+    window.saveUserProfile = () => {
+        if(!currentUser) return;
+        set(ref(db, `settings/profiles/${currentUser}`), {
+            color: document.getElementById('user-color').value,
+            presetName: document.getElementById('user-preset').value,
+            customCSS: document.getElementById('user-css').value,
+            msg: "[CORE_UPDATED]"
+        });
+        alert("Profil mis à jour !");
+    };
+
+    window.createNewUser = () => {
+        const name = prompt("Nom du nouveau membre ?");
+        if(name) set(ref(db, `settings/profiles/${name}`), { color: "#00d4ff", presetName: "", customCSS: "" });
+    };
+
+    window.deleteUser = () => {
+        if(currentUser && confirm(`Supprimer définitivement ${currentUser} ?`)) {
+            remove(ref(db, `settings/profiles/${currentUser}`));
+            document.getElementById('editor').style.display = 'none';
+            currentUser = null;
+        }
+    };
+</script>
+</body>
+</html>

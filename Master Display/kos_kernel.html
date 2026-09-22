@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>K-OS // NEURAL_KERNEL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&display=swap');
+
+        :root {
+            --accent: #00ffff;
+            --bg: #050505;
+            --panel: #0a0a0a;
+            --border: #1a1a1a;
+            --text: #4a4a4a;
+        }
+
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Fira Code', monospace; 
+            padding: 40px; 
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .main-frame {
+            max-width: 600px;
+            margin: auto;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            box-shadow: 0 0 50px rgba(0,0,0,1);
+            position: relative;
+        }
+
+        /* Barre de titre style OS */
+        .title-bar {
+            background: var(--border);
+            padding: 8px 15px;
+            color: #fff;
+            font-size: 10px;
+            letter-spacing: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .content { padding: 30px; }
+
+        h1 { 
+            font-size: 14px; 
+            color: #fff; 
+            margin: 0 0 20px 0; 
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+        }
+
+        h1::before {
+            content: "";
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: var(--accent);
+            margin-right: 10px;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        #status { 
+            font-size: 9px; 
+            margin-bottom: 20px; 
+            padding: 5px 10px;
+            border: 1px solid #330000;
+            color: #ff003c;
+            display: inline-block;
+        }
+
+        .input-group { position: relative; margin-bottom: 20px; }
+
+        input { 
+            width: 100%; 
+            background: #000; 
+            border: 1px solid var(--border); 
+            color: var(--accent); 
+            padding: 15px; 
+            font-family: 'Fira Code';
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,255,255,0.1); }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--accent); 
+            border: none; 
+            color: #000; 
+            cursor: pointer; 
+            font-weight: 900; 
+            font-family: 'Fira Code';
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #fff; box-shadow: 0 0 20px #fff; }
+
+        #log { 
+            margin-top: 25px;
+            font-size: 10px; 
+            height: 150px; 
+            overflow-y: auto; 
+            border-top: 1px solid var(--border); 
+            padding-top: 15px; 
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .log-user { color: var(--accent); }
+        .log-system { color: #fff; font-weight: bold; }
+
+        /* Scrollbar custom */
+        #log::-webkit-scrollbar { width: 4px; }
+        #log::-webkit-scrollbar-thumb { background: var(--border); }
+    </style>
+</head>
+<body>
+
+    <div class="main-frame">
+        <div class="title-bar">
+            <span>CORE_v4.0.2</span>
+            <span>SYSTEM_ONLINE</span>
+        </div>
+        
+        <div class="content">
+            <h1>NEURAL_LINK</h1>
+            <div id="status">CONNECTION_REQUIRED</div>
+            
+            <div class="input-group">
+                <input type="text" id="channelName" placeholder="ID_CIBLE (NOM_TWITCH)">
+            </div>
+            
+            <button id="connectBtn">INITIALISER LA LIAISON</button>
+            
+            <div id="log">--- STANDBY ---<br></div>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        const logEl = document.getElementById('log');
+        const statusEl = document.getElementById('status');
+        const btn = document.getElementById('connectBtn');
+
+        function writeLog(msg, type = '') {
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const spanClass = type ? `class="log-${type}"` : '';
+            logEl.innerHTML += `[${time}] <span ${spanClass}>${msg}</span><br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        btn.onclick = function() {
+            const channel = document.getElementById('channelName').value.trim().toLowerCase();
+            if(!channel) return;
+
+            writeLog(`Tentative d'accès au flux : ${channel}...`, 'system');
+            
+            socket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+            socket.onopen = () => {
+                socket.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+                socket.send('PASS SCHMOOPIIE');
+                socket.send(`NICK justinfan${Math.floor(Math.random() * 10000)}`);
+                socket.send(`JOIN #${channel}`);
+            };
+
+            socket.onmessage = (event) => {
+                const raw = event.data;
+                
+                if (raw.startsWith('PING')) {
+                    socket.send('PONG :tmi.twitch.tv');
+                    return;
+                }
+
+                const match = raw.match(/display-name=([^;]+).*PRIVMSG #([^ ]+) :(.+)/);
+                if (match) {
+                    const user = match[1];
+                    const msg = match[3].trim();
+                    writeLog(`${user}: ${msg}`, 'user');
+
+                    const signal = {
+                        type: "SIGNAL_CHAT",
+                        value: `${user.toUpperCase()}: ${msg.toUpperCase()}`,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('KOS_SIGNAL', JSON.stringify(signal));
+                }
+
+                if (raw.includes('JOIN')) {
+                    statusEl.innerText = "LIAISON_ACTIVE // TARGET:" + channel.toUpperCase();
+                    statusEl.style.color = "var(--accent)";
+                    statusEl.style.borderColor = "var(--accent)";
+                    writeLog("Protocole de liaison terminé.", 'system');
+                    btn.style.display = "none";
+                }
+            };
+
+            socket.onerror = (err) => writeLog("CRITICAL_ERROR: " + err, 'system');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>K-OS // TECHWEAR CONTROL</title>
+    <style>
+        body {
+            background: #050505;
+            color: #444;
+            font-family: sans-serif;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .panel {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 11px;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #000;
+            border: 1px solid #222;
+            color: #00FFFF; /* Rappel de la couleur de Kashiro */
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        textarea:focus { border-color: #444; }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 15px;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            font-weight: 900;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #FF003C;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h1>K-OS // CONTROL_INTERFACE</h1>
+        <textarea id="input" placeholder="ENTRER LES DONNÉES DU PROTOCOLE..."></textarea>
+        <button onclick="inject()">INJECTER LE SIGNAL</button>
+    </div>
+
+    <script>
+        function inject() {
+            const val = document.getElementById('input').value;
+            // On enregistre dans la boîte aux lettres commune
+            localStorage.setItem('kashiro_cmd', val);
+            console.log("Signal injecté avec succès.");
+        }
+    </script>
+
+</body>
+</html>

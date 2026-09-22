@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>K-OS // KASHIRO COMMAND CENTER</title>
+    <style>
+        :root {
+            --neon-cyan: #00FFFF;
+            --dark-bg: #000814;
+            --low-cyan: rgba(0, 255, 255, 0.1);
+            --panel-border: #004444;
+            --glow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        body { 
+            background: var(--dark-bg); 
+            color: var(--neon-cyan); 
+            font-family: 'Courier New', monospace; 
+            padding: 20px; 
+            display: flex; 
+            gap: 15px; 
+            height: 95vh; 
+            user-select: none; 
+            font-size: 13px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- EFFETS VISUELS DA --- */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .panel { 
+            flex: 1; 
+            border: 2px solid var(--panel-border); 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            background: rgba(0, 10, 20, 0.9); 
+            overflow: hidden; 
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.05);
+        }
+
+        .panel::after {
+            content: "SYSTEM.K-OS.PROPRIETARY";
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-size: 8px;
+            color: var(--panel-border);
+            letter-spacing: 1px;
+        }
+
+        h2 { 
+            background: var(--panel-border);
+            color: var(--neon-cyan);
+            font-size: 11px; 
+            padding: 6px 12px; 
+            margin: -15px -15px 15px -15px; 
+            text-transform: uppercase; 
+            letter-spacing: 3px;
+            border-bottom: 2px solid var(--neon-cyan);
+            text-shadow: var(--glow);
+        }
+        
+        /* --- ARCHIVES --- */
+        #archiveList { flex-grow: 1; overflow-y: auto; scrollbar-width: none; }
+        
+        .archive-item { 
+            background: var(--low-cyan); 
+            border: 1px solid var(--panel-border); 
+            color: var(--neon-cyan); 
+            padding: 10px; 
+            margin: 5px 0; 
+            cursor: grab; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            transition: all 0.2s;
+        }
+        .archive-item:hover { 
+            border-color: var(--neon-cyan); 
+            background: rgba(0, 255, 255, 0.15);
+            box-shadow: 0 0 8px var(--low-cyan);
+        }
+
+        .edit-icon { 
+            cursor: pointer; 
+            color: var(--neon-cyan); 
+            font-size: 9px; 
+            border: 1px solid var(--neon-cyan); 
+            padding: 2px 6px; 
+            opacity: 0.6;
+        }
+        .edit-icon:hover { opacity: 1; background: var(--low-cyan); }
+
+        /* --- SÉQUENCEUR --- */
+        #queueList { 
+            flex-grow: 1; 
+            border: 1px solid var(--panel-border); 
+            padding: 10px; 
+            overflow-y: auto; 
+            margin: 10px 0; 
+            background: rgba(0, 0, 5, 0.9);
+            box-shadow: inset 0 0 10px #000;
+        }
+        
+        .queue-item { 
+            background: rgba(0, 255, 255, 0.03); 
+            border-left: 4px solid var(--neon-cyan); 
+            color: var(--neon-cyan); 
+            padding: 8px; 
+            margin-bottom: 6px; 
+            display: flex; 
+            justify-content: space-between; 
+            animation: slideIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .active-task { 
+            background: var(--neon-cyan) !important; 
+            color: var(--dark-bg) !important; 
+            box-shadow: 0 0 20px var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        /* --- ÉDITEUR & TOOLS --- */
+        textarea { 
+            background: #000; 
+            color: var(--neon-cyan); 
+            border: 1px solid var(--panel-border); 
+            flex-grow: 1; 
+            padding: 12px; 
+            font-family: 'Courier New', monospace; 
+            resize: none; 
+            margin-bottom: 10px; 
+            outline: none; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+        }
+        textarea:focus { border-color: var(--neon-cyan); }
+
+        .progress-container { 
+            height: 3px; 
+            background: #001a1a; 
+            border: 1px solid var(--panel-border); 
+            margin-bottom: 10px; 
+            display: none; 
+        }
+        #progressBar { height: 100%; width: 0%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); transition: width 0.3s linear; }
+
+        .btn { 
+            background: transparent; 
+            border: 1px solid var(--neon-cyan); 
+            color: var(--neon-cyan); 
+            padding: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-family: inherit; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--neon-cyan); color: var(--dark-bg); box-shadow: var(--glow); }
+
+        .btn-launch { background: var(--neon-cyan); color: var(--dark-bg); font-size: 14px; margin-top: 5px; }
+        .remove-x { color: #FF4444; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h2>:: DATABASE_ARCHIVES ::</h2>
+        <div id="archiveList"></div>
+        <button class="btn" style="font-size: 10px; border-style: dashed; margin-top: 10px;" onclick="createNewArchive()">[+] REGISTER_NEW_PROTOCOL</button>
+    </div>
+
+    <div class="panel">
+        <h2>:: K-OS_CORE_SEQUENCER ::</h2>
+        <div class="progress-container" id="progCont"><div id="progressBar"></div></div>
+        <div id="queueList" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        
+        <button id="launchBtn" class="btn btn-launch" onclick="startAutoSequence()">> EXECUTE_SEQUENCE</button>
+        <button id="loopBtn" class="btn" onclick="toggleLoop()" style="font-size: 11px; border-color: #333; color: #555;">LOOP_MODE: OFF</button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px;">
+            <button class="btn" style="color:#FF4444; border-color:#FF4444;" onclick="stopSequence()">STOP</button>
+            <button class="btn" style="font-size: 10px;" onclick="sendCmd('RESET', '')">WIPE_UI</button>
+        </div>
+        
+        <button class="btn" onclick="wipeCache()" style="color:#ffa500; border-color:#ffa500; font-size: 8px; margin-top: 15px; opacity: 0.4; border-style: dotted;">[!] SYSTEM_FACTORY_RESET</button>
+    </div>
+
+    <div class="panel">
+        <h2>:: PROTOCOL_EDITOR ::</h2>
+        <p id="editingTitle" style="font-size: 9px; color: #008888; margin: 0 0 8px 0; letter-spacing: 1px;">IDLE: STANDBY...</p>
+        <textarea id="editorText" placeholder="// Awaiting data injection..."></textarea>
+        <button class="btn" onclick="saveArchive()">COMMIT_CHANGES</button>
+    </div>
+
+    <script>
+        // --- DATA ---
+        let ARCHIVES = JSON.parse(localStorage.getItem('kashiro_archives')) || {
+            "01_BOOT_CORE": "[SYSTEM] Initializing consciousness upload...\n[READY] Kashiro_Virus injected.",
+            "02_SYNC_SAITHO": "[CONNECTING] Linking to Saitho_Archives...",
+            "03_RAID_PROTOCOL": "[ALERTE] RAID detected! Glitch mode engaged."
+        };
+
+        let sequenceQueue = [];
+        let currentEditingKey = null;
+        let isLooping = false;
+        let isRunning = false;
+
+        // --- DRAG & DROP ---
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.dataset.key); }
+        function drop(ev) {
+            ev.preventDefault();
+            const key = ev.dataTransfer.getData("text");
+            if(key) { sequenceQueue.push(key); renderQueue(); }
+        }
+
+        // --- RENDERING ---
+        function renderQueue() {
+            const list = document.getElementById('queueList');
+            list.innerHTML = "";
+            sequenceQueue.forEach((key, index) => {
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                item.id = "item-" + index;
+                item.innerHTML = `<span>${index + 1}. ${key}</span> <span class="remove-x" onclick="sequenceQueue.splice(${index},1);renderQueue();">X</span>`;
+                list.appendChild(item);
+            });
+        }
+
+        function renderArchives() {
+            const list = document.getElementById('archiveList');
+            list.innerHTML = "";
+            for (let key in ARCHIVES) {
+                let div = document.createElement('div');
+                div.className = 'archive-item';
+                div.innerHTML = `<span>> ${key}</span>`;
+                div.draggable = true;
+                div.dataset.key = key;
+                div.ondragstart = drag;
+                div.ondblclick = () => sendCmd('TYPE', ARCHIVES[key]);
+                
+                let editBtn = document.createElement('span');
+                editBtn.className = 'edit-icon';
+                editBtn.innerText = "EDIT";
+                editBtn.onclick = (e) => { e.stopPropagation(); openEditor(key); };
+                
+                div.appendChild(editBtn);
+                list.appendChild(div);
+            }
+        }
+
+        // --- CORE FUNCTIONS ---
+        function openEditor(key) {
+            currentEditingKey = key;
+            document.getElementById('editingTitle').innerText = "LINKED_FILE: " + key;
+            document.getElementById('editorText').value = ARCHIVES[key];
+        }
+
+        function saveArchive() {
+            if(!currentEditingKey) return;
+            ARCHIVES[currentEditingKey] = document.getElementById('editorText').value;
+            localStorage.setItem('kashiro_archives', JSON.stringify(ARCHIVES));
+            renderArchives();
+        }
+
+        function createNewArchive() {
+            let name = prompt("PROTOCOL_ID:");
+            if(name) { ARCHIVES[name] = "[NEW_DATA]"; renderArchives(); }
+        }
+
+        function toggleLoop() {
+            isLooping = !isLooping;
+            const btn = document.getElementById('loopBtn');
+            btn.innerText = "LOOP_MODE: " + (isLooping ? "ON" : "OFF");
+            btn.style.borderColor = isLooping ? "var(--neon-cyan)" : "#333";
+            btn.style.color = isLooping ? "var(--neon-cyan)" : "#555";
+            if(isLooping) btn.style.boxShadow = "var(--glow)";
+            else btn.style.boxShadow = "none";
+        }
+
+        function stopSequence() {
+            isRunning = false;
+            isLooping = false;
+            const lBtn = document.getElementById('loopBtn');
+            lBtn.innerText = "LOOP_MODE: OFF";
+            lBtn.style.borderColor = "#333";
+            lBtn.style.color = "#555";
+            lBtn.style.boxShadow = "none";
+            sendCmd('RESET', '');
+        }
+
+        function sendCmd(type, content) {
+            localStorage.setItem('kashiro_cmd', content);
+            localStorage.setItem('kashiro_type', type);
+            localStorage.setItem('kashiro_trigger', Date.now());
+        }
+
+        async function startAutoSequence() {
+            if (sequenceQueue.length === 0 || isRunning) return;
+            isRunning = true;
+            const bar = document.getElementById('progressBar');
+            const cont = document.getElementById('progCont');
+            cont.style.display = "block";
+
+            do {
+                for (let i = 0; i < sequenceQueue.length; i++) {
+                    if (!isRunning) break;
+                    renderQueue();
+                    const currentEl = document.getElementById('item-' + i);
+                    if(currentEl) currentEl.classList.add('active-task');
+                    
+                    sendCmd('TYPE', ARCHIVES[sequenceQueue[i]]);
+                    bar.style.width = ((i + 1) / sequenceQueue.length) * 100 + "%";
+                    
+                    const waitTime = (ARCHIVES[sequenceQueue[i]].length * 50) + 2500;
+                    await new Promise(r => setTimeout(r, waitTime));
+                }
+            } while (isLooping && isRunning);
+
+            isRunning = false;
+            cont.style.display = "none";
+            bar.style.width = "0%";
+            renderQueue();
+        }
+
+        function wipeCache() {
+            if (confirm("DANGER: WIPE ALL LOCAL DATA?")) { 
+                localStorage.removeItem('kashiro_archives'); 
+                location.reload(); 
+            }
+        }
+
+        renderArchives();
+    </script>
+</body>
+</html>

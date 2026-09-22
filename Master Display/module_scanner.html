@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300&display=swap');
+        
+        body { 
+            margin: 0; 
+            padding: 0; 
+            color: #0FF; 
+            font-family: 'Fira Code', monospace; 
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            /* Ces deux lignes calent le module au pixel près en bas à droite */
+            justify-content: flex-end; 
+            align-items: flex-end;    
+            background: transparent;
+            overflow: hidden;
+        }
+
+        .scanner-box {
+            position: relative; /* Pour que la ligne de scan reste DANS la boîte */
+            border-right: 2px solid #0FF;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 10px;
+            width: 180px; /* Largeur réduite pour gagner de la place */
+            background: rgba(0, 255, 255, 0.05);
+            margin: 10px; /* Petit espace de sécurité avec le bord de l'écran */
+            text-align: right;
+        }
+
+        .line {
+            font-size: 9px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+
+        .label { opacity: 0.4; font-size: 8px; }
+        .value { font-weight: bold; }
+
+        /* Ligne de scan : maintenant limitée à la largeur de la boîte */
+        .scan-anim {
+            width: 100%;
+            height: 1px;
+            background: rgba(0, 255, 255, 0.6);
+            position: absolute;
+            left: 0;
+            z-index: 10;
+            animation: scan 3s linear infinite;
+            box-shadow: 0 0 5px #0FF;
+        }
+
+        @keyframes scan {
+            0% { top: 0; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanner-box">
+        <div class="scan-anim"></div>
+        <div class="line"><span class="value" id="scan-status">LISTENING</span> <span class="label">//STATUS</span></div>
+        <div class="line"><span class="value" id="scan-origin">0.0.0.0</span> <span class="label">//ORIGIN</span></div>
+        <div class="line"><span class="value" id="scan-hash">NX-NULL</span> <span class="label">//HASH</span></div>
+        <div class="line"><span class="value" id="scan-byte">000</span> <span class="label">//BYTE</span></div>
+    </div>
+
+    <script>
+        let lastTimestamp = 0;
+
+        window.addEventListener('storage', () => {
+            const raw = localStorage.getItem('KOS_SIGNAL');
+            if (!raw) return;
+            const s = JSON.parse(raw);
+
+            if (s.timestamp > lastTimestamp) {
+                lastTimestamp = s.timestamp;
+                
+                document.getElementById('scan-status').innerText = "SCANNING...";
+                document.getElementById('scan-origin').innerText = (s.origin || "CORE").split('_')[0];
+                document.getElementById('scan-byte').innerText = (s.value.length * 8) + "bt";
+                
+                const randomHash = "0x" + Math.floor(Math.random()*16777215).toString(16).toUpperCase();
+                document.getElementById('scan-hash').innerText = randomHash;
+
+                setTimeout(() => {
+                    document.getElementById('scan-status').innerText = "STABLE";
+                }, 1200);
+            }
+        });
+    </script>
+</body>
+</html>

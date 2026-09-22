@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: transparent;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #overlay-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #quiz-overlay {
+            display: none;
+            position: fixed;
+            top: 20px;
+            /* Positionné en haut */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            /* Fond sombre semi-transparent */
+            border: 2px solid #00d4ff;
+            /* Bordure cyan style K-OS */
+            color: #00d4ff;
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            /* Effet néon */
+            z-index: 10000;
+        }
+
+        #quiz-question-text {
+            font-size: 28px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        @keyframes pulse-cyan {
+            0% {
+                box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(0, 212, 255, 0.8);
+            }
+
+            100% {
+                box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            }
+        }
+
+        #quiz-overlay {
+            animation: pulse-cyan 2s infinite ease-in-out;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="overlay-container" class="fade-in">
+        <div id="content-box"></div>
+        <div id="quiz-overlay"
+            style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); border:2px solid #00d4ff; padding:20px; color:white; z-index:10000; min-width:300px; text-align:center; border-radius:10px; font-family: 'Segoe UI', sans-serif;">
+            <div style="color:#00d4ff; font-weight:bold; margin-bottom:10px; font-size:14px;">[ MISSION_EN_COURS ]</div>
+            <div id="quiz-question-text" style="font-size:20px;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { firebaseConfig } from './config.js';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const user = new URLSearchParams(window.location.search).get('user') || 'GUEST';
+
+        const container = document.getElementById('overlay-container');
+        const content = document.getElementById('content-box');
+
+        // Styles de secours (Templates de base)
+        const ttsSkins = {
+            Kashiro: "background:rgba(0,15,30,0.95); border:2px solid; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); padding:30px;",
+            Saitho: "background:rgba(0,20,0,0.9); border-left:10px solid; font-family:monospace; padding:20px;",
+            Foetic: "background:linear-gradient(45deg, rgba(50,0,0,0.9), rgba(20,0,0,0.8)); border:1px solid; border-radius:20px; padding:20px;",
+            Reindal: "background:rgba(255,255,255,0.1); backdrop-filter: blur(10px); border:1px solid rgba(255,255,255,0.2); border-radius:5px; font-style:italic; padding:20px;",
+            Ximie: "background:rgba(255,183,213,0.1); border:2px dashed; border-radius:40px; padding:25px;"
+        };
+
+        onValue(ref(db, 'commands'), async (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            if (data.target === user || data.target === "ALL") {
+                window.speechSynthesis.cancel();
+                container.style.display = 'none';
+
+                let activeColor = "#00d4ff";
+                let activeMsg = "";
+                let finalCSS = "";
+
+                // On détermine qui est l'entité concernée (l'expéditeur du TTS ou l'utilisateur local pour un Glitch)
+                const subject = (data.action === "TTS") ? data.sender : user;
+
+                try {
+                    const profileSnap = await get(child(ref(db), `settings/profiles/${subject}`));
+                    if (profileSnap.exists()) {
+                        const p = profileSnap.val();
+                        activeColor = p.color || "#00d4ff";
+                        activeMsg = p.msg || "";
+
+                        // LOGIQUE DE STYLE DU DESIGN STUDIO
+                        if (p.useCustom && p.customCSS) {
+                            // Si l'utilisateur a un style unique dans l'admin
+                            finalCSS = p.customCSS;
+                        } else {
+                            // Sinon on utilise le template choisi (ou Kashiro par défaut)
+                            const templateKey = p.presetName || p.template || subject;
+                            finalCSS = ttsSkins[templateKey] || ttsSkins.Kashiro;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Erreur de récupération profil:", e);
+                    finalCSS = ttsSkins.Kashiro;
+                }
+
+                if (data.action === "TTS") {
+                    // Application du style dynamique
+                    content.style.cssText = `position:absolute; bottom:50px; right:50px; min-width:350px; color:${activeColor}; border-color:${activeColor}; box-shadow: 0 0 15px ${activeColor}55; ${finalCSS}`;
+
+                    content.innerHTML = `
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            <small style="opacity:0.6; font-weight:bold; letter-spacing:2px;">> INCOMING_FROM: ${data.sender}</small>
+                            <div style="font-size:1.3rem;">${data.message}</div>
+                        </div>`;
+
+                    container.style.display = 'flex';
+                    const utterance = new SpeechSynthesisUtterance(data.message);
+                    utterance.lang = 'fr-FR';
+
+                    const safetyTimer = setTimeout(() => { container.style.display = 'none'; }, 8000);
+                    utterance.onend = () => {
+                        clearTimeout(safetyTimer);
+                        setTimeout(() => { container.style.display = 'none'; }, 1500);
+                    };
+                    window.speechSynthesis.speak(utterance);
+                }
+                else if (data.action === "GLITCH") {
+                    content.style.cssText = finalCSS + ` color:${activeColor}; border-color:${activeColor}; text-shadow: 0 0 15px ${activeColor};`;
+                    content.innerHTML = activeMsg || "[SYSTEM_BREACH]";
+
+                    container.style.display = 'flex';
+                    setTimeout(() => { container.style.display = 'none'; }, 4500);
+                }
+            }
+        });
+
+        // Déblocage audio
+        window.addEventListener('click', () => {
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+        }, { once: true });
+
+        // Initialisation des caches Pokémon
+        const slotContainer = document.createElement('div');
+        slotContainer.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:8000;";
+        document.body.appendChild(slotContainer);
+
+        const slotsElements = {};
+        for (let i = 1; i <= 6; i++) {
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute; width:280px; height:85px; background:rgba(0,0,0,0.95); border:2px solid #ff0055; display:none; align-items:center; justify-content:center; color:#ff0055; font-family:monospace; text-align:center; box-shadow: 0 0 15px rgba(0,0,0,0.8);`;
+            el.style.top = (110 + (i * 92)) + "px"; // Ajusté pour PokéMMO
+            el.style.left = "25px";
+            slotContainer.appendChild(el);
+            slotsElements[i] = el;
+        }
+
+        onValue(ref(db, `pokemmo/slots/${user}`), (snap) => {
+            const data = snap.val() || {};
+            for (let i = 1; i <= 6; i++) {
+                const slot = data[i];
+                const el = slotsElements[i];
+                if (el.timer) clearInterval(el.timer);
+                if (slot && slot.deathCount > 0) {
+                    el.style.display = 'flex';
+                    if (slot.type === "PERMA") {
+                        el.style.borderColor = "red"; el.style.color = "red";
+                        el.innerHTML = "DÉCÉDÉ<br>DÉFINITIVEMENT";
+                    } else {
+                        el.style.borderColor = "orange"; el.style.color = "orange";
+                        const endTime = slot.timestamp + (slot.duration * 1000);
+                        const update = () => {
+                            const rem = Math.ceil((endTime - Date.now()) / 1000);
+                            if (rem <= 0) { el.style.display = 'none'; clearInterval(el.timer); }
+                            else {
+                                const m = Math.floor(rem / 60); const s = rem % 60;
+                                el.innerHTML = `HORS COMBAT<br><span style="font-size:20px; color:white;">${m}:${s < 10 ? '0' + s : s}</span>`;
+                            }
+                        };
+                        update(); el.timer = setInterval(update, 1000);
+                    }
+                } else { el.style.display = 'none'; }
+            }
+        });
+
+        function startTimer(el, startTime, durationSec, index) {
+            el.style.display = 'flex';
+            el.style.borderColor = "orange";
+            el.style.color = "orange";
+
+            const update = () => {
+                const now = Date.now();
+                const remaining = Math.ceil(((startTime + (durationSec * 1000)) - now) / 1000);
+
+                if (remaining <= 0) {
+                    el.style.display = 'none';
+                    clearInterval(el.timerInterval);
+                } else {
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    el.innerHTML = `INDISPONIBLE<br><span style="font-size:22px">${m}:${s < 10 ? '0' + s : s}</span>`;
+                }
+            };
+
+            update();
+            el.timerInterval = setInterval(update, 1000);
+        }
+
+        function updateTimer(el, startTime, durationSec, slotIndex) {
+            const endTime = startTime + (durationSec * 1000);
+
+            const check = setInterval(() => {
+                const now = Date.now();
+                const remaining = Math.ceil((endTime - now) / 1000);
+
+                if (remaining <= 0) {
+                    el.style.display = 'none';
+                    clearInterval(check);
+                } else {
+                    el.style.display = 'flex';
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    el.innerHTML = `INDISPONIBLE<br><span style="font-size:20px">${m}:${s < 10 ? '0' + s : s}</span>`;
+                    el.style.borderColor = "orange";
+                }
+            }, 1000);
+        }
+
+        // Écoute du Quizz pour l'Overlay
+        onValue(ref(db, 'pokemmo/quizz'), (snap) => {
+            const quiz = snap.val();
+            const overlay = document.getElementById('quiz-overlay');
+            const text = document.getElementById('quiz-question-text');
+            const parentContainer = document.getElementById('overlay-container');
+
+            if (quiz && quiz.active === true && quiz.question) {
+                text.innerText = quiz.question;
+
+                // On affiche le parent sans forcer le centrage flex si on veut que 
+                // le quiz reste en haut (top: 20px)
+                if (parentContainer) {
+                    parentContainer.style.display = 'block';
+                }
+
+                overlay.style.display = 'block';
+                overlay.classList.add('fade-in');
+            } else {
+                overlay.style.display = 'none';
+                // On ne cache le parent que si le contenu du glitch est vide
+                if (document.getElementById('content-box').innerHTML === "") {
+                    parentContainer.style.display = 'none';
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

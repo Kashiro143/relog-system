@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-OS // TERMINAL_JOUEUR</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
+        
+        /* Conteneur du module dynamique */
+        #module-container {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Barre de statut discrète en haut */
+        #status-bar {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            height: 4px; background: #222; z-index: 100;
+        }
+        #status-indicator {
+            width: 0%; height: 100%; background: #00d4ff;
+            transition: width 0.5s, background 0.3s;
+        }
+        .online { background: #00ff88 !important; width: 100% !important; }
+    </style>
+</head>
+<body data-role="player">
+
+    <div id="status-bar"><div id="status-indicator"></div></div>
+
+    <iframe id="module-container" src="about:blank"></iframe>
+
+    <script type="module" src="core.js"></script>
+
+    <script>
+        // Petite logique visuelle pour confirmer la connexion
+        window.addEventListener('load', () => {
+            const indicator = document.getElementById('status-indicator');
+            // On simule une connexion réussie une fois le core chargé
+            setTimeout(() => indicator.classList.add('online'), 1000);
+        });
+    </script>
+</body>
+</html>

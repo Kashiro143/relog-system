@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css?family=Chakra Petch');
+/* ideas: 
+if .wrapper .meta .username-box .badges img class=icon-subscriber 
+change add class to username_box & fancy_message_box*/
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Chakra Petch', 'Helvetica Neue', sans-serif;
+  line-height: 1.5em;
+}
+
+.colon {
+  display: none;
+}
+
+.wrapper {
+  margin: 15px;
+}
+
+#log {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0 10px 10px;
+}
+
+#log > div.deleted {
+  visibility: hidden;
+}
+
+#log > div {
+  margin-bottom: {box_spacing}px;
+}
+
+.meta {
+  display: inline-flex;
+  margin-bottom:-1px;
+}
+
+.badge {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin: -2px 0 0 5px;
+}
+
+.username_box {
+  display: inline-block;
+  margin: 0 0 0 8px;
+  padding: 2px 5px;
+  background: #17E8FF;
+  z-index: 1;
+}
+
+.name {
+  display: inline-block;
+  color: #140E63;
+  font-size: {username_font_size}px;
+  font-weight: {username_font_weight};
+  letter-spacing: 1px;
+  text-transform: {username_transform};
+  padding: 2px 8px 0 8px;
+  text-transform: uppercase;
+}
+.triangle {
+   width: 0px;
+   height: 0px;
+   border-style: solid;
+   border-width: 31px 0 0px 41px;
+   border-color: transparent transparent transparent #17E8FF;
+   transform: rotate(0deg);
+}
+
+.fancy_message_box{
+  display:flex;
+  align-items:center;
+  margin: 0 0 0 8px;
+}
+ .fancy_message_box img{
+   width: 22px;
+}
+
+.message_box {
+  padding: 11px 13px 11px 17px;
+  background: linear-gradient(132deg,rgba(255, 255, 255, 0.6) 44%, rgba(120, 203, 255, 0.6) 100%);
+  border: 1px solid #17E8FF;
+  box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25);
+  position: relative;
+  z-index: -1;
+  margin-bottom: 8px;
+}
+.message_box:has(.message.emotes) {
+  padding: 3px 8px 3px 17px;
+}
+.message_box:has(.only-emotes) {
+  padding: 15px 15px 0px 15px;
+}
+.message_box::after {
+  content: "";
+  background: url(https://media.discordapp.net/attachments/981579056594173993/1377777048659038229/emoji__sparkles__1.png?ex=683a325e&is=6838e0de&hm=f49214ed949c1afc159e5941cd59da6f89e362901d7767a12c261d5efac62cd6&=&format=webp&quality=lossless) no-repeat;
+  background-size: contain;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: -20px;
+  right: 15px;
+}
+
+.message {
+  display: block;
+  color: #140E63;
+  font-size: {message_font_size}px;
+  font-weight: {message_font_weight};
+  letter-spacing: 0.9px;
+  text-transform: {message_transform};
+  word-wrap: break-word;
+}
+
+/* Emotes génériques */
+#log .emote {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  position: relative;
+  padding: 0.5em;
+  transition: width 0.3s ease, height 0.3s ease, padding 0.3s ease;
+}
+
+#log .emote img {
+  height: 1em;
+  opacity: 0;
+  transition: height 0.3s ease, width 0.3s ease;
+}
+
+/* Emotes-only agrandies */
+
+.only-emotes .emote {
+  width: 3.5em;
+  height: 3.5em;
+  display: inline-block;
+}
+
+.only-emotes .emote img {
+  height: 3.5em !important;
+  width: 3.5em !important;
+  opacity: 0;
+}
+.only-emotes span:only-child {
+  margin-bottom: 15px;
+}
+/* Animation fadeInUp */
+.fadeInUp {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: transform 0.6s ease, opacity 0.6s ease;
+}
+
+.fadeInUp.show {
+  opacity: 1;
+  transform: translateY(0);
+}

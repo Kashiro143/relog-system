@@ -1,0 +1,76 @@
+document.addEventListener('onLoad', () => {
+    console.log("Chat widget loaded");
+  });
+  
+  document.addEventListener('onEventReceived', function (obj) {
+    const detail = obj.detail;
+  
+    if (detail.command === "PRIVMSG") {
+      const $newMessage = $('#log > div').last();
+  
+      // Met à jour toutes les emotes (img + parent .emote style) AVANT l'animation
+      const $messageSpan = $newMessage.find('.message');
+      $messageSpan.find('.emote').each(function () {
+        const $emote = $(this);
+        const $img = $emote.find('img');
+  
+        // Remplace les versions dans le src
+        if ($img.length) {
+          let src = $img.attr('src');
+          if (src) {
+            src = src.replace(/1\.0/g, '3.0').replace(/1x/g, '3x');
+            $img.attr('src', src);
+          }
+        }
+  
+        // Corrige aussi les styles inline (background-image, etc.)
+        let styleAttr = $emote.attr('style');
+        if (styleAttr) {
+          styleAttr = styleAttr
+            .replace(/1\.0/g, '3.0')
+            .replace(/1x/g, '3x')
+            .replace(/background-size:[^;]+;/g, '')     // retire le size forcé
+            .replace(/background-repeat:[^;]+;/g, '')   // retire le repeat
+            .replace(/background-position:[^;]+;/g, ''); // retire le position
+  
+          $emote.attr('style', styleAttr);
+        }
+      });
+  
+      // Vérifie si le message ne contient que des emotes AVANT l'animation
+      const isOnlyEmotes = $messageSpan.contents().toArray().every(node =>
+        (node.nodeType === 1 && $(node).hasClass('emote')) ||
+        (node.nodeType === 3 && !/\S/.test(node.nodeValue))
+      );
+  
+      if (isOnlyEmotes) {
+        $messageSpan.addClass('only-emotes');
+      } else {
+        $messageSpan.removeClass('only-emotes');
+      }
+
+      // Maintenant on lance l'animation avec la classe appropriée déjà appliquée
+      $newMessage
+        .hide()
+        .css({ opacity: 0 })
+        .slideDown(600, "easeInOutQuart")
+        .animate({ opacity: 1 }, { duration: 600, queue: false });
+
+      // Supprime les anciens messages si limite activée
+      const limitEnable = {enable_limit};
+      const msgLimit = {message_limit};
+      const $msgParent = $('.sl__chat__layout');
+  
+      if (limitEnable === true && $msgParent.children().length > msgLimit) {
+        $msgParent.children()
+          .not($msgParent.children().slice(-msgLimit))
+          .fadeOut(600, function () {
+            $(this).remove();
+          });
+      }
+    }
+  
+    if (detail.command === "CLEARCHAT" && typeof detail.body === "undefined") {
+      $('#log').empty();
+    }
+  });

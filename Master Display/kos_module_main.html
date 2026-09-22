@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;700&display=swap');
+        
+        body { 
+            margin: 0; 
+            padding: 60px; 
+            background: transparent; /* Fond pour tes tests */
+            color: white; 
+            font-family: 'Inter', sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            box-sizing: border-box;
+            overflow: hidden;
+
+            /* POSITIONNEMENT : 
+               - Pour Haut : align-items: flex-start;
+               - Pour Milieu : align-items: center;
+               - Pour Bas : align-items: flex-end; 
+            */
+            align-items: center; 
+            justify-content: flex-start; /* Aligné à gauche */
+        }
+        
+        #hud { 
+            border-left: 2px solid #0FF; 
+            padding-left: 25px; 
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
+            opacity: 0; 
+            transform: translateX(-20px); /* Animation de gauche à droite */
+        }
+
+        #type { 
+            font-size: 10px; 
+            letter-spacing: 5px; 
+            color: #0FF; 
+            margin-bottom: 5px; 
+            font-weight: 700; 
+        }
+
+        #val { 
+            font-size: 28px; 
+            font-weight: 200; 
+            text-transform: uppercase; 
+            max-width: 600px;
+        }
+
+        /* --- ÉTATS --- */
+        .show { opacity: 1 !important; transform: translateX(0) !important; }
+
+        /* MODE RAID */
+        .mode-raid { background: #FF003C !important; }
+        .mode-raid #hud { border-left-color: #000; }
+        .mode-raid #type, .mode-raid #val { color: #000 !important; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <div id="type">SYSTEM_READY</div>
+        <div id="val">Awaiting Signal...</div>
+    </div>
+
+    <script>
+        const hud = document.getElementById('hud');
+        const typeEl = document.getElementById('type');
+        const valEl = document.getElementById('val');
+        let lastTimestamp = 0;
+
+        // Affichage initial
+        setTimeout(() => hud.classList.add('show'), 500);
+
+        setInterval(() => {
+            const raw = localStorage.getItem('KOS_SIGNAL');
+            if (!raw) return;
+            const signal = JSON.parse(raw);
+
+            if (signal.timestamp > lastTimestamp) {
+                lastTimestamp = signal.timestamp;
+                processSignal(signal);
+            }
+        }, 200);
+
+        async function processSignal(s) {
+            hud.classList.remove('show');
+            await new Promise(r => setTimeout(r, 400));
+
+            // Reset des styles
+            document.body.classList.remove('mode-raid');
+            typeEl.style.color = "#0FF";
+            hud.style.borderLeftColor = "#0FF";
+
+            // Logique de couleur par signal
+            if (s.type === 'SIGNAL_INVASION') {
+                document.body.classList.add('mode-raid');
+            } else if (s.type === 'SIGNAL_UPGRADE') {
+                typeEl.style.color = "#FFD700";
+                hud.style.borderLeftColor = "#FFD700";
+            }
+
+            typeEl.innerText = s.type;
+            if(s.type === "SIGNAL_CHAT") {
+                valEl.innerHTML = `<span style="opacity:0.3; font-size:0.6em">DECRYPT_MSG_INCOMING:</span><br>${s.value}`;
+            } else {
+                valEl.innerText = s.value;
+            }
+            hud.classList.add('show');
+        }
+    </script>
+</body>
+</html>

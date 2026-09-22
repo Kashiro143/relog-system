@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@700&display=swap');
+        
+        body { 
+            margin: 0; padding: 0; 
+            background: transparent; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 200px; height: 200px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Le cercle extérieur (Fixe comme le HUD) */
+        .outer-ring {
+            position: absolute;
+            width: 120px; height: 120px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+        }
+
+        /* Le Logo Central avec le style néon K-OS */
+        .core-logo {
+            width: 90px; height: 90px;
+            border: 2px solid #00ffff;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            color: #ffffff;
+            font-family: 'Fira Code', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            transition: all 0.1s;
+        }
+
+        /* L'onde réactive (Animation de scan circulaire) */
+        .pulse-wave {
+            position: absolute;
+            width: 90px; height: 90px;
+            border: 2px solid #00ffff;
+            border-radius: 50%;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        /* --- ÉTAT QUAND TU PARLES (ANIMATION) --- */
+        .speaking .core-logo {
+            color: #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        .speaking .pulse-wave {
+            animation: kos-ripple 0.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+        }
+
+        @keyframes kos-ripple {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        /* Barre de scan horizontale (Comme sur le scanner) */
+        .scan-line {
+            position: absolute;
+            width: 100%; height: 1px;
+            background: #00ffff;
+            box-shadow: 0 0 8px #00ffff;
+            top: 50%;
+            opacity: 0;
+        }
+
+        .speaking .scan-line {
+            opacity: 0.3;
+            animation: scan-move 2s linear infinite;
+        }
+
+        @keyframes scan-move {
+            0% { top: 30%; }
+            100% { top: 70%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="avatar" class="avatar-container">
+        <div class="outer-ring"></div>
+        <div class="pulse-wave"></div>
+        <div class="scan-line"></div>
+        <div class="core-logo">K-OS</div>
+    </div>
+
+    <script>
+        const avatar = document.getElementById('avatar');
+        let threshold = 15; 
+
+        async function initAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function checkVolume() {
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for(let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
+                    let average = sum / bufferLength;
+
+                    if (average > threshold) {
+                        avatar.classList.add('speaking');
+                    } else {
+                        avatar.classList.remove('speaking');
+                    }
+                    requestAnimationFrame(checkVolume);
+                }
+                checkVolume();
+            } catch (err) {
+                console.error("Microphone non détecté.");
+            }
+        }
+
+        window.onclick = () => { initAudio(); };
+    </script>
+</body>
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Kashiro Chatbox</title>
+<link href="https://fonts.googleapis.com/css?family=Tomorrow:400,600,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --username-font-size: 16pt;
+  --message-font-size: 16pt;
+  --box-spacing: 15px;
+  --accent-color: #17E8FF;
+  --text-color: #140E63;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Tomorrow', 'Helvetica Neue', sans-serif;
+  line-height: 1.5em;
+}
+
+#log {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+#log > div {
+  margin-bottom: var(--box-spacing);
+  opacity: 0;
+  transform: translateY(40px);
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+#log > div.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#log > div.fade-out {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.wrapper {
+  margin: 15px;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: -1px;
+}
+
+.badge {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin: 0 2px 0 0;
+  width: 18px;
+  height: 18px;
+}
+
+.username_box {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 0 8px;
+  padding: 4px 5px 6px;
+  background: var(--accent-color);
+  z-index: 1;
+}
+
+.badges {
+  display: inline-flex;
+  align-items: center;
+}
+
+.name {
+  display: inline-block;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: var(--username-font-size);
+  letter-spacing: 1px;
+  padding: 2px 8px 0 8px;
+  text-transform: uppercase;
+}
+
+.triangle {
+  width: 0px;
+  height: 0px;
+  border-style: solid;
+  border-width: 39px 0 0px 30px;
+  border-color: transparent transparent transparent var(--accent-color);
+}
+
+.fancy_message_box {
+  display: flex;
+  align-items: center;
+  margin: 0 0 0 8px;
+}
+
+.message_box {
+  padding: 13px 19px 15px 19px;
+  background: linear-gradient(132deg, rgba(255,255,255,0.6) 44%, rgba(120,203,255,0.6) 100%);
+  border: 1px solid var(--accent-color);
+  box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25);
+  position: relative;
+  z-index: -1;
+  margin-bottom: 8px;
+}
+
+.message_box.only-emotes {
+  padding: 15px 15px 0px 15px;
+}
+
+.message_box::after {
+  content: "";
+  background: url(https://media.discordapp.net/attachments/981579056594173993/1377777048659038229/emoji__sparkles__1.png?format=webp&quality=lossless) no-repeat;
+  background-size: contain;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: -20px;
+  right: 15px;
+}
+
+.message {
+  display: block;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: var(--message-font-size);
+  letter-spacing: 0.9px;
+  word-wrap: break-word;
+}
+
+.emote {
+  display: inline-block;
+  vertical-align: middle;
+  height: 1.6em;
+  margin: -2px 2px;
+}
+
+.only-emotes .emote {
+  height: 3em;
+}
+</style>
+</head>
+<body>
+
+<div id="log"></div>
+
+<!-- Réglages externalisés : voir config.js (ou config-panel.html pour une interface visuelle) -->
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const CFG = window.CHATBOX_CONFIG || {};
+  const CHANNEL = CFG.channel || "kashiro143";
+  const LIMIT_COUNT = 50; // limite fixe pour éviter une accumulation infinie de messages en mémoire
+  const SHOW_BADGES = CFG.showBadges !== false;
+  const SHOW_BTTV = CFG.showBTTV !== false;
+  const SHOW_FFZ = CFG.showFFZ !== false;
+  const SHOW_7TV = CFG.show7TV !== false;
+
+  // Applique les réglages visuels de config.js aux variables CSS
+  const root = document.documentElement.style;
+  if (CFG.usernameFontSize) root.setProperty("--username-font-size", CFG.usernameFontSize + "pt");
+  if (CFG.messageFontSize) root.setProperty("--message-font-size", CFG.messageFontSize + "pt");
+  if (CFG.boxSpacing !== undefined) root.setProperty("--box-spacing", CFG.boxSpacing + "px");
+  if (CFG.accentColor) root.setProperty("--accent-color", CFG.accentColor);
+  if (CFG.textColor) root.setProperty("--text-color", CFG.textColor);
+
+  const logEl = document.getElementById("log");
+  let badgeMap = {};       // "set/version" -> url
+  let bttvGlobal = {};     // name -> url
+  let bttvChannel = {};
+  let ffzGlobal = {};
+  let ffzChannel = {};
+  let sevenTVGlobal = {};
+  let sevenTVChannel = {};
+
+  // --- Badges Twitch (API publique, pas d'auth nécessaire) ---
+  async function loadBadges() {
+    if (!SHOW_BADGES) return;
+    try {
+      const res = await fetch("https://badges.twitch.tv/v1/badges/global/display").then(r => r.json());
+      Object.entries(res.badge_sets).forEach(([setId, data]) => {
+        Object.entries(data.versions).forEach(([ver, v]) => {
+          badgeMap[`${setId}/${ver}`] = v.image_url_2x;
+        });
+      });
+    } catch (e) {
+      console.warn("Badges Twitch globaux non chargés (non bloquant):", e);
+    }
+  }
+
+  async function loadChannelBadges(broadcasterId) {
+    if (!SHOW_BADGES || !broadcasterId) return;
+    try {
+      const res = await fetch(`https://badges.twitch.tv/v1/badges/channels/${broadcasterId}/display`).then(r => r.json());
+      Object.entries(res.badge_sets).forEach(([setId, data]) => {
+        Object.entries(data.versions).forEach(([ver, v]) => {
+          badgeMap[`${setId}/${ver}`] = v.image_url_2x;
+        });
+      });
+    } catch (e) {
+      console.warn("Badges de chaîne non chargés (non bloquant):", e);
+    }
+  }
+
+  // --- BTTV ---
+  async function loadBTTV(broadcasterId) {
+    if (!SHOW_BTTV) return;
+    try {
+      const global = await fetch("https://api.betterttv.net/3/cached/emotes/global").then(r => r.json());
+      global.forEach(e => bttvGlobal[e.code] = `https://cdn.betterttv.net/emote/${e.id}/2x`);
+    } catch (e) {
+      console.warn("BTTV global non chargé (non bloquant):", e);
+    }
+    if (!broadcasterId) return;
+    try {
+      const channel = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${broadcasterId}`).then(r => r.json());
+      (channel.channelEmotes || []).concat(channel.sharedEmotes || []).forEach(e => {
+        bttvChannel[e.code] = `https://cdn.betterttv.net/emote/${e.id}/2x`;
+      });
+    } catch (e) {
+      console.warn("BTTV chaîne non chargé (non bloquant):", e);
+    }
+  }
+
+  // --- FrankerFaceZ ---
+  async function loadFFZGlobal() {
+    if (!SHOW_FFZ) return;
+    try {
+      const data = await fetch("https://api.frankerfacez.com/v1/set/global").then(r => r.json());
+      (data.default_sets || []).forEach(setId => {
+        const set = data.sets[setId];
+        if (!set) return;
+        set.emoticons.forEach(e => {
+          const urls = e.urls;
+          const url = urls["4"] || urls["2"] || urls["1"];
+          if (url) ffzGlobal[e.name] = url.startsWith("http") ? url : "https:" + url;
+        });
+      });
+    } catch (e) {
+      console.warn("FFZ global non chargé (non bloquant):", e);
+    }
+  }
+
+  async function loadFFZChannel(channelLogin) {
+    if (!SHOW_FFZ || !channelLogin) return;
+    try {
+      const data = await fetch(`https://api.frankerfacez.com/v1/room/${channelLogin}`).then(r => r.json());
+      const set = data.sets && data.sets[data.room.set];
+      if (!set) return;
+      set.emoticons.forEach(e => {
+        const urls = e.urls;
+        const url = urls["4"] || urls["2"] || urls["1"];
+        if (url) ffzChannel[e.name] = url.startsWith("http") ? url : "https:" + url;
+      });
+    } catch (e) {
+      console.warn("FFZ chaîne non chargé (non bloquant):", e);
+    }
+  }
+
+  // --- 7TV ---
+  async function load7TVGlobal() {
+    if (!SHOW_7TV) return;
+    try {
+      const data = await fetch("https://7tv.io/v3/emote-sets/global").then(r => r.json());
+      (data.emotes || []).forEach(e => {
+        sevenTVGlobal[e.name] = `https://cdn.7tv.app/emote/${e.id}/2x.webp`;
+      });
+    } catch (e) {
+      console.warn("7TV global non chargé (non bloquant):", e);
+    }
+  }
+
+  async function load7TVChannel(broadcasterId) {
+    if (!SHOW_7TV || !broadcasterId) return;
+    try {
+      const data = await fetch(`https://7tv.io/v3/users/twitch/${broadcasterId}`).then(r => r.json());
+      const emotes = (data.emote_set && data.emote_set.emotes) || [];
+      emotes.forEach(e => {
+        sevenTVChannel[e.name] = `https://cdn.7tv.app/emote/${e.id}/2x.webp`;
+      });
+    } catch (e) {
+      console.warn("7TV chaîne non chargé (non bloquant):", e);
+    }
+  }
+
+  // --- Construit le HTML du message avec émotes Twitch natives + tierces ---
+  function renderMessage(text, twitchEmotes) {
+    const chars = Array.from(text);
+    const replacements = [];
+
+    if (twitchEmotes) {
+      Object.entries(twitchEmotes).forEach(([id, positions]) => {
+        positions.forEach(pos => {
+          const [start, end] = pos.split("-").map(Number);
+          replacements.push({
+            start, end,
+            html: `<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/3.0" alt="">`
+          });
+        });
+      });
+    }
+
+    replacements.sort((a, b) => a.start - b.start);
+
+    function lookupThirdParty(word) {
+      return bttvChannel[word] || bttvGlobal[word] || ffzChannel[word] || ffzGlobal[word] || sevenTVChannel[word] || sevenTVGlobal[word] || null;
+    }
+
+    let result = "";
+    let onlyEmotesSoFar = true;
+    let i = 0;
+
+    while (i < chars.length) {
+      const match = replacements.find(r => r.start === i);
+      if (match) {
+        result += match.html;
+        i = match.end + 1;
+        continue;
+      }
+      const word = [];
+      let j = i;
+      while (j < chars.length && chars[j] !== " " && !replacements.find(r => r.start === j)) {
+        word.push(chars[j]);
+        j++;
+      }
+      if (word.length) {
+        const w = word.join("");
+        const url = lookupThirdParty(w);
+        if (url) {
+          result += `<img class="emote" src="${url}" alt="">`;
+        } else {
+          onlyEmotesSoFar = false;
+          result += escapeHtml(w);
+        }
+        i = j;
+      } else {
+        result += escapeHtml(chars[i]);
+        if (chars[i] !== " ") onlyEmotesSoFar = false;
+        i++;
+      }
+    }
+
+    return { html: result, onlyEmotes: onlyEmotesSoFar };
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement("div");
+    d.innerText = s;
+    return d.innerHTML;
+  }
+
+  function badgesHtml(badgesObj) {
+    if (!SHOW_BADGES || !badgesObj) return "";
+    return Object.entries(badgesObj).map(([set, ver]) => {
+      const url = badgeMap[`${set}/${ver}`];
+      return url ? `<img class="badge" src="${url}" alt="${set}">` : "";
+    }).join("");
+  }
+
+  function addMessage(user, colorHex, badges, text, emotes) {
+    const { html, onlyEmotes } = renderMessage(text, emotes);
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "wrapper";
+    wrapper.innerHTML = `
+      <div class="meta">
+        <div class="username_box">
+          <span class="badges">${badgesHtml(badges)}</span>
+          <span class="name" style="${colorHex ? `color:${colorHex}` : ""}">${escapeHtml(user)}</span>
+        </div>
+        <div class="triangle"></div>
+      </div>
+      <div class="fancy_message_box">
+        <div class="message_box${onlyEmotes ? " only-emotes" : ""}">
+          <span class="message">${html}</span>
+        </div>
+      </div>
+    `;
+
+    logEl.appendChild(wrapper);
+    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add("show")));
+
+    const items = logEl.children;
+    while (items.length > LIMIT_COUNT) {
+      const oldest = items[0];
+      oldest.classList.add("fade-out");
+      oldest.addEventListener("transitionend", () => oldest.remove(), { once: true });
+      setTimeout(() => { if (oldest.parentNode) oldest.remove(); }, 1000);
+      if (items.length <= LIMIT_COUNT) break;
+    }
+  }
+
+  function clearChat() {
+    logEl.innerHTML = "";
+  }
+
+  // --- Connexion Twitch en IRC-over-WebSocket, lecture seule, anonyme (pas de token requis) ---
+  let channelDataLoaded = false;
+
+  function unescapeTagValue(v) {
+    return v
+      .replace(/\\s/g, " ")
+      .replace(/\\:/g, ";")
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\\\/g, "\\");
+  }
+
+  function parseTags(tagStr) {
+    const tags = {};
+    tagStr.split(";").forEach(pair => {
+      const eq = pair.indexOf("=");
+      const key = eq === -1 ? pair : pair.slice(0, eq);
+      const value = eq === -1 ? "" : unescapeTagValue(pair.slice(eq + 1));
+      tags[key] = value;
+    });
+    return tags;
+  }
+
+  function parseBadges(str) {
+    if (!str) return {};
+    const out = {};
+    str.split(",").forEach(b => {
+      const [set, ver] = b.split("/");
+      if (set) out[set] = ver;
+    });
+    return out;
+  }
+
+  function parseEmotes(str) {
+    if (!str) return {};
+    const out = {};
+    str.split("/").forEach(part => {
+      const [id, positions] = part.split(":");
+      if (id && positions) out[id] = positions.split(",");
+    });
+    return out;
+  }
+
+  function parseIRCLine(line) {
+    let rest = line;
+    let tags = {};
+
+    if (rest.startsWith("@")) {
+      const sp = rest.indexOf(" ");
+      tags = parseTags(rest.slice(1, sp));
+      rest = rest.slice(sp + 1);
+    }
+
+    const parts = rest.split(" ");
+    const command = parts[1];
+
+    if (command === "PRIVMSG") {
+      const msgIdx = rest.indexOf(" :", rest.indexOf("PRIVMSG"));
+      const message = msgIdx !== -1 ? rest.slice(msgIdx + 2) : "";
+      return { command, tags, message };
+    }
+
+    return { command, tags, message: "" };
+  }
+
+  function connect() {
+    const ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+
+    ws.onopen = () => {
+      ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
+      ws.send("PASS SCHMOOPIE");
+      ws.send("NICK justinfan" + Math.floor(Math.random() * 100000));
+      ws.send("JOIN #" + CHANNEL.toLowerCase());
+    };
+
+    ws.onmessage = (event) => {
+      const lines = event.data.split("\r\n").filter(Boolean);
+      lines.forEach(line => {
+        if (line.startsWith("PING")) {
+          ws.send("PONG :tmi.twitch.tv");
+          return;
+        }
+
+        if (!line.includes("PRIVMSG") && !line.includes("CLEARCHAT")) return;
+
+        const parsed = parseIRCLine(line);
+
+        if (parsed.command === "PRIVMSG") {
+          const tags = parsed.tags;
+
+          if (!channelDataLoaded && tags["room-id"]) {
+            channelDataLoaded = true;
+            loadChannelBadges(tags["room-id"]);
+            loadBTTV(tags["room-id"]);
+            load7TVChannel(tags["room-id"]);
+          }
+
+          addMessage(
+            tags["display-name"] || "?",
+            tags.color,
+            parseBadges(tags.badges),
+            parsed.message,
+            parseEmotes(tags.emotes)
+          );
+        } else if (parsed.command === "CLEARCHAT") {
+          clearChat();
+        }
+      });
+    };
+
+    ws.onclose = () => {
+      console.warn("Connexion Twitch fermée, reconnexion dans 5s...");
+      setTimeout(connect, 5000);
+    };
+
+    ws.onerror = (e) => console.error("Erreur WebSocket Twitch:", e);
+  }
+
+  connect();
+  loadBadges();
+  loadFFZGlobal();
+  loadFFZChannel(CHANNEL);
+  load7TVGlobal();
+})();
+</script>
+</body>
+</html>

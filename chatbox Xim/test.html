@@ -1,0 +1,244 @@
+<!-- Zone d'affichage du chat -->
+<div id="log" class="sl__chat__layout"></div>
+
+<!-- Template pour un message de chat -->
+<script type="text/template" id="chatlist_item">
+  <div class="wrapper" data-from="{from}" data-id="{messageId}">
+    <div class="meta">
+      <div class="username_box">
+        <span class="badges"></span>
+        <span class="name">{from}</span>
+      </div>
+    </div>
+    <div class="message_box">
+      <span class="message">{message}</span>
+    </div>
+  </div>
+</script>
+
+<!-- Boutons de test -->
+<div style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
+  <button onclick="addTestMessage('Alice', 'Salut tout le monde !')">Test texte</button>
+  <button onclick="addTestMessage('Bob', 'GG <span class=\'emote\'><img src=\'https://static-cdn.jtvnw.net/emoticons/v2/25/default/light/3.0\'></span> !')">Test texte + emote</button>
+  <button onclick="addTestMessage('EmoteOnly', '<span class=\'emote\'><img src=\'https://static-cdn.jtvnw.net/emoticons/v2/301747747/default/light/3.0\'></span><span class=\'emote\'><img src=\'https://static-cdn.jtvnw.net/emoticons/v2/301747748/default/light/3.0\'></span>')">Test emotes seules</button>
+</div>
+ 
+
+
+<!-- Styles -->
+
+    
+ @import url('https://fonts.googleapis.com/css?family=Fredoka');
+
+* {
+  box-sizing: border-box;
+}
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  font-family: 'Fredoka', 'Helvetica Neue', sans-serif;
+  line-height: 1.5em;
+}
+.wrapper {
+  margin: 15px;
+}
+#log {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 0 10px 10px 10px;
+  width: 100%;
+}
+#log > div.deleted {
+  visibility: hidden;
+}
+.meta {
+  display: inline-block;
+}
+.badges {
+  display: inline-block;
+}
+.badge {
+  display: inline-block;
+  margin-top: -2px;
+  margin-left: 5px;
+}
+.username_box {
+  display: inline-block;
+  margin-bottom: -8px;
+  margin-left: 10px;
+  padding: 2px 5px;
+  background-color: rgba(51, 131, 143, 0.8);
+  box-shadow: 0px 0px 10px rgba(87, 204, 222, 0.8);
+  border: 1px solid rgba(51, 131, 143, 0.5);
+  border-radius: 8px;
+  z-index: 1;
+}
+.name {
+  display: inline-block;
+  color: rgba(213, 213, 213, 1);
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding: 2px 8px 0px 8px;
+}
+.message_box {
+  padding-top: 10px;
+  border: 1px solid rgba(30, 38, 43, 0.5);
+  background-color: rgba(16, 11, 11, 0.6);
+  border-radius: 8px;
+  position: relative;
+  z-index: -1;
+}
+.message_box::after {
+  content: "";
+  background: url(https://cdn.discordapp.com/attachments/1326991828217757857/1377291359874056232/badge-star.png) no-repeat;
+  background-size: contain;
+  height: 30px;
+  width: 30px;
+  position: absolute;
+  top: -20px;
+  right: 15px;
+}
+.message {
+  display: block;
+  color: rgba(213, 213, 213, 1);
+  letter-spacing: 0.9px;
+  margin-left: 5px;
+  padding: 6px 6px;
+  word-wrap: break-word;
+  font-size: 18px;
+  font-weight: normal;
+}
+#log .emote {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  padding: 0.4em 0.2em;
+  position: relative;
+}
+#log .emote img {
+  display: inline-block;
+  height: 1em;
+  opacity: 0;
+}
+.fadeInUp {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: transform 0.6s ease, opacity 0.6s ease;
+}
+.fadeInUp.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+
+
+<script>
+document.addEventListener('onLoad', function () {
+  console.log("Chat widget loaded");
+});
+
+document.addEventListener('onEventReceived', function (obj) {
+  if (obj.detail.command === "PRIVMSG") {
+    const $newMessage = $('#log > .wrapper').last();
+    const $messageSpan = $newMessage.find('.message');
+    const childNodes = [...$messageSpan[0].childNodes];
+
+    const onlyEmotes = childNodes.every(node =>
+      (node.nodeType === 1 && node.classList.contains('emote')) ||
+      (node.nodeType === 3 && node.textContent.trim() === '')
+    );
+
+    if (onlyEmotes) {
+      $messageSpan.find('img').css({
+        height: '64px',
+        opacity: 1
+      });
+    } else {
+      $messageSpan.find('img').css({
+        opacity: 1
+      });
+    }
+
+    $newMessage.hide().css({ opacity: 0 })
+      .slideDown(600, "easeInOutQuart")
+      .animate({ opacity: 1 }, { duration: 600, queue: false });
+
+    setTimeout(() => {
+      $newMessage.remove();
+    }, 8000);
+
+    const limitEnable = true;
+    const msgLimit = 10;
+    const $msgParent = $('#log');
+    if (limitEnable && $msgParent.children().length > msgLimit) {
+      $msgParent.children()
+        .not($msgParent.children().slice(-msgLimit))
+        .fadeOut(600, function () {
+          $(this).remove();
+        });
+    }
+  }
+
+  if (obj.detail.command === "CLEARCHAT" && typeof obj.detail.body === "undefined") {
+    $('#log').empty();
+  }
+});
+
+function isOnlyEmotes(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const children = [...div.childNodes];
+  return children.every(node =>
+    (node.nodeType === 1 && node.classList.contains('emote')) ||
+    (node.nodeType === 3 && node.textContent.trim() === '')
+  );
+}
+
+function addTestMessage(from, message) {
+  const template = document.getElementById('chatlist_item').innerHTML;
+  const messageId = Date.now();
+  let finalMessage = message;
+
+  if (isOnlyEmotes(message)) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = message;
+    tempDiv.querySelectorAll('img').forEach(img => {
+      img.style.height = '64px';
+      img.style.opacity = '1';
+    });
+    finalMessage = tempDiv.innerHTML;
+  } else {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = message;
+    tempDiv.querySelectorAll('img').forEach(img => {
+      img.style.opacity = '1';
+    });
+    finalMessage = tempDiv.innerHTML;
+  }
+
+  const html = template
+    .replace(/{from}/g, from)
+    .replace(/{messageId}/g, messageId)
+    .replace(/{message}/g, finalMessage);
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  const messageElement = wrapper.firstElementChild;
+  messageElement.classList.add('fadeInUp');
+  document.getElementById('log').appendChild(messageElement);
+
+  setTimeout(() => {
+    messageElement.classList.add('show');
+  }, 100);
+
+  setTimeout(() => {
+    messageElement.remove();
+  }, 8000);
+}
+</script>

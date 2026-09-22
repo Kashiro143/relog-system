@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Kashiro Chatbox</title>
+<link href="https://fonts.googleapis.com/css?family=Tomorrow:400,600,700&family=Poppins:400,600,700&family=Bebas+Neue&family=Share+Tech+Mono&family=Press+Start+2P&family=Comfortaa:400,600,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --username-font-size: 16pt;
+  --message-font-size: 16pt;
+  --box-spacing: 15px;
+  --accent-color: #17E8FF;
+  --text-color: #140E63;
+  --box-radius: 0px;
+  --gradient-color-1: #E8F4FF;
+  --gradient-color-2: #A8D8FF;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Tomorrow', 'Helvetica Neue', sans-serif;
+  line-height: 1.5em;
+}
+
+#log {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 1s ease;
+  opacity: 1;
+}
+
+#log.pos-bottom-right { left: auto; right: 0; }
+#log.pos-top-left     { top: 0; bottom: auto; flex-direction: column-reverse; padding: 10px 10px 0; }
+#log.pos-top-right    { top: 0; bottom: auto; left: auto; right: 0; flex-direction: column-reverse; padding: 10px 10px 0; }
+
+#log.hidden {
+  opacity: 0;
+}
+
+#log > div {
+  margin-bottom: var(--box-spacing);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+#log > div.fade-out {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+@keyframes anim-slide-in {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes anim-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes anim-pop-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  70%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+#log > div.anim-slide.show { animation: anim-slide-in 0.5s ease forwards; }
+#log > div.anim-fade.show  { animation: anim-fade-in 0.5s ease forwards; }
+#log > div.anim-pop.show   { animation: anim-pop-in 0.45s cubic-bezier(.34,1.56,.64,1) forwards; }
+#log > div.anim-typewriter.show { animation: anim-fade-in 0.3s ease forwards; }
+
+.tw-token {
+  display: inline-block;
+  opacity: 0;
+  animation: anim-fade-in 0.2s ease forwards;
+}
+
+.wrapper {
+  margin: 15px;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: -1px;
+}
+
+.badge {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin: 0 2px 0 0;
+  width: 18px;
+  height: 18px;
+}
+
+.username_box {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 0 8px;
+  padding: 4px 5px 6px;
+  background: var(--accent-color);
+  border-radius: var(--box-radius);
+  z-index: 1;
+}
+
+.badges {
+  display: inline-flex;
+  align-items: center;
+}
+
+.name {
+  display: inline-block;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: var(--username-font-size);
+  letter-spacing: 1px;
+  padding: 2px 8px 0 8px;
+  text-transform: uppercase;
+}
+
+.new-tag {
+  display: inline-block;
+  background: var(--text-color);
+  color: var(--accent-color);
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 4px;
+  text-transform: uppercase;
+  animation: anim-fade-in 0.3s ease;
+}
+
+.triangle {
+  width: 0px;
+  height: 0px;
+  border-style: solid;
+  border-width: 39px 0 0px 30px;
+  border-color: transparent transparent transparent var(--accent-color);
+}
+
+.fancy_message_box {
+  display: flex;
+  align-items: center;
+  margin: 0 0 0 8px;
+}
+
+.message_box {
+  padding: 13px 19px 15px 19px;
+  background: linear-gradient(132deg, var(--gradient-color-1) 44%, var(--gradient-color-2) 100%);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--box-radius);
+  box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25);
+  position: relative;
+  z-index: -1;
+  margin-bottom: 8px;
+}
+
+.message_box.only-emotes {
+  padding: 15px 15px 0px 15px;
+}
+
+body.show-sparkle .message_box::after {
+  content: "";
+  background: url(https://media.discordapp.net/attachments/981579056594173993/1377777048659038229/emoji__sparkles__1.png?format=webp&quality=lossless) no-repeat;
+  background-size: contain;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: -20px;
+  right: 15px;
+}
+
+@keyframes mention-pulse {
+  0%, 100% { box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25); }
+  50%      { box-shadow: 0 0 26px 6px var(--accent-color); }
+}
+
+.message_box.mention {
+  animation: mention-pulse 1.1s ease-in-out 2;
+}
+
+.message {
+  display: block;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: var(--message-font-size);
+  letter-spacing: 0.9px;
+  word-wrap: break-word;
+}
+
+.emote {
+  display: inline-block;
+  vertical-align: middle;
+  height: 1.6em;
+  margin: -2px 2px;
+}
+
+.only-emotes .emote {
+  height: 3em;
+}
+
+#reactions-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-emote {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  animation: float-up 2.2s ease-out forwards;
+}
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(0) scale(0.6); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-240px) scale(1.3); }
+}
+</style>
+</head>
+<body>
+
+<div id="log"></div>
+<div id="reactions-layer"></div>
+
+<!-- Réglages externalisés : voir config.js (ou config-panel.html pour une interface visuelle) -->
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const CFG = window.CHATBOX_CONFIG || {};
+  const CHANNEL = CFG.channel || "kashiro143";
+  const LIMIT_ENABLED = CFG.limitEnabled !== false;
+  const LIMIT_COUNT = CFG.limitCount || 50;
+  const SHOW_BADGES = CFG.showBadges !== false;
+  const SHOW_BTTV = CFG.showBTTV !== false;
+  const SHOW_FFZ = CFG.showFFZ !== false;
+  const SHOW_7TV = CFG.show7TV !== false;
+
+  const ANIMATION_STYLE = ["slide", "fade", "pop", "typewriter"].includes(CFG.animationStyle) ? CFG.animationStyle : "slide";
+  const MENTION_HIGHLIGHT = CFG.mentionHighlight !== false;
+  const FLOATING_REACTIONS = CFG.floatingReactions !== false;
+  const NEW_USER_TAG = CFG.newUserTag !== false;
+  const NEW_USER_TAG_DURATION = (CFG.newUserTagDuration || 4) * 1000;
+  const AUTO_HIDE_MS = (() => {
+    const v = CFG.autoHide;
+    if (!v || v === "never") return 0;
+    const n = Number(v);
+    return isNaN(n) ? 0 : n * 1000;
+  })();
+
+  const POSITION = ["bottom-left", "bottom-right", "top-left", "top-right"].includes(CFG.position) ? CFG.position : "bottom-left";
+  const SHOW_SPARKLE = CFG.showSparkle !== false;
+  const NEW_USER_TAG_TEXT = CFG.newUserTagText || "Nouveau";
+
+  const ROLE_PROFILES = (() => {
+    const defaults = {
+      broadcaster: { enabled: true, color: "#FF6EC7", textColor: "#3D0066", font: "Tomorrow" },
+      moderator:   { enabled: true, color: "#00C2FF", textColor: "#052940", font: "Tomorrow" },
+      vip:         { enabled: true, color: "#FFD166", textColor: "#5C2E00", font: "Tomorrow" },
+      subscriber:  { enabled: true, color: "#6BFFB0", textColor: "#023B1D", font: "Tomorrow" }
+    };
+    const src = CFG.roleProfiles || {};
+    const out = {};
+    Object.keys(defaults).forEach(role => {
+      out[role] = Object.assign({}, defaults[role], src[role] || {});
+    });
+    return out;
+  })();
+
+  function getRoleFromBadges(badgesObj) {
+    if (!badgesObj) return null;
+    if (badgesObj.broadcaster) return "broadcaster";
+    if (badgesObj.moderator) return "moderator";
+    if (badgesObj.vip) return "vip";
+    if (badgesObj.subscriber || badgesObj.founder) return "subscriber";
+    return null;
+  }
+
+  // Applique les réglages visuels de config.js aux variables CSS
+  const root = document.documentElement.style;
+  if (CFG.usernameFontSize) root.setProperty("--username-font-size", CFG.usernameFontSize + "pt");
+  if (CFG.messageFontSize) root.setProperty("--message-font-size", CFG.messageFontSize + "pt");
+  if (CFG.boxSpacing !== undefined) root.setProperty("--box-spacing", CFG.boxSpacing + "px");
+  if (CFG.accentColor) root.setProperty("--accent-color", CFG.accentColor);
+  if (CFG.textColor) root.setProperty("--text-color", CFG.textColor);
+  if (CFG.boxRadius !== undefined) root.setProperty("--box-radius", CFG.boxRadius + "px");
+  if (CFG.gradientColor1) root.setProperty("--gradient-color-1", CFG.gradientColor1);
+  if (CFG.gradientColor2) root.setProperty("--gradient-color-2", CFG.gradientColor2);
+  if (CFG.defaultFont) document.body.style.fontFamily = `'${CFG.defaultFont}', 'Helvetica Neue', sans-serif`;
+  if (SHOW_SPARKLE) document.body.classList.add("show-sparkle");
+
+  const logEl = document.getElementById("log");
+  if (POSITION !== "bottom-left") logEl.classList.add(`pos-${POSITION}`);
+  const reactionsLayer = document.getElementById("reactions-layer");
+  let badgeMap = {};       // "set/version" -> url
+  let bttvGlobal = {};     // name -> url
+  let bttvChannel = {};
+  let ffzGlobal = {};
+  let ffzChannel = {};
+  let sevenTVGlobal = {};
+  let sevenTVChannel = {};
+  const seenUsers = new Set();
+
+  // --- Badges Twitch (API publique, pas d'auth nécessaire) ---
+  async function loadBadges() {
+    if (!SHOW_BADGES) return;
+    try {
+      const res = await fetch("https://badges.twitch.tv/v1/badges/global/display").then(r => r.json());
+      Object.entries(res.badge_sets).forEach(([setId, data]) => {
+        Object.entries(data.versions).forEach(([ver, v]) => {
+          badgeMap[`${setId}/${ver}`] = v.image_url_2x;
+        });
+      });
+    } catch (e) {
+      console.warn("Badges Twitch globaux non chargés (non bloquant):", e);
+    }
+  }
+
+  async function loadChannelBadges(broadcasterId) {
+    if (!SHOW_BADGES || !broadcasterId) return;
+    try {
+      const res = await fetch(`https://badges.twitch.tv/v1/badges/channels/${broadcasterId}/display`).then(r => r.json());
+      Object.entries(res.badge_sets).forEach(([setId, data]) => {
+        Object.entries(data.versions).forEach(([ver, v]) => {
+          badgeMap[`${setId}/${ver}`] = v.image_url_2x;
+        });
+      });
+    } catch (e) {
+      console.warn("Badges de chaîne non chargés (non bloquant):", e);
+    }
+  }
+
+  // --- BTTV ---
+  async function loadBTTV(broadcasterId) {
+    if (!SHOW_BTTV) return;
+    try {
+      const global = await fetch("https://api.betterttv.net/3/cached/emotes/global").then(r => r.json());
+      global.forEach(e => bttvGlobal[e.code] = `https://cdn.betterttv.net/emote/${e.id}/2x`);
+    } catch (e) {
+      console.warn("BTTV global non chargé (non bloquant):", e);
+    }
+    if (!broadcasterId) return;
+    try {
+      const channel = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${broadcasterId}`).then(r => r.json());
+      (channel.channelEmotes || []).concat(channel.sharedEmotes || []).forEach(e => {
+        bttvChannel[e.code] = `https://cdn.betterttv.net/emote/${e.id}/2x`;
+      });
+    } catch (e) {
+      console.warn("BTTV chaîne non chargé (non bloquant):", e);
+    }
+  }
+
+  // --- FrankerFaceZ ---
+  async function loadFFZGlobal() {
+    if (!SHOW_FFZ) return;
+    try {
+      const data = await fetch("https://api.frankerfacez.com/v1/set/global").then(r => r.json());
+      (data.default_sets || []).forEach(setId => {
+        const set = data.sets[setId];
+        if (!set) return;
+        set.emoticons.forEach(e => {
+          const urls = e.urls;
+          const url = urls["4"] || urls["2"] || urls["1"];
+          if (url) ffzGlobal[e.name] = url.startsWith("http") ? url : "https:" + url;
+        });
+      });
+    } catch (e) {
+      console.warn("FFZ global non chargé (non bloquant):", e);
+    }
+  }
+
+  async function loadFFZChannel(channelLogin) {
+    if (!SHOW_FFZ || !channelLogin) return;
+    try {
+      const data = await fetch(`https://api.frankerfacez.com/v1/room/${channelLogin}`).then(r => r.json());
+      const set = data.sets && data.sets[data.room.set];
+      if (!set) return;
+      set.emoticons.forEach(e => {
+        const urls = e.urls;
+        const url = urls["4"] || urls["2"] || urls["1"];
+        if (url) ffzChannel[e.name] = url.startsWith("http") ? url : "https:" + url;
+      });
+    } catch (e) {
+      console.warn("FFZ chaîne non chargé (non bloquant):", e);
+    }
+  }
+
+  // --- 7TV ---
+  async function load7TVGlobal() {
+    if (!SHOW_7TV) return;
+    try {
+      const data = await fetch("https://7tv.io/v3/emote-sets/global").then(r => r.json());
+      (data.emotes || []).forEach(e => {
+        sevenTVGlobal[e.name] = `https://cdn.7tv.app/emote/${e.id}/2x.webp`;
+      });
+    } catch (e) {
+      console.warn("7TV global non chargé (non bloquant):", e);
+    }
+  }
+
+  async function load7TVChannel(broadcasterId) {
+    if (!SHOW_7TV || !broadcasterId) return;
+    try {
+      const data = await fetch(`https://7tv.io/v3/users/twitch/${broadcasterId}`).then(r => r.json());
+      const emotes = (data.emote_set && data.emote_set.emotes) || [];
+      emotes.forEach(e => {
+        sevenTVChannel[e.name] = `https://cdn.7tv.app/emote/${e.id}/2x.webp`;
+      });
+    } catch (e) {
+      console.warn("7TV chaîne non chargé (non bloquant):", e);
+    }
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement("div");
+    d.innerText = s;
+    return d.innerHTML;
+  }
+
+  function escapeRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // --- Découpe le message en tokens (mots / émotes / espaces) avec rendu HTML ---
+  function renderMessage(text, twitchEmotes) {
+    const chars = Array.from(text);
+    const replacements = [];
+
+    if (twitchEmotes) {
+      Object.entries(twitchEmotes).forEach(([id, positions]) => {
+        positions.forEach(pos => {
+          const [start, end] = pos.split("-").map(Number);
+          replacements.push({
+            start, end,
+            html: `<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/3.0" alt="">`,
+            isEmote: true,
+            src: `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/3.0`
+          });
+        });
+      });
+    }
+
+    replacements.sort((a, b) => a.start - b.start);
+
+    function lookupThirdParty(word) {
+      return bttvChannel[word] || bttvGlobal[word] || ffzChannel[word] || ffzGlobal[word] || sevenTVChannel[word] || sevenTVGlobal[word] || null;
+    }
+
+    const tokens = []; // { html, isEmote, src }
+    let onlyEmotesSoFar = true;
+    let i = 0;
+
+    while (i < chars.length) {
+      const match = replacements.find(r => r.start === i);
+      if (match) {
+        tokens.push({ html: match.html, isEmote: true, src: match.src });
+        i = match.end + 1;
+        continue;
+      }
+      const word = [];
+      let j = i;
+      while (j < chars.length && chars[j] !== " " && !replacements.find(r => r.start === j)) {
+        word.push(chars[j]);
+        j++;
+      }
+      if (word.length) {
+        const w = word.join("");
+        const url = lookupThirdParty(w);
+        if (url) {
+          tokens.push({ html: `<img class="emote" src="${url}" alt="">`, isEmote: true, src: url });
+        } else {
+          onlyEmotesSoFar = false;
+          tokens.push({ html: escapeHtml(w), isEmote: false });
+        }
+        i = j;
+      } else {
+        tokens.push({ html: escapeHtml(chars[i]), isEmote: false });
+        if (chars[i] !== " ") onlyEmotesSoFar = false;
+        i++;
+      }
+    }
+
+    return { tokens, onlyEmotes: onlyEmotesSoFar };
+  }
+
+  function badgesHtml(badgesObj) {
+    if (!SHOW_BADGES || !badgesObj) return "";
+    return Object.entries(badgesObj).map(([set, ver]) => {
+      const url = badgeMap[`${set}/${ver}`];
+      return url ? `<img class="badge" src="${url}" alt="${set}">` : "";
+    }).join("");
+  }
+
+  function spawnFloatingReaction(src) {
+    if (!FLOATING_REACTIONS || !src) return;
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "floating-emote";
+    img.style.left = (15 + Math.random() * 65) + "%";
+    img.style.bottom = "10px";
+    reactionsLayer.appendChild(img);
+    img.addEventListener("animationend", () => img.remove());
+  }
+
+  let hideTimer = null;
+  function scheduleAutoHide() {
+    if (!AUTO_HIDE_MS) return;
+    clearTimeout(hideTimer);
+    logEl.classList.remove("hidden");
+    hideTimer = setTimeout(() => logEl.classList.add("hidden"), AUTO_HIDE_MS);
+  }
+
+  function addMessage(user, colorHex, badges, text, emotes) {
+    const { tokens, onlyEmotes } = renderMessage(text, emotes);
+
+    const activeRole = getRoleFromBadges(badges);
+    const activeProfile = (activeRole && ROLE_PROFILES[activeRole] && ROLE_PROFILES[activeRole].enabled) ? ROLE_PROFILES[activeRole] : null;
+    const nameColor = (activeProfile && activeProfile.textColor) ? activeProfile.textColor : colorHex;
+
+    let messageHtml;
+    if (ANIMATION_STYLE === "typewriter") {
+      messageHtml = tokens.map((t, idx) => {
+        if (t.html.trim() === "") return t.html;
+        return `<span class="tw-token" style="animation-delay:${idx * 70}ms">${t.html}</span>`;
+      }).join("");
+    } else {
+      messageHtml = tokens.map(t => t.html).join("");
+    }
+
+    const isNewUser = NEW_USER_TAG && !seenUsers.has(user.toLowerCase());
+    seenUsers.add(user.toLowerCase());
+
+    const isMention = MENTION_HIGHLIGHT && new RegExp("@" + escapeRegex(CHANNEL), "i").test(text);
+
+    const wrapper = document.createElement("div");
+    wrapper.className = `wrapper anim-${ANIMATION_STYLE}`;
+    wrapper.innerHTML = `
+      <div class="meta">
+        <div class="username_box">
+          <span class="badges">${badgesHtml(badges)}</span>
+          ${isNewUser ? `<span class="new-tag">${escapeHtml(NEW_USER_TAG_TEXT)}</span>` : ""}
+          <span class="name" style="${nameColor ? `color:${nameColor}` : ""}">${escapeHtml(user)}</span>
+        </div>
+        <div class="triangle"></div>
+      </div>
+      <div class="fancy_message_box">
+        <div class="message_box${onlyEmotes ? " only-emotes" : ""}${isMention ? " mention" : ""}">
+          <span class="message">${messageHtml}</span>
+        </div>
+      </div>
+    `;
+
+    if (activeProfile) {
+      wrapper.style.setProperty("--accent-color", activeProfile.color);
+      if (activeProfile.font) wrapper.style.fontFamily = `'${activeProfile.font}', 'Helvetica Neue', sans-serif`;
+    }
+
+    logEl.appendChild(wrapper);
+    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add("show")));
+
+    if (onlyEmotes) {
+      const firstEmote = tokens.find(t => t.isEmote);
+      if (firstEmote) spawnFloatingReaction(firstEmote.src);
+    }
+
+    if (isNewUser) {
+      const tag = wrapper.querySelector(".new-tag");
+      if (tag) setTimeout(() => tag.remove(), NEW_USER_TAG_DURATION);
+    }
+
+    if (LIMIT_ENABLED) {
+      const items = logEl.children;
+      while (items.length > LIMIT_COUNT) {
+        const oldest = items[0];
+        oldest.classList.add("fade-out");
+        oldest.addEventListener("transitionend", () => oldest.remove(), { once: true });
+        setTimeout(() => { if (oldest.parentNode) oldest.remove(); }, 1000);
+        if (items.length <= LIMIT_COUNT) break;
+      }
+    }
+
+    scheduleAutoHide();
+  }
+
+  function clearChat() {
+    logEl.innerHTML = "";
+  }
+
+  // --- Connexion Twitch en IRC-over-WebSocket, lecture seule, anonyme (pas de token requis) ---
+  let channelDataLoaded = false;
+
+  function unescapeTagValue(v) {
+    return v
+      .replace(/\\s/g, " ")
+      .replace(/\\:/g, ";")
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\\\/g, "\\");
+  }
+
+  function parseTags(tagStr) {
+    const tags = {};
+    tagStr.split(";").forEach(pair => {
+      const eq = pair.indexOf("=");
+      const key = eq === -1 ? pair : pair.slice(0, eq);
+      const value = eq === -1 ? "" : unescapeTagValue(pair.slice(eq + 1));
+      tags[key] = value;
+    });
+    return tags;
+  }
+
+  function parseBadges(str) {
+    if (!str) return {};
+    const out = {};
+    str.split(",").forEach(b => {
+      const [set, ver] = b.split("/");
+      if (set) out[set] = ver;
+    });
+    return out;
+  }
+
+  function parseEmotes(str) {
+    if (!str) return {};
+    const out = {};
+    str.split("/").forEach(part => {
+      const [id, positions] = part.split(":");
+      if (id && positions) out[id] = positions.split(",");
+    });
+    return out;
+  }
+
+  function parseIRCLine(line) {
+    let rest = line;
+    let tags = {};
+
+    if (rest.startsWith("@")) {
+      const sp = rest.indexOf(" ");
+      tags = parseTags(rest.slice(1, sp));
+      rest = rest.slice(sp + 1);
+    }
+
+    const parts = rest.split(" ");
+    const command = parts[1];
+
+    if (command === "PRIVMSG") {
+      const msgIdx = rest.indexOf(" :", rest.indexOf("PRIVMSG"));
+      const message = msgIdx !== -1 ? rest.slice(msgIdx + 2) : "";
+      return { command, tags, message };
+    }
+
+    return { command, tags, message: "" };
+  }
+
+  function connect() {
+    const ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+
+    ws.onopen = () => {
+      ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
+      ws.send("PASS SCHMOOPIE");
+      ws.send("NICK justinfan" + Math.floor(Math.random() * 100000));
+      ws.send("JOIN #" + CHANNEL.toLowerCase());
+    };
+
+    ws.onmessage = (event) => {
+      const lines = event.data.split("\r\n").filter(Boolean);
+      lines.forEach(line => {
+        if (line.startsWith("PING")) {
+          ws.send("PONG :tmi.twitch.tv");
+          return;
+        }
+
+        if (!line.includes("PRIVMSG") && !line.includes("CLEARCHAT")) return;
+
+        const parsed = parseIRCLine(line);
+
+        if (parsed.command === "PRIVMSG") {
+          const tags = parsed.tags;
+
+          if (!channelDataLoaded && tags["room-id"]) {
+            channelDataLoaded = true;
+            loadChannelBadges(tags["room-id"]);
+            loadBTTV(tags["room-id"]);
+            load7TVChannel(tags["room-id"]);
+          }
+
+          addMessage(
+            tags["display-name"] || "?",
+            tags.color,
+            parseBadges(tags.badges),
+            parsed.message,
+            parseEmotes(tags.emotes)
+          );
+        } else if (parsed.command === "CLEARCHAT") {
+          clearChat();
+        }
+      });
+    };
+
+    ws.onclose = () => {
+      console.warn("Connexion Twitch fermée, reconnexion dans 5s...");
+      setTimeout(connect, 5000);
+    };
+
+    ws.onerror = (e) => console.error("Erreur WebSocket Twitch:", e);
+  }
+
+  connect();
+  loadBadges();
+  loadFFZGlobal();
+  loadFFZChannel(CHANNEL);
+  load7TVGlobal();
+  scheduleAutoHide();
+})();
+</script>
+</body>
+</html>

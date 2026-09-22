@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>K-OS // TECHWEAR DISPLAY</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 60px;
+            /* Note : Supprimer 'background' pour la transparence totale sur OBS */
+            background: #0a0a0a; 
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: flex-end; /* Aligne le texte en bas de l'écran */
+            transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Conteneur de message avec bordure structurelle */
+        #container {
+            border-left: 2px solid #ffffff;
+            padding-left: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #meta {
+            font-size: 10px;
+            letter-spacing: 5px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        #text {
+            font-size: 32px;
+            font-weight: 200;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* --- ÉTATS DYNAMIQUES --- */
+        
+        /* Apparition du texte */
+        .visible {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        /* Alerte RAID : Rouge chirurgical, texte noir pour contraste max */
+        .raid-mode {
+            background: #FF003C !important;
+        }
+        .raid-mode #container { border-left-color: #000; }
+        .raid-mode #text, .raid-mode #meta {
+            color: #000 !important;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <div id="meta">SYSTEM_READY</div>
+        <div id="text">INITIALISATION...</div>
+    </div>
+
+    <script>
+        const container = document.getElementById('container');
+        const textEl = document.getElementById('text');
+        const metaEl = document.getElementById('meta');
+        let lastMsg = "";
+
+        // Animation d'entrée au chargement
+        setTimeout(() => container.classList.add('visible'), 500);
+
+        // LE PULSAR : Vérifie la mémoire toutes les 300ms (Infaillible en local)
+        setInterval(() => {
+            const msg = localStorage.getItem('kashiro_cmd');
+            
+            if (msg && msg !== lastMsg) {
+                lastMsg = msg;
+                updateInterface(msg);
+            }
+        }, 300);
+
+        async function updateInterface(content) {
+            // 1. Sortie du texte actuel
+            container.classList.remove('visible');
+            
+            // 2. Temps d'attente pour l'animation de sortie
+            await new Promise(r => setTimeout(r, 400));
+
+            // 3. Logique de l'alerte RAID
+            if (content.toUpperCase().includes("RAID")) {
+                document.body.classList.add('raid-mode');
+                metaEl.innerText = "CRITICAL_ALERT // INTRUSION";
+            } else {
+                document.body.classList.remove('raid-mode');
+                metaEl.innerText = "DATA_STREAM // NOMINAL";
+            }
+
+            // 4. Mise à jour du texte et rentrée fluide
+            textEl.innerText = content;
+            container.classList.add('visible');
+        }
+    </script>
+</body>
+</html>

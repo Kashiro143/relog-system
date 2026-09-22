@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Réglages du Chatbox</title>
+<link href="https://fonts.googleapis.com/css?family=Tomorrow:400,600,700&family=Inter:400,600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0f1220;
+    color: #e8e8f0;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  #panel {
+    width: 380px;
+    flex-shrink: 0;
+    padding: 24px;
+    background: #171a2b;
+    overflow-y: auto;
+  }
+
+  #panel h1 {
+    font-size: 18px;
+    margin: 0 0 20px;
+  }
+
+  fieldset {
+    border: 1px solid #2a2e45;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 12px 14px 16px;
+  }
+
+  legend {
+    padding: 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b8fb3;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    margin: 10px 0;
+  }
+
+  input[type="text"], input[type="number"] {
+    width: 110px;
+    background: #0f1220;
+    border: 1px solid #2a2e45;
+    border-radius: 5px;
+    color: #e8e8f0;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  input[type="color"] {
+    width: 40px;
+    height: 28px;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #17E8FF;
+    cursor: pointer;
+  }
+
+  #save {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    background: #17E8FF;
+    color: #0f1220;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  #save:hover { opacity: 0.9; }
+
+  #instructions {
+    margin-top: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #8b8fb3;
+  }
+
+  #status {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #6bffb0;
+    min-height: 16px;
+  }
+
+  #preview-wrap {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    padding: 30px;
+    background:
+      linear-gradient(135deg, #2b2f4a 25%, transparent 25%) -20px 0/ 40px 40px,
+      linear-gradient(225deg, #2b2f4a 25%, transparent 25%) -20px 0/ 40px 40px,
+      linear-gradient(315deg, #2b2f4a 25%, transparent 25%) 0px 0/ 40px 40px,
+      linear-gradient(45deg, #2b2f4a 25%, #1a1d30 25%) 0px 0/ 40px 40px;
+  }
+
+  #preview-box { width: 100%; max-width: 520px; isolation: isolate; }
+
+  #preview-log { display: flex; flex-direction: column; }
+  #preview-log > div { margin-bottom: var(--box-spacing, 15px); }
+
+  .wrapper { margin: 15px; font-family: 'Tomorrow', sans-serif; }
+  .meta { display: inline-flex; align-items: center; margin-bottom: -1px; }
+  .badge { width: 18px; height: 18px; margin: 0 2px 0 0; }
+  .username_box {
+    display: inline-flex; align-items: center; margin: 0 0 0 8px;
+    padding: 4px 5px 6px; background: var(--accent-color, #17E8FF); z-index: 1;
+  }
+  .name {
+    color: var(--text-color, #140E63); font-weight: 600;
+    font-size: var(--username-font-size, 16pt); letter-spacing: 1px;
+    padding: 2px 8px 0 8px; text-transform: uppercase;
+  }
+  .triangle {
+    width: 0; height: 0; border-style: solid;
+    border-width: 39px 0 0 30px;
+    border-color: transparent transparent transparent var(--accent-color, #17E8FF);
+  }
+  .fancy_message_box { display: flex; align-items: center; margin: 0 0 0 8px; }
+  .message_box {
+    padding: 13px 19px 15px 19px;
+    background: linear-gradient(132deg, rgba(255,255,255,0.6) 44%, rgba(120,203,255,0.6) 100%);
+    border: 1px solid var(--accent-color, #17E8FF);
+    box-shadow: 8px 7px 0px 2px rgba(3,197,211,0.25);
+    position: relative; z-index: -1; margin-bottom: 8px;
+  }
+  .message_box::after {
+    content: "";
+    background: url(https://media.discordapp.net/attachments/981579056594173993/1377777048659038229/emoji__sparkles__1.png?format=webp&quality=lossless) no-repeat;
+    background-size: contain; width: 30px; height: 30px;
+    position: absolute; top: -20px; right: 15px;
+  }
+  .message {
+    display: block; color: var(--text-color, #140E63); font-weight: 600;
+    font-size: var(--message-font-size, 16pt); letter-spacing: 0.9px; word-wrap: break-word;
+  }
+  .message_box.only-emotes { padding: 15px 15px 0px 15px; }
+  .badge-emoji {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; margin: 0 2px 0 0; font-size: 12px;
+  }
+  .preview-emote { font-size: 1.6em; line-height: 1; vertical-align: middle; }
+  .only-emotes .preview-emote { font-size: 2.6em; }
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h1>🎛️ Réglages du Chatbox</h1>
+
+  <fieldset>
+    <legend>Connexion</legend>
+    <label>Chaîne Twitch <input type="text" id="channel"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Affichage</legend>
+    <label>Taille pseudo (pt) <input type="number" id="usernameFontSize" min="8" max="40"></label>
+    <label>Taille message (pt) <input type="number" id="messageFontSize" min="8" max="40"></label>
+    <label>Espacement (px) <input type="number" id="boxSpacing" min="0" max="60"></label>
+    <label>Couleur d'accent <input type="color" id="accentColor"></label>
+    <label>Couleur du texte <input type="color" id="textColor"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Émotes &amp; badges</legend>
+    <label>Badges Twitch <input type="checkbox" id="showBadges"></label>
+    <label>BetterTTV (BTTV) <input type="checkbox" id="showBTTV"></label>
+    <label>FrankerFaceZ (FFZ) <input type="checkbox" id="showFFZ"></label>
+    <label>7TV <input type="checkbox" id="show7TV"></label>
+  </fieldset>
+
+  <button id="save">💾 Enregistrer config.js</button>
+  <div id="status"></div>
+
+  <div id="instructions">
+    Le clic ci-dessus télécharge un fichier <code>config.js</code> à jour.
+    Déplace-le dans ce même dossier en écrasant l'ancien, puis fais
+    "Refresh cache of current page" sur la source du chatbox dans OBS
+    pour appliquer les changements.
+  </div>
+</div>
+
+<div id="preview-wrap">
+  <div id="preview-box">
+    <div id="preview-log"></div>
+  </div>
+</div>
+
+<!-- Charge les valeurs actuelles depuis config.js (doit être dans le même dossier) -->
+<script src="config.js"></script>
+<script>
+(function () {
+  const CFG = window.CHATBOX_CONFIG || {};
+  const DEFAULTS = {
+    channel: "kashiro143",
+    usernameFontSize: 16,
+    messageFontSize: 16,
+    boxSpacing: 15,
+    accentColor: "#17E8FF",
+    textColor: "#140E63",
+    showBadges: true,
+    showBTTV: true,
+    showFFZ: true,
+    show7TV: true
+  };
+  const values = Object.assign({}, DEFAULTS, CFG);
+
+  const fields = ["channel", "usernameFontSize", "messageFontSize", "boxSpacing",
+    "accentColor", "textColor", "showBadges", "showBTTV", "showFFZ", "show7TV"];
+
+  const el = id => document.getElementById(id);
+
+  // --- Messages de test pour l'aperçu ---
+  const SAMPLE_MESSAGES = [
+    { user: "Kashiro", color: "#FF6EC7", badges: ["👑"], text: "Voici un aperçu du chat en direct !", onlyEmotes: false },
+    { user: "Modo_Aya", color: "#00C2FF", badges: ["⚔️"], text: "Salut tout le monde, bon stream !", onlyEmotes: false },
+    { user: "ViewerLambda", color: "#8B8FB3", badges: [], text: "gg easy", onlyEmotes: false },
+    { user: "SubDeLannee", color: "#FFD166", badges: ["⭐"], text: "C'est vraiment un beau gameplay, continue comme ça tu gères trop bien cette phase du jeu !", onlyEmotes: false },
+    { user: "HypeTrain", color: "#FF4D4D", badges: [], text: "🔥 🔥 🔥", onlyEmotes: true },
+    { user: "NouveauViewer", color: "#6BFFB0", badges: [], text: "c'est quoi le jeu ?", onlyEmotes: false }
+  ];
+
+  function escapePreviewHtml(s) {
+    const d = document.createElement("div");
+    d.innerText = s;
+    return d.innerHTML;
+  }
+
+  function renderSampleMessages() {
+    const log = el("preview-log");
+    log.innerHTML = "";
+    SAMPLE_MESSAGES.forEach(m => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "wrapper";
+      const badgesHtml = el("showBadges").checked
+        ? m.badges.map(b => `<span class="badge-emoji">${b}</span>`).join("")
+        : "";
+      const messageHtml = m.onlyEmotes
+        ? m.text.split(" ").map(e => `<span class="preview-emote">${e}</span>`).join(" ")
+        : escapePreviewHtml(m.text);
+      wrapper.innerHTML = `
+        <div class="meta">
+          <div class="username_box">
+            <span class="badges">${badgesHtml}</span>
+            <span class="name" style="color:${m.color}">${escapePreviewHtml(m.user)}</span>
+          </div>
+          <div class="triangle"></div>
+        </div>
+        <div class="fancy_message_box">
+          <div class="message_box${m.onlyEmotes ? " only-emotes" : ""}">
+            <span class="message">${messageHtml}</span>
+          </div>
+        </div>
+      `;
+      log.appendChild(wrapper);
+    });
+  }
+
+  function loadIntoForm() {
+    fields.forEach(f => {
+      const input = el(f);
+      if (input.type === "checkbox") input.checked = !!values[f];
+      else input.value = values[f];
+    });
+  }
+
+  function applyPreview() {
+    const root = document.documentElement.style;
+    root.setProperty("--username-font-size", el("usernameFontSize").value + "pt");
+    root.setProperty("--message-font-size", el("messageFontSize").value + "pt");
+    root.setProperty("--box-spacing", el("boxSpacing").value + "px");
+    root.setProperty("--accent-color", el("accentColor").value);
+    root.setProperty("--text-color", el("textColor").value);
+  }
+
+  function collect() {
+    const out = {};
+    fields.forEach(f => {
+      const input = el(f);
+      if (input.type === "checkbox") out[f] = input.checked;
+      else if (input.type === "number") out[f] = Number(input.value);
+      else out[f] = input.value;
+    });
+    return out;
+  }
+
+  function generateConfigJs(cfg) {
+    return `// ===================== CONFIGURATION DU CHATBOX =====================
+// Modifie ces valeurs directement ici, ou utilise config-panel.html
+// pour une interface visuelle avec aperçu en direct.
+// N'oublie pas de garder ce fichier dans le même dossier que le chatbox.
+// =======================================================================
+
+window.CHATBOX_CONFIG = {
+  channel: "${cfg.channel}",
+
+  usernameFontSize: ${cfg.usernameFontSize},
+  messageFontSize: ${cfg.messageFontSize},
+  boxSpacing: ${cfg.boxSpacing},
+
+  accentColor: "${cfg.accentColor}",
+  textColor: "${cfg.textColor}",
+
+  showBadges: ${cfg.showBadges},
+  showBTTV: ${cfg.showBTTV},
+  showFFZ: ${cfg.showFFZ},
+  show7TV: ${cfg.show7TV}
+};
+`;
+  }
+
+  loadIntoForm();
+  applyPreview();
+  renderSampleMessages();
+
+  fields.forEach(f => el(f).addEventListener("input", applyPreview));
+  el("showBadges").addEventListener("input", renderSampleMessages);
+
+  el("save").addEventListener("click", () => {
+    const cfg = collect();
+    const content = generateConfigJs(cfg);
+    const blob = new Blob([content], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "config.js";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    el("status").textContent = "✓ Téléchargé — déplace le fichier dans le dossier du chatbox.";
+    setTimeout(() => el("status").textContent = "", 4000);
+  });
+})();
+</script>
+</body>
+</html>

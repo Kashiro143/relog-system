@@ -2,7 +2,7 @@ import { watchArchives, saveArchive, deleteArchive, dispatchLive, resetLive } fr
 import type { Archive, Skin } from "./data";
 import { armConfirmDelete, flashError } from "../../ui/dialogs";
 
-export function renderTerminalPanel(container: HTMLElement, actorId: string) {
+export function renderTerminalPanel(container: HTMLElement) {
   let archives: Record<string, Archive> = {};
   let queue: string[] = [];
   let editingId: string | null = null;
@@ -13,16 +13,25 @@ export function renderTerminalPanel(container: HTMLElement, actorId: string) {
 
   container.innerHTML = `
     <div class="panel" style="margin-bottom:16px;">
+      <h4>Message rapide</h4>
+      <textarea id="term-quick-text" placeholder="Message à injecter en direct..." rows="3" style="width:100%; margin-bottom:8px; font-family:var(--font-mono); background:#000; color:var(--text-main); border:1px solid var(--border); border-radius:4px; padding:8px;"></textarea>
+      <label style="font-size:0.8rem; display:flex; align-items:center; gap:6px; margin-bottom:10px;">
+        <input type="checkbox" id="term-quick-raid" /> Mode RAID (glitch)
+      </label>
+      <button id="term-quick-send" style="width:100%;">Envoyer en live</button>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
       <h4>Archives (lore)</h4>
       <div id="term-archive-list"></div>
       <button id="term-new-archive" style="width:100%; margin-top:10px; border-style:dashed;">+ Nouveau protocole</button>
     </div>
 
     <div class="panel" style="margin-bottom:16px;">
-      <h4>Séquenceur</h4>
+      <h4>Séquenceur — boucle "Starting soon"</h4>
       <div id="term-queue" style="min-height:40px; border:1px solid var(--border); border-radius:4px; padding:8px; margin-bottom:10px;"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button id="term-play">▶ Lancer la séquence</button>
+        <button id="term-play">▶ Lancer</button>
         <button id="term-stop">■ Stop</button>
         <button id="term-loop">Boucle : OFF</button>
         <select id="term-skin" style="margin-left:auto;">
@@ -45,6 +54,8 @@ export function renderTerminalPanel(container: HTMLElement, actorId: string) {
     </div>
   `;
 
+  const quickText = container.querySelector<HTMLTextAreaElement>("#term-quick-text")!;
+  const quickRaid = container.querySelector<HTMLInputElement>("#term-quick-raid")!;
   const archiveList = container.querySelector<HTMLElement>("#term-archive-list")!;
   const queueList = container.querySelector<HTMLElement>("#term-queue")!;
   const playBtn = container.querySelector<HTMLButtonElement>("#term-play")!;
@@ -55,6 +66,11 @@ export function renderTerminalPanel(container: HTMLElement, actorId: string) {
   const edLabel = container.querySelector<HTMLInputElement>("#term-ed-label")!;
   const edText = container.querySelector<HTMLTextAreaElement>("#term-ed-text")!;
   const edRaid = container.querySelector<HTMLInputElement>("#term-ed-raid")!;
+
+  container.querySelector("#term-quick-send")!.addEventListener("click", () => {
+    if (!quickText.value.trim()) return;
+    dispatchLive({ type: "TYPE", text: quickText.value, raid: quickRaid.checked, skin });
+  });
 
   function renderArchives() {
     archiveList.innerHTML = Object.values(archives)
@@ -112,7 +128,7 @@ export function renderTerminalPanel(container: HTMLElement, actorId: string) {
   function fireArchive(id: string) {
     const archive = archives[id];
     if (!archive) return;
-    dispatchLive(actorId, { type: "TYPE", text: archive.text, raid: archive.raid, skin });
+    dispatchLive({ type: "TYPE", text: archive.text, raid: archive.raid, skin });
   }
 
   function openEditor(id: string | null) {
@@ -147,7 +163,7 @@ export function renderTerminalPanel(container: HTMLElement, actorId: string) {
     loopBtn.textContent = `Boucle : ${isLooping ? "ON" : "OFF"}`;
   });
   skinSelect.addEventListener("change", () => (skin = skinSelect.value as Skin));
-  container.querySelector("#term-reset")!.addEventListener("click", () => resetLive(actorId));
+  container.querySelector("#term-reset")!.addEventListener("click", () => resetLive());
 
   async function runSequence() {
     if (isRunning || queue.length === 0) return;
@@ -159,7 +175,7 @@ export function renderTerminalPanel(container: HTMLElement, actorId: string) {
         if (myRun !== runToken) return;
         const archive = archives[id];
         if (!archive) continue;
-        dispatchLive(actorId, { type: "TYPE", text: archive.text, raid: archive.raid, skin });
+        dispatchLive({ type: "TYPE", text: archive.text, raid: archive.raid, skin });
         const waitMs = archive.text.length * 40 + 2500;
         await new Promise((r) => setTimeout(r, waitMs));
       }

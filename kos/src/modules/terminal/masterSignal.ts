@@ -3,7 +3,7 @@ import type { Skin } from "./data";
 import { renderArchiveLibrary } from "./archiveLibrary";
 
 /** Panneau Master : Kashiro envoie un signal (texte libre ou archive) vers l'overlay d'un acteur choisi. */
-export function renderMasterSignalPanel(container: HTMLElement, actorId: string) {
+export function renderMasterSignalPanel(container: HTMLElement, actorId: string): () => void {
   let skin: Skin = "classic";
 
   container.innerHTML = `
@@ -40,7 +40,7 @@ export function renderMasterSignalPanel(container: HTMLElement, actorId: string)
 
   container.querySelector("#ms-reset")!.addEventListener("click", () => resetLive(actorId));
 
-  renderArchiveLibrary(container.querySelector("#ms-archives")!, {
+  return renderArchiveLibrary(container.querySelector("#ms-archives")!, {
     editable: false,
     onFire: (archive) => dispatchLive(actorId, { type: "TYPE", text: archive.text, raid: archive.raid, skin }),
   });

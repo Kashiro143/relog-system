@@ -2,10 +2,12 @@ import "../theme.css";
 import { watchActors, watchModes, setActorMode } from "../registry";
 import type { Actor, ModuleDefinition } from "../types";
 import { renderMasterSignalPanel } from "../modules/terminal/masterSignal";
+import { renderPokemmoMasterPanel } from "../modules/pokemmo/masterPanel";
 
 let selectedActorId: string | null = null;
 let actors: Record<string, Actor> = {};
 let modes: Record<string, ModuleDefinition> = {};
+let panelCleanups: Array<() => void> = [];
 
 const actorList = document.getElementById("actor-list")!;
 const targetDisplay = document.getElementById("target-display")!;
@@ -44,6 +46,9 @@ function renderControls() {
   if (!selectedActorId) return;
   const actor = actors[selectedActorId];
 
+  panelCleanups.forEach((fn) => fn());
+  panelCleanups = [];
+
   const modeButtons = Object.values(modes)
     .map(
       (m) =>
@@ -56,6 +61,7 @@ function renderControls() {
       <h4>Univers actuel</h4>
       ${modeButtons || '<p style="color:var(--text-dim)">Aucun mode forgé — utilisez la Forge.</p>'}
     </div>
+    <div id="mode-panel" style="margin-bottom:16px;"></div>
     <div id="signal-panel"></div>`;
 
   controlZone.querySelectorAll<HTMLButtonElement>(".mode-btn").forEach((btn) => {
@@ -65,7 +71,11 @@ function renderControls() {
     });
   });
 
-  renderMasterSignalPanel(document.getElementById("signal-panel")!, selectedActorId);
+  if (actor?.currentMode === "pokemmo") {
+    panelCleanups.push(renderPokemmoMasterPanel(document.getElementById("mode-panel")!, selectedActorId));
+  }
+
+  panelCleanups.push(renderMasterSignalPanel(document.getElementById("signal-panel")!, selectedActorId));
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {

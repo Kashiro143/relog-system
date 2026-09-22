@@ -14,6 +14,8 @@ export default defineConfig({
         player: resolve(root, "player.html"),
         kashiroTerminal: resolve(root, "kashiro-terminal.html"),
         terminalOverlay: resolve(root, "modules/terminal/overlay.html"),
+        pokemmoOverlay: resolve(root, "modules/pokemmo/overlay.html"),
+        pokemmoPlayer: resolve(root, "modules/pokemmo/player.html"),
       },
     },
   },

@@ -12,7 +12,7 @@ export interface ArchiveLibraryOptions {
 }
 
 /** Bibliothèque d'archives (lore) — contenu partagé, potentiellement affiché sur n'importe quel acteur. */
-export function renderArchiveLibrary(container: HTMLElement, options: ArchiveLibraryOptions = {}) {
+export function renderArchiveLibrary(container: HTMLElement, options: ArchiveLibraryOptions = {}): () => void {
   let archives: Record<string, Archive> = {};
   let editingId: string | null = null;
 
@@ -102,7 +102,7 @@ export function renderArchiveLibrary(container: HTMLElement, options: ArchiveLib
     });
   }
 
-  watchArchives((data) => {
+  return watchArchives((data) => {
     archives = data;
     renderList();
   });

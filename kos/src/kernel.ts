@@ -33,7 +33,8 @@ export class Kernel {
   }
 
   private announcePresence() {
-    const statusRef = ref(db, `users/${this.actorId}/status`);
+    // Master lit la présence dans registry/users, pas dans users/.
+    const statusRef = ref(db, `registry/users/${this.actorId}/status`);
     set(statusRef, "online");
     onDisconnect(statusRef).set("offline");
   }

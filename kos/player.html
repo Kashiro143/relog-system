@@ -11,10 +11,13 @@
       #status-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: var(--border); z-index: 100; }
       #status-indicator { width: 0%; height: 100%; background: var(--accent-neon); transition: width 0.5s, background 0.3s; }
       #status-indicator.online { background: var(--status-online); width: 100%; }
+      #panic-btn { position: fixed; bottom: 16px; right: 16px; z-index: 100; background: var(--status-offline); color: white; border: none; font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
+      #panic-btn.muted { background: var(--status-online); color: black; }
     </style>
   </head>
   <body data-role="player">
     <div id="status-bar"><div id="status-indicator"></div></div>
+    <button id="panic-btn">🛑 Couper mon overlay Re:log</button>
     <iframe id="module-container" src="about:blank"></iframe>
     <script type="module" src="/src/pages/player.ts"></script>
   </body>

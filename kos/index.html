@@ -7,25 +7,42 @@
     <title>K-OS</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <style>
-      body { display: flex; align-items: center; justify-content: center; height: 100vh; }
-      .hub { text-align: center; }
-      .hub h1 { color: var(--accent-neon); letter-spacing: 4px; font-weight: 300; }
-      .hub nav { display: flex; gap: 12px; margin-top: 20px; }
-      .hub a { text-decoration: none; }
+      body { padding: 48px 16px; }
+      .hub { max-width: 760px; margin: 0 auto; }
+      .hub h1 { color: var(--accent-neon); letter-spacing: 4px; font-weight: 300; margin: 0; }
+      .hub .sub { color: var(--text-dim); margin: 6px 0 32px; }
+      .spaces { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+      .space p.desc { color: var(--text-dim); font-size: 0.85rem; margin: -6px 0 16px; }
+      .space nav { display: flex; flex-direction: column; gap: 8px; }
+      .space a { text-decoration: none; }
+      .soon { color: var(--text-dim); font-size: 0.8rem; margin-top: 14px; }
     </style>
   </head>
   <body>
     <div class="hub">
       <h1>K-OS</h1>
-      <p style="color: var(--text-dim)">Re:log system console</p>
-      <nav>
-        <a class="btn" href="/forge.html">Forge (admin)</a>
-        <a class="btn" href="/master.html">Master (contrôle)</a>
-      </nav>
-      <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 24px;">Outils solo</p>
-      <nav>
-        <a class="btn" href="/kashiro-terminal.html">Kashiro Terminal</a>
-      </nav>
+      <p class="sub">Re:log system console</p>
+
+      <div class="spaces">
+        <section class="panel space">
+          <h3>Mon stream</h3>
+          <p class="desc">Modules, widgets et effets pour le stream de Kashiro uniquement.</p>
+          <nav>
+            <a class="btn" href="/kashiro-terminal.html">Terminal — starting soon</a>
+          </nav>
+          <p class="soon">À venir : pont Twitch, jauge de puissance, avatar.</p>
+        </section>
+
+        <section class="panel space">
+          <h3>Re:log</h3>
+          <p class="desc">Outils partagés avec le collectif, un overlay unique par membre.</p>
+          <nav>
+            <a class="btn" href="/master.html">Contrôle du groupe</a>
+            <a class="btn" href="/forge.html">Membres &amp; modes</a>
+          </nav>
+          <p class="soon">À venir : GIF, tableau blanc, watch-party.</p>
+        </section>
+      </div>
     </div>
   </body>
 </html>

@@ -2,16 +2,20 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>K-OS // OVERLAY</title>
+    <title>K-OS // OVERLAY_RELOG</title>
     <style>
       html, body { margin: 0; padding: 0; width: 1920px; height: 1080px; background: transparent; overflow: hidden; }
-      #module-container { width: 100%; height: 100%; border: none; background: transparent; }
-      #debug { position: absolute; bottom: 8px; right: 10px; color: rgba(255,255,255,0.2); font-size: 10px; font-family: monospace; }
+      #module-container { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: transparent; }
+      /* Tout ce que les autres membres envoient : coupé d'un coup par le bouton panique. */
+      #collective-layer { position: absolute; inset: 0; pointer-events: none; }
+      #signal-layer { position: absolute; inset: 0; }
     </style>
   </head>
   <body data-role="overlay">
     <iframe id="module-container" src="about:blank" allowtransparency="true"></iframe>
-    <div id="debug">K-OS_OVERLAY_ACTIVE</div>
+    <div id="collective-layer">
+      <div id="signal-layer"></div>
+    </div>
     <script type="module" src="/src/pages/overlay.ts"></script>
   </body>
 </html>

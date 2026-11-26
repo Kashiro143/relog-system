@@ -1,6 +1,7 @@
 import { dispatchLive, resetLive } from "./data";
 import type { Skin } from "./data";
 import { renderArchiveLibrary } from "./archiveLibrary";
+import { watchMuted } from "../../relog/overlayControl";
 
 /** Panneau Master : Kashiro envoie un signal (texte libre ou archive) vers l'overlay d'un acteur choisi. */
 export function renderMasterSignalPanel(container: HTMLElement, actorId: string): () => void {
@@ -9,6 +10,7 @@ export function renderMasterSignalPanel(container: HTMLElement, actorId: string)
   container.innerHTML = `
     <div class="panel" style="margin-bottom:16px;">
       <h4>Signal K-OS — vers l'overlay de ${actorId}</h4>
+      <p id="ms-muted" style="display:none; color:var(--status-offline); font-size:0.8rem; margin:0 0 10px;">🛑 ${actorId} a coupé son overlay Re:log : rien ne s'affichera chez lui.</p>
       <textarea id="ms-text" placeholder="Message à injecter en direct..." rows="3" style="width:100%; margin-bottom:8px; font-family:var(--font-mono); background:#000; color:var(--text-main); border:1px solid var(--border); border-radius:4px; padding:8px;"></textarea>
       <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
         <label style="font-size:0.8rem; display:flex; align-items:center; gap:6px;">
@@ -23,7 +25,7 @@ export function renderMasterSignalPanel(container: HTMLElement, actorId: string)
       <button id="ms-reset" style="width:100%; color:var(--status-offline); border-color:var(--status-offline);">Effacer l'écran</button>
       <hr style="border-color:var(--border); margin:14px 0;" />
       <div id="ms-archives"></div>
-      <p style="color:var(--text-dim); font-size:0.7rem; margin-top:10px;">Overlay à ajouter dans OBS : ${window.location.origin}/modules/terminal/overlay.html?u=${actorId}</p>
+      <p style="color:var(--text-dim); font-size:0.7rem; margin-top:10px;">S'affiche sur l'overlay Re:log de ${actorId} (lien "Overlay" dans la barre latérale).</p>
     </div>
   `;
 
@@ -40,8 +42,18 @@ export function renderMasterSignalPanel(container: HTMLElement, actorId: string)
 
   container.querySelector("#ms-reset")!.addEventListener("click", () => resetLive(actorId));
 
-  return renderArchiveLibrary(container.querySelector("#ms-archives")!, {
+  const mutedNotice = container.querySelector<HTMLElement>("#ms-muted")!;
+  const stopMuted = watchMuted(actorId, (muted) => {
+    mutedNotice.style.display = muted ? "block" : "none";
+  });
+
+  const stopArchives = renderArchiveLibrary(container.querySelector("#ms-archives")!, {
     editable: false,
     onFire: (archive) => dispatchLive(actorId, { type: "TYPE", text: archive.text, raid: archive.raid, skin }),
   });
+
+  return () => {
+    stopMuted();
+    stopArchives();
+  };
 }

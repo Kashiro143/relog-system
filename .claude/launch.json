@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "kos", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "kos-pages-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["kos/node_modules/vite/bin/vite.js", "preview", "kos", "--base", "/relog-system/", "--port", "4173", "--strictPort"],
+      "port": 4173
     }
   ]
 }

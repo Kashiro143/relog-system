@@ -3,6 +3,7 @@ import { watchActors, watchModes, setActorMode } from "../registry";
 import type { Actor, ModuleDefinition } from "../types";
 import { renderMasterSignalPanel } from "../modules/terminal/masterSignal";
 import { renderPokemmoMasterPanel } from "../modules/pokemmo/masterPanel";
+import { appUrl } from "../appUrl";
 
 let selectedActorId: string | null = null;
 let actors: Record<string, Actor> = {};
@@ -36,9 +37,9 @@ function selectActor(id: string) {
   renderActorList();
   renderControls();
 
-  const base = `${window.location.origin}`;
-  (document.getElementById("link-overlay") as HTMLInputElement).value = `${base}/overlay.html?u=${id}`;
-  (document.getElementById("link-player") as HTMLInputElement).value = `${base}/player.html?u=${id}`;
+  const u = encodeURIComponent(id);
+  (document.getElementById("link-overlay") as HTMLInputElement).value = `${appUrl("overlay.html")}?u=${u}`;
+  (document.getElementById("link-player") as HTMLInputElement).value = `${appUrl("player.html")}?u=${u}`;
   linkHub.style.display = "block";
 }
 

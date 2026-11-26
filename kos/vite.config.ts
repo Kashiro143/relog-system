@@ -4,6 +4,8 @@ import { resolve } from "path";
 const root = import.meta.dirname;
 
 export default defineConfig({
+  // GitHub Pages sert un site de projet sous /<repo>/ : le workflow de déploiement fixe KOS_BASE.
+  base: process.env.KOS_BASE ?? "/",
   build: {
     rollupOptions: {
       input: {

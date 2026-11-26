@@ -1,5 +1,6 @@
 import { ref, onValue, set, onDisconnect } from "firebase/database";
 import { db } from "./firebase";
+import { appUrl } from "./appUrl";
 import type { Role } from "./types";
 
 export interface KernelOptions {
@@ -54,7 +55,7 @@ export class Kernel {
       (snapshot) => {
         const mode = snapshot.val();
         const url = this.role === "overlay" ? mode?.overlayUrl : mode?.playerUrl;
-        if (url) this.container.src = `${url}?u=${this.actorId}`;
+        if (url) this.container.src = `${appUrl(url)}?u=${encodeURIComponent(this.actorId)}`;
       },
       { onlyOnce: true },
     );

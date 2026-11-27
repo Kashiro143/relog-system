@@ -344,8 +344,8 @@ const STYLE = `
 /* La pause masque aussi l'interface que YouTube affiche sur une vidéo arrêtée. */
 .kos-video.paused .pause, .kos-video.ended .pause, .kos-video.resuming .pause { display: grid; }
 /* À la reprise, YouTube réaffiche son titre quelques secondes : on le cache sous un fondu. */
-.kos-video.resuming .pause { animation: kosv-fade 3s ease-in forwards; }
-@keyframes kosv-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.kos-video.resuming .pause { animation: kosv-fade 5.5s ease-in forwards; }
+@keyframes kosv-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 .kos-video.plain .pause { color: #fff; text-shadow: none; font-size: calc(var(--k, 1) * 26px); }
 .kos-video .boot { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: #000; color: var(--c, #00d4ff); font: 700 calc(var(--k, 1) * 22px) "JetBrains Mono", Consolas, monospace; letter-spacing: calc(var(--k, 1) * 4px); transition: opacity 0.5s; }
 .kos-video .boot span { animation: kosv-blink 0.8s steps(2) infinite; }
@@ -563,7 +563,7 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
       resumeTimer = setTimeout(() => {
         f.classList.remove("resuming");
         pause.textContent = "❚❚ EN PAUSE";
-      }, 3000);
+      }, 5500);
     } else if (paused) {
       clearTimeout(resumeTimer);
       frame.classList.remove("resuming");

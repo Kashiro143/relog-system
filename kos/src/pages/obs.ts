@@ -18,6 +18,7 @@ const PORT_KEY = "kos.obs.port";
 
 const u = encodeURIComponent(me);
 const docks = [
+  { name: "K-OS Installer", url: appUrl("obs.html") },
   { name: "K-OS Player", url: appUrl(`player.html?u=${u}`) },
   { name: "K-OS GIF", url: appUrl("relog.html") },
   { name: "K-OS Salons", url: appUrl("room.html") },

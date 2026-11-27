@@ -47,7 +47,11 @@ export class ObsClient {
       }
       this.ws = ws;
       let obsVersion = "";
-      ws.onerror = () => fail("Connexion refusée. Vérifie qu'OBS est ouvert, que le serveur WebSocket est activé et le port.");
+      ws.onerror = () =>
+        fail(
+          "Connexion refusée. Vérifie qu'OBS est ouvert, que le serveur WebSocket est activé et le port. " +
+            "Si ton navigateur demande l'accès aux « appareils du réseau local », autorise-le ; sinon ouvre cette page en dock dans OBS.",
+        );
       ws.onclose = (e) => {
         if (!settled) {
           if (e.code === 4009) fail("Mot de passe incorrect.", 4009);

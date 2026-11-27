@@ -2,7 +2,7 @@ import "../theme.css";
 import { requireMember, blockPage } from "../auth";
 import { appUrl } from "../appUrl";
 import { ObsClient } from "../obs/obsClient";
-import { PART_INFO, WATCH_SCENE, applyPlan, defaultPlan, readState, retargetUrl, type ObsState, type Part, type Plan } from "../obs/installer";
+import { PART_INFO, WATCH_SCENE, applyPlan, defaultPlan, readState, retargetUrl, sceneThumbnail, type ObsState, type Part, type Plan, type SceneState } from "../obs/installer";
 
 const member = await requireMember();
 const me = member.actorId;
@@ -124,64 +124,113 @@ async function refresh() {
   renderScenes();
 }
 
+// Miniatures des scènes (capture OBS), gardées entre deux rendus.
+const thumbs = new Map<string, string>();
+let thumbRun = 0;
+
+async function loadThumbs(names: string[]) {
+  const run = ++thumbRun;
+  for (const name of names) {
+    if (run !== thumbRun || !obs.connected) return;
+    if (!thumbs.has(name)) {
+      const url = await sceneThumbnail(obs, name);
+      if (!url) continue;
+      thumbs.set(name, url);
+    }
+    document.querySelectorAll<HTMLImageElement>(`.scard img[data-scene="${CSS.escape(name)}"]`).forEach((img) => {
+      img.src = thumbs.get(name)!;
+      img.closest(".thumb")?.classList.add("loaded");
+    });
+  }
+}
+
+const PART_ICON: Record<Part, string> = { relog: "💬", module: "🎮" };
+
+function sceneCard(s: SceneState): HTMLElement {
+  const card = document.createElement("article");
+  card.className = `scard${s.kind === "nested" ? " nested" : ""}`;
+  card.innerHTML = `
+    <div class="thumb">
+      <img alt="" />
+      <span class="noimg">Aperçu…</span>
+      <div class="ov-relog"><span>RE:LOG</span></div>
+      <div class="ov-module"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="badge"></span>
+    </div>
+    <div class="meta"><b class="nm"></b><small class="st"></small></div>
+    <div class="tgs"></div>`;
+  const img = card.querySelector("img")!;
+  img.dataset.scene = s.name;
+  if (thumbs.has(s.name)) {
+    img.src = thumbs.get(s.name)!;
+    card.querySelector(".thumb")!.classList.add("loaded");
+  }
+  card.querySelector(".nm")!.textContent = s.name;
+  (card.querySelector(".nm") as HTMLElement).title = s.name;
+  const tgs = card.querySelector(".tgs")!;
+  for (const part of ["relog", "module"] as Part[]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `tg ${part}`;
+    b.dataset.part = part;
+    b.innerHTML = `<span aria-hidden="true">${PART_ICON[part]}</span> ${PART_INFO[part].label}`;
+    b.title = PART_INFO[part].hint;
+    b.addEventListener("click", () => {
+      plan[s.name][part] = !plan[s.name][part];
+      updateCard(card, s);
+      summarize();
+    });
+    tgs.appendChild(b);
+  }
+  updateCard(card, s);
+  return card;
+}
+
+function updateCard(card: HTMLElement, s: SceneState) {
+  const want = plan[s.name];
+  let adds = 0, rems = 0;
+  for (const part of ["relog", "module"] as Part[]) {
+    const on = !!want?.[part], has = !!s.items[part];
+    card.classList.toggle(`with-${part}`, on);
+    const b = card.querySelector<HTMLButtonElement>(`.tg.${part}`)!;
+    b.classList.toggle("on", on);
+    b.classList.toggle("chg", on !== has);
+    b.setAttribute("aria-pressed", String(on));
+    b.setAttribute("aria-label", `${PART_INFO[part].label} dans ${s.name} : ${on ? "affiché" : "non affiché"}${on !== has ? " (changement en attente)" : ""}`);
+    if (on && !has) adds++;
+    if (!on && has) rems++;
+  }
+  card.classList.toggle("pending", adds + rems > 0);
+  const badge = card.querySelector<HTMLElement>(".badge")!;
+  badge.textContent = adds && rems ? "± à modifier" : adds ? "+ à ajouter" : rems ? "− à retirer" : "";
+  badge.className = `badge${adds ? " add" : ""}${rems && !adds ? " rem" : ""}`;
+  const st = card.querySelector<HTMLElement>(".st")!;
+  const srcs = [s.items.relog?.sourceName, s.items.module?.sourceName].filter(Boolean);
+  st.textContent = s.kind === "nested" ? "sous-scène" : srcs.length ? `dans OBS : ${srcs.join(", ")}` : "sans K-OS";
+  st.title = st.textContent;
+}
+
 function renderScenes() {
   if (!state) return;
-  const body = $("scene-rows");
-  body.replaceChildren();
+  const grid = $("scene-grid");
+  grid.replaceChildren();
   const main = state.scenes.filter((s) => s.kind === "main");
   const nested = state.scenes.filter((s) => s.kind === "nested");
-  // Une sous-scène déjà équipée ou modifiée reste visible pour qu'on la voie.
-  const touched = (s: (typeof nested)[number]) => !!s.items.relog || !!s.items.module || !!plan[s.name]?.relog || !!plan[s.name]?.module;
-  const rowsToShow = [...main, ...nested.filter((s) => showNested || touched(s))];
+  // Une sous-scène déjà équipée reste visible pour qu'on la voie.
+  const touched = (s: SceneState) => !!s.items.relog || !!s.items.module || !!plan[s.name]?.relog || !!plan[s.name]?.module;
+  const shown = [...main, ...nested.filter((s) => showNested || touched(s))];
+  for (const s of shown) grid.appendChild(sceneCard(s));
   const hiddenNested = nested.filter((s) => !showNested && !touched(s)).length;
-  for (const s of rowsToShow) {
-    const tr = document.createElement("tr");
-    if (s.kind === "nested") tr.className = "nested";
-    const name = document.createElement("td");
-    name.textContent = s.name;
-    tr.appendChild(name);
-    for (const part of ["relog", "module"] as Part[]) {
-      const td = document.createElement("td");
-      td.className = "c";
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = !!plan[s.name]?.[part];
-      cb.setAttribute("aria-label", `${PART_INFO[part].label} dans ${s.name}`);
-      cb.addEventListener("change", () => {
-        plan[s.name][part] = cb.checked;
-        renderScenes();
-      });
-      td.appendChild(cb);
-      const has = s.items[part];
-      const changed = cb.checked !== !!has;
-      const note = document.createElement("span");
-      note.className = `src${changed ? " chg" : ""}`;
-      note.textContent = changed ? (cb.checked ? "+ à ajouter" : "− à retirer") : has ? has.sourceName : "";
-      if (has) note.title = `Source : ${has.sourceName}`;
-      td.appendChild(note);
-      tr.appendChild(td);
-    }
-    body.appendChild(tr);
-  }
-  if (nested.length) {
-    const tr = document.createElement("tr");
-    tr.className = "toggle";
-    const td = document.createElement("td");
-    td.colSpan = 3;
-    const btn = document.createElement("button");
-    btn.className = "btn-sm";
-    btn.textContent = showNested ? "▴ Masquer les sous-scènes" : `▾ ${hiddenNested} sous-scène${hiddenNested > 1 ? "s" : ""} masquée${hiddenNested > 1 ? "s" : ""}`;
-    btn.title = "Scènes utilisées comme source dans d'autres scènes (Chanson, Alerte…) : le K-OS n'y est généralement pas utile.";
-    btn.addEventListener("click", () => {
-      showNested = !showNested;
-      renderScenes();
-    });
-    td.appendChild(btn);
-    tr.appendChild(td);
-    if (showNested || hiddenNested) body.appendChild(tr);
-  }
+  const toggle = $<HTMLButtonElement>("nested-toggle");
+  toggle.hidden = !nested.length || (!showNested && !hiddenNested);
+  toggle.textContent = showNested ? "▴ Masquer les sous-scènes" : `▾ Voir ${hiddenNested} sous-scène${hiddenNested > 1 ? "s" : ""}`;
   summarize();
+  loadThumbs(shown.map((s) => s.name));
 }
+$("nested-toggle").addEventListener("click", () => {
+  showNested = !showNested;
+  renderScenes();
+});
 
 function summarize() {
   if (!state) return;
@@ -211,7 +260,10 @@ function setAll(part: Part, value: boolean) {
 }
 $("all-relog").addEventListener("click", () => setAll("relog", true));
 $("none-relog").addEventListener("click", () => setAll("relog", false));
-$("obs-refresh").addEventListener("click", () => refresh());
+$("obs-refresh").addEventListener("click", () => {
+  thumbs.clear();
+  refresh();
+});
 
 $("obs-apply").addEventListener("click", async () => {
   if (!state) return;

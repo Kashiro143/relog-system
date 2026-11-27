@@ -115,6 +115,21 @@ export async function readState(obs: ObsClient, actorId: string): Promise<ObsSta
   return { canvas: { w: video.baseWidth, h: video.baseHeight }, scenes: out, inputs: found };
 }
 
+/** Miniature d'une scène (data URL JPEG), ou null si OBS refuse. */
+export async function sceneThumbnail(obs: ObsClient, sceneName: string, width = 384): Promise<string | null> {
+  try {
+    const { imageData } = await obs.request<{ imageData: string }>("GetSourceScreenshot", {
+      sourceName: sceneName,
+      imageFormat: "jpg",
+      imageWidth: width,
+      imageCompressionQuality: 70,
+    });
+    return typeof imageData === "string" && imageData.startsWith("data:image/") ? imageData : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Plan proposé par défaut, pour que rien ne change à l'écran : Re:log et
  * module là où ils sont déjà visibles (un ancien Re:log sans ?module=0 affiche

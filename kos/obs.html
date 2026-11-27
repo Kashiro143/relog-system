@@ -15,17 +15,46 @@
       ol.how b { color: var(--text-main); }
       .conn { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 8px; align-items: end; }
       @media (max-width: 560px) { .conn { grid-template-columns: 1fr; } }
-      .scene-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-      .scene-table th { text-align: left; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--border); }
-      .scene-table th.c, .scene-table td.c { text-align: center; width: 110px; }
-      .scene-table td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
-      .scene-table tr.new td:first-child::after { content: "nouvelle"; margin-left: 8px; font-size: 10px; padding: 2px 6px; border-radius: 999px; background: var(--accent-low); color: var(--accent-neon); }
-      .scene-table input { width: 18px; height: 18px; accent-color: var(--accent-neon); }
-      .scene-table .src { display: block; font-size: 10px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; margin: 2px auto 0; }
-      .scene-table .chg { color: var(--accent-neon); }
-      .scene-table tr.nested td:first-child { color: var(--text-dim); padding-left: 20px; }
-      .scene-table tr.nested td:first-child::before { content: "↳ "; color: var(--text-faint); }
-      .scene-table tr.toggle td { border-bottom: 0; padding-top: 10px; }
+      .scene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+      .scard { --m: #b77cff; display: grid; background: var(--panel-bg-alt); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .2s, box-shadow .2s, transform .2s; }
+      .scard.with-relog { border-color: color-mix(in srgb, var(--accent-neon) 60%, var(--border)); box-shadow: 0 0 14px color-mix(in srgb, var(--accent-neon) 18%, transparent); }
+      .scard.pending { border-style: dashed; border-color: #ffcc33; box-shadow: 0 0 14px rgba(255, 204, 51, 0.15); }
+      .scard .thumb { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: linear-gradient(135deg, #0d1117, #05070a); }
+      .scard .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s; }
+      .scard .thumb.loaded img { opacity: 1; }
+      .scard .thumb .noimg { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; color: var(--text-faint); letter-spacing: 1px; }
+      .scard .thumb.loaded .noimg { display: none; }
+      .scard:not(.with-relog):not(.with-module) .thumb img { filter: saturate(0.5) brightness(0.75); }
+      .ov-relog { position: absolute; inset: 5px; border: 2px solid var(--accent-neon); border-radius: 4px; box-shadow: 0 0 10px var(--accent-neon), inset 0 0 12px color-mix(in srgb, var(--accent-neon) 35%, transparent); opacity: 0; transform: scale(1.04); transition: opacity .25s, transform .25s; pointer-events: none; }
+      .ov-relog span { position: absolute; left: 6px; top: 5px; padding: 1px 6px; border-radius: 3px; background: var(--accent-neon); color: #000; font: 800 9px var(--font-mono); letter-spacing: 1.5px; }
+      .with-relog .ov-relog { opacity: 1; transform: none; }
+      .ov-module { position: absolute; left: 4%; top: 22%; height: 52%; width: 17%; display: grid; grid-template-rows: repeat(6, 1fr); gap: 5%; opacity: 0; transform: translateX(-8px); transition: opacity .25s, transform .25s; pointer-events: none; }
+      .ov-module i { background: rgba(10, 11, 13, 0.85); border-left: 3px solid var(--m); border-radius: 0 3px 3px 0; box-shadow: 0 0 6px color-mix(in srgb, var(--m) 50%, transparent); }
+      .with-module .ov-module { opacity: 1; transform: none; }
+      .scard .badge { position: absolute; right: 6px; top: 6px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; background: #ffcc33; color: #000; }
+      .scard .badge:empty { display: none; }
+      .scard .badge.rem { background: var(--status-offline); color: #fff; }
+      .scard .meta { display: grid; padding: 8px 10px 2px; min-width: 0; }
+      .scard .meta b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .scard .meta small { font-size: 11px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .scard.nested .meta b { color: var(--text-dim); }
+      .scard .tgs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 10px 10px; }
+      .tg { padding: 6px 4px; font-size: 12px; font-weight: 600; border-radius: 6px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); position: relative; }
+      .tg:hover { color: var(--text-main); border-color: var(--text-dim); }
+      .tg.relog.on { background: var(--accent-low); border-color: var(--accent-neon); color: var(--accent-neon); }
+      .tg.module.on { background: color-mix(in srgb, var(--m) 18%, transparent); border-color: var(--m); color: var(--m); }
+      .scard .tg.module { --m: #b77cff; }
+      .tg.chg::after { content: ""; position: absolute; right: 5px; top: 5px; width: 6px; height: 6px; border-radius: 50%; background: #ffcc33; }
+      @media (max-width: 520px) {
+        .scene-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .scard .meta { padding: 6px 8px 0; }
+        .scard .meta small { display: none; }
+        .scard .tgs { grid-template-columns: 1fr; gap: 4px; padding: 6px 8px 8px; }
+        .tg { padding: 5px 4px; font-size: 11px; }
+      }
+      .grid-foot { display: flex; justify-content: center; margin-top: 12px; }
+      .applybar { position: sticky; bottom: 0; z-index: 5; margin: 16px -16px -16px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: color-mix(in srgb, var(--panel-bg) 94%, transparent); backdrop-filter: blur(6px); border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+      .applybar .feedback { flex-basis: 100%; margin: 0; }
       .legend { display: grid; gap: 4px; font-size: 12px; color: var(--text-dim); margin: 0 0 12px; }
       .legend b { color: var(--text-main); }
       .summary { font-size: 13px; color: var(--text-dim); min-height: 18px; }
@@ -72,16 +101,14 @@
             <button class="btn-sm" id="none-relog">Re:log nulle part</button>
             <button class="btn-sm push" id="obs-refresh" title="Relire l'état d'OBS">↻ Relire OBS</button>
           </div>
-          <table class="scene-table">
-            <thead><tr><th>Scène</th><th class="c">Re:log</th><th class="c">Module</th></tr></thead>
-            <tbody id="scene-rows"></tbody>
-          </table>
+          <div class="scene-grid" id="scene-grid" aria-label="Scènes OBS"></div>
+          <div class="grid-foot"><button class="btn-sm" id="nested-toggle" hidden title="Scènes utilisées comme source dans d'autres scènes (Chanson, Alerte…) : le K-OS n'y est généralement pas utile."></button></div>
           <label class="check" id="watch-scene-opt" style="margin-top:12px"><input type="checkbox" id="make-watch" checked /> Créer une scène « K-OS · Watch-party » (Re:log seul, pour regarder des vidéos ensemble)</label>
-          <div class="btn-row" style="margin-top:14px">
+          <div class="applybar">
             <button class="primary" id="obs-apply">Appliquer dans OBS</button>
             <span class="summary" id="plan-summary"></span>
+            <div class="feedback" id="apply-feedback" aria-live="polite"></div>
           </div>
-          <div class="feedback" id="apply-feedback" aria-live="polite"></div>
         </section>
 
         <section class="panel step" id="step-docks">

@@ -188,8 +188,9 @@ function twitchVodDriver(slot: HTMLElement, onReady: () => void, onError: (msg: 
           if (ready) return;
           ready = true;
           const pl = p!;
-          pl.seek(playing ? start + (Date.now() - bootAt) / 1000 : start);
+          pl.setVideo(`v${id}`, playing ? start + (Date.now() - bootAt) / 1000 : start);
           if (playing) pl.play();
+          else pl.pause();
           onReady();
         });
       })

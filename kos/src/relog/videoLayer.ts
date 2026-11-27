@@ -156,19 +156,26 @@ function twitchVodDriver(slot: HTMLElement, onReady: () => void, onError: (msg: 
     loadTwitch()
       .then(() => {
         const T = window.Twitch!.Player;
+        // Pas d'autoplay ni de "time" à la création : dans OBS, Twitch reste alors
+        // bloqué sur son bouton lecture. On démarre nous-mêmes une fois prêt
+        // (seek + play), comme pour un changement de vidéo, ce qui fonctionne.
         p = new T(slot.id, {
           width: "100%",
           height: "100%",
           video: `v${id}`,
-          time: `${Math.floor(start / 3600)}h${Math.floor((start % 3600) / 60)}m${Math.floor(start % 60)}s`,
           parent: [location.hostname],
-          autoplay: playing,
+          autoplay: false,
           muted: true,
           controls: false,
         });
         loaded = id;
+        const bootAt = Date.now();
         p.addEventListener(T.READY, () => {
+          if (ready) return;
           ready = true;
+          const pl = p!;
+          pl.seek(playing ? start + (Date.now() - bootAt) / 1000 : start);
+          if (playing) pl.play();
           onReady();
         });
       })

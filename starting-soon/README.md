@@ -1,0 +1,41 @@
+# Kashiro — Starting soon
+
+Outil autonome, indépendant du K-OS : pas d'internet, pas de compte, pas d'installation.
+
+| Fichier | Rôle |
+|---|---|
+| `display.html` | L'écran affiché en stream. Il tourne tout seul en boucle. |
+| `controller.html` | Le panneau : messages de la boucle, style, message en direct, aperçu. |
+
+## Adresses en ligne
+
+Le même outil est publié sur GitHub Pages, à utiliser à la place des fichiers locaux :
+
+- Écran : `https://kashiro143.github.io/relog-system/starting-soon/display.html`
+- Panneau : `https://kashiro143.github.io/relog-system/starting-soon/controller.html`
+
+Utilisez soit les deux adresses en ligne, soit les deux fichiers locaux : l'écran et le
+panneau ne se parlent que s'ils viennent du même endroit.
+
+## Installation dans OBS (fichiers locaux)
+
+1. **L'écran** : Sources > + > *Navigateur*, cochez **Fichier local**, choisissez `display.html`.
+   Largeur 1920, hauteur 1080.
+2. **Le panneau** : menu *Docks* > *Docks de navigateur personnalisés*, nom `Starting soon`,
+   URL : `file:///E:/Dev/Twitch/starting-soon/controller.html`.
+
+Le panneau doit être ouvert **dans OBS** (dock) : c'est ce qui lui permet de partager
+ses réglages avec l'écran. Ouvert dans Chrome, il ne pilotera pas OBS.
+
+Sans panneau, l'écran joue les messages par défaut écrits en haut de `display.html`.
+
+## Réglages par l'adresse (facultatif)
+
+Dans la source OBS, décochez *Fichier local* et utilisez l'URL du fichier avec des paramètres :
+`file:///E:/Dev/Twitch/starting-soon/display.html?skin=techwear&hold=8&bg=%23000`
+
+- `skin` : `classic` (terminal cyan) ou `techwear` (HUD blanc)
+- `hold` : secondes d'affichage d'un message une fois tapé
+- `bg` : couleur de fond (`%23000` = noir), transparent par défaut
+
+Ces paramètres passent avant les réglages du panneau.

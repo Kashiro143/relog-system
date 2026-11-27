@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>KASHIRO // STARTING SOON</title>
+<!--
+  Écran "starting soon" de Kashiro — outil autonome, indépendant du K-OS.
+  OBS : Source navigateur > Fichier local > ce fichier, 1920 x 1080.
+  Tourne tout seul en boucle. Le panneau controller.html (dock OBS) permet
+  de modifier les messages et d'en envoyer un en direct.
+-->
+<style>
+  html, body { margin: 0; padding: 0; width: 1920px; height: 1080px; background: transparent; overflow: hidden; }
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  /* --- CLASSIC : terminal cyan phosphore --- */
+  #root.skin-classic {
+    font-family: "Courier New", monospace; font-size: 32px; font-weight: bold;
+    color: #00ffff; text-shadow: 0 0 12px #00ffff; transition: filter 0.3s ease;
+  }
+  #root.skin-classic .box { position: absolute; top: 60px; left: 60px; width: 85%; line-height: 1.5; white-space: pre-wrap; }
+  #root.skin-classic .meta { display: none; }
+  #root.skin-classic .text::after { content: "█"; animation: blink 1s steps(1) infinite; margin-left: 4px; }
+  #root.skin-classic.raid { animation: shake 0.2s infinite; filter: hue-rotate(110deg) contrast(180%) brightness(1.3); }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes shake {
+    0% { transform: translate(0, 0); } 25% { transform: translate(-4px, 4px); }
+    50% { transform: translate(4px, -4px); } 75% { transform: translate(-4px, -4px); } 100% { transform: translate(4px, 4px); }
+  }
+
+  /* --- TECHWEAR : HUD minimal blanc --- */
+  #root.skin-techwear {
+    font-family: "Inter", "Segoe UI", sans-serif; color: #fff;
+    display: flex; align-items: flex-end; padding: 80px; box-sizing: border-box;
+    transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #root.skin-techwear .box { border-left: 2px solid #fff; padding-left: 26px; opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  #root.skin-techwear .box.visible { opacity: 1; transform: translateY(0); }
+  #root.skin-techwear .meta { font-size: 12px; letter-spacing: 5px; color: rgba(255,255,255,0.4); margin-bottom: 10px; font-weight: 700; }
+  #root.skin-techwear .text { font-size: 44px; font-weight: 200; letter-spacing: 1px; text-transform: uppercase; white-space: pre-wrap; }
+  #root.skin-techwear.raid { background: #ff003c; }
+  #root.skin-techwear.raid .box { border-left-color: #000; }
+  #root.skin-techwear.raid .text, #root.skin-techwear.raid .meta { color: #000; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="root" class="skin-classic">
+  <div class="box"><div class="meta">DATA_STREAM // NOMINAL</div><div class="text"></div></div>
+</div>
+
+<script>
+  // Réglages par défaut. Le panneau controller.html les remplace (ils sont
+  // alors gardés par OBS). Sans panneau, ce sont eux qui tournent.
+  const DEFAULTS = {
+    skin: "classic",          // "classic" ou "techwear"
+    holdSeconds: 6,           // temps d'affichage d'un message une fois tapé
+    background: "transparent",
+    running: true,            // la boucle tourne
+    messages: [
+      { text: "[SYSTEM] Initializing consciousness upload...\n[INFO] Power Core: STABLE\n[READY] Kashiro_Virus injected.", raid: false },
+      { text: "[IDLE] Consciousness_Core operating at 143Hz. [STABLE]\n[LOG] Syncing with Saitho_Archives...\n[SYS] Cleaning_Residual_Data... DONE.", raid: false },
+      { text: "[SCANNING] Target Archive: DIMENSION_Z\n[INFO] Mechanics: HARDCORE\n[STATUS] Stabilizing reality...", raid: false },
+    ],
+  };
+
+  const CONFIG_KEY = "kashiro_ss_config";
+  const CMD_KEY = "kashiro_ss_cmd";
+  const CHAR_DELAY = 35, LINE_DELAY = 400, GAP = 800, RAID_MS = 12000;
+
+  const root = document.getElementById("root");
+  const box = root.querySelector(".box");
+  const meta = root.querySelector(".meta");
+  const textEl = root.querySelector(".text");
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Paramètres d'adresse prioritaires : ?skin=techwear&hold=8&bg=%23000
+  const params = new URLSearchParams(location.search);
+
+  function loadConfig() {
+    let cfg = { ...DEFAULTS };
+    try { cfg = { ...cfg, ...JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}") }; } catch {}
+    if (params.get("skin") === "classic" || params.get("skin") === "techwear") cfg.skin = params.get("skin");
+    if (Number(params.get("hold")) > 0) cfg.holdSeconds = Number(params.get("hold"));
+    if (params.get("bg")) cfg.background = params.get("bg");
+    cfg.messages = (cfg.messages || []).filter((m) => m && typeof m.text === "string" && m.text.trim());
+    return cfg;
+  }
+
+  let cfg = loadConfig();
+  let token = 0;        // chaque nouvelle action annule la précédente
+  let raidTimer;
+
+  function applyLook() {
+    document.body.style.background = cfg.background || "transparent";
+    root.classList.remove("skin-classic", "skin-techwear");
+    root.classList.add("skin-" + cfg.skin);
+  }
+
+  function clearScreen() {
+    clearTimeout(raidTimer);
+    textEl.textContent = "";
+    root.classList.remove("raid");
+    box.classList.remove("visible");
+  }
+
+  async function type(message, my) {
+    clearScreen();
+    if (message.raid) {
+      root.classList.add("raid");
+      meta.textContent = "CRITICAL_ALERT // INTRUSION";
+      raidTimer = setTimeout(() => root.classList.remove("raid"), RAID_MS);
+    } else {
+      meta.textContent = "DATA_STREAM // NOMINAL";
+    }
+    await sleep(150);
+    if (my !== token) return false;
+    box.classList.add("visible");
+    for (const line of message.text.split("\n")) {
+      if (textEl.textContent) textEl.textContent += "\n";
+      for (const ch of line) {
+        if (my !== token) return false;
+        textEl.textContent += ch;
+        await sleep(CHAR_DELAY);
+      }
+      await sleep(LINE_DELAY);
+    }
+    return my === token;
+  }
+
+  async function hold(my) {
+    await sleep(cfg.holdSeconds * 1000);
+    return my === token;
+  }
+
+  async function loop(my) {
+    while (my === token && cfg.running && cfg.messages.length) {
+      for (const message of cfg.messages) {
+        if (!(await type(message, my)) || !(await hold(my))) return;
+        clearScreen();
+        await sleep(GAP);
+        if (my !== token) return;
+      }
+    }
+  }
+
+  function restart() {
+    const my = ++token;
+    applyLook();
+    clearScreen();
+    if (cfg.running) loop(my);
+  }
+
+  // Message envoyé en direct : il interrompt la boucle, puis elle reprend.
+  async function sendNow(message) {
+    const my = ++token;
+    applyLook();
+    if (!(await type(message, my)) || !(await hold(my))) return;
+    if (cfg.running) { clearScreen(); await sleep(GAP); if (my === token) loop(my); }
+  }
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === CONFIG_KEY) { cfg = loadConfig(); restart(); }
+    if (e.key === CMD_KEY && e.newValue) {
+      try {
+        const cmd = JSON.parse(e.newValue);
+        if (cmd.type === "TYPE" && cmd.text) sendNow({ text: cmd.text, raid: !!cmd.raid });
+        if (cmd.type === "CLEAR") restart(); // efface le message en direct, la boucle reprend
+      } catch {}
+    }
+  });
+
+  restart();
+</script>
+</body>
+</html>

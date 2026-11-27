@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KASHIRO // STARTING SOON — PANNEAU</title>
+<!--
+  Panneau du starting soon. À ouvrir DANS OBS (Docks > Docks de navigateur
+  personnalisés) : c'est ainsi qu'il partage ses réglages avec display.html.
+-->
+<style>
+  :root { --bg: #0a0b0d; --panel: #141619; --alt: #1e2126; --neon: #00d4ff; --text: #e0e6ed; --dim: #8a949c; --border: #23272e; --red: #ff4757; --green: #00ff88; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text); font: 14px "Segoe UI", system-ui, sans-serif; }
+  h1 { margin: 0 0 14px; font-size: 15px; letter-spacing: 3px; font-weight: 400; color: var(--neon); }
+  h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--neon); }
+  section { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  label { display: block; font-size: 11px; text-transform: uppercase; color: var(--dim); margin: 0 0 4px; }
+  input, select, textarea { width: 100%; background: #000; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font: inherit; }
+  textarea { font-family: "Courier New", monospace; font-size: 13px; resize: vertical; min-height: 64px; }
+  button { background: var(--alt); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font: 600 13px inherit; cursor: pointer; }
+  button:hover { border-color: var(--neon); color: var(--neon); }
+  button.primary { background: var(--neon); color: #000; border-color: var(--neon); }
+  button.danger { color: var(--red); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .check { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--text); text-transform: none; margin: 0; }
+  .check input { width: auto; }
+  .msg { border-left: 3px solid var(--neon); background: var(--alt); border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+  .msg .row { margin-top: 6px; justify-content: space-between; }
+  .status { font-size: 12px; color: var(--dim); }
+  .status b { color: var(--green); }
+  .status b.off { color: var(--red); }
+  #preview-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; border: 1px solid var(--border);
+    background: repeating-conic-gradient(#1a1d21 0 25%, #121417 0 50%) 0 0 / 24px 24px; }
+  #preview { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  @media (max-width: 520px) { .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>KASHIRO // STARTING SOON</h1>
+
+  <section>
+    <h2>Aperçu</h2>
+    <div id="preview-wrap"><iframe id="preview" src="display.html" title="Aperçu"></iframe></div>
+    <div class="row" style="margin-top:10px; justify-content:space-between;">
+      <span class="status" id="status"></span>
+      <div class="row">
+        <button class="primary" id="start">▶ Lancer la boucle</button>
+        <button class="danger" id="stop">■ Arrêter</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Message en direct</h2>
+    <textarea id="live-text" placeholder="[ALERTE] Stream dans 2 minutes..."></textarea>
+    <div class="row" style="margin-top:8px; justify-content:space-between;">
+      <label class="check"><input type="checkbox" id="live-raid" /> Effet glitch (raid)</label>
+      <div class="row">
+        <button id="clear">Effacer le message</button>
+        <button class="primary" id="send">Envoyer maintenant</button>
+      </div>
+    </div>
+    <p class="status" style="margin:8px 0 0;">Le message interrompt la boucle, puis elle reprend.</p>
+  </section>
+
+  <section>
+    <h2>Réglages</h2>
+    <div class="grid3">
+      <div><label for="skin">Style</label>
+        <select id="skin"><option value="classic">Classic (terminal cyan)</option><option value="techwear">Techwear (HUD blanc)</option></select></div>
+      <div><label for="hold">Affichage (secondes)</label><input id="hold" type="number" min="1" max="120" /></div>
+      <div><label for="bg">Fond</label>
+        <select id="bg"><option value="transparent">Transparent</option><option value="#000000">Noir</option></select></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Messages de la boucle</h2>
+    <div id="messages"></div>
+    <div class="row" style="justify-content:space-between;">
+      <button id="add">+ Ajouter un message</button>
+      <button class="primary" id="save">Enregistrer</button>
+    </div>
+    <p class="status" style="margin:8px 0 0;" id="save-status"></p>
+  </section>
+
+<script>
+  const CONFIG_KEY = "kashiro_ss_config";
+  const CMD_KEY = "kashiro_ss_cmd";
+  const DEFAULTS = {
+    skin: "classic", holdSeconds: 6, background: "transparent", running: true,
+    messages: [
+      { text: "[SYSTEM] Initializing consciousness upload...\n[INFO] Power Core: STABLE\n[READY] Kashiro_Virus injected.", raid: false },
+      { text: "[IDLE] Consciousness_Core operating at 143Hz. [STABLE]\n[LOG] Syncing with Saitho_Archives...\n[SYS] Cleaning_Residual_Data... DONE.", raid: false },
+      { text: "[SCANNING] Target Archive: DIMENSION_Z\n[INFO] Mechanics: HARDCORE\n[STATUS] Stabilizing reality...", raid: false },
+    ],
+  };
+
+  const $ = (id) => document.getElementById(id);
+  let cfg = load();
+
+  function load() {
+    try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}") }; }
+    catch { return { ...DEFAULTS }; }
+  }
+
+  function persist() {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    renderStatus();
+  }
+
+  function renderStatus() {
+    $("status").innerHTML = cfg.running
+      ? `Boucle : <b>EN COURS</b> · ${cfg.messages.length} message(s)`
+      : `Boucle : <b class="off">ARRÊTÉE</b>`;
+  }
+
+  function renderSettings() {
+    $("skin").value = cfg.skin;
+    $("hold").value = cfg.holdSeconds;
+    $("bg").value = cfg.background === "transparent" ? "transparent" : "#000000";
+  }
+
+  function renderMessages() {
+    const list = $("messages");
+    list.innerHTML = "";
+    cfg.messages.forEach((m, i) => {
+      const el = document.createElement("div");
+      el.className = "msg";
+      el.innerHTML = `
+        <textarea rows="3"></textarea>
+        <div class="row">
+          <label class="check"><input type="checkbox" /> Effet glitch</label>
+          <div class="row">
+            <button data-act="up" title="Monter">↑</button>
+            <button data-act="down" title="Descendre">↓</button>
+            <button data-act="del" class="danger">Supprimer</button>
+          </div>
+        </div>`;
+      el.querySelector("textarea").value = m.text;
+      el.querySelector("input").checked = !!m.raid;
+      el.querySelector("textarea").addEventListener("input", (e) => { m.text = e.target.value; dirty(); });
+      el.querySelector("input").addEventListener("change", (e) => { m.raid = e.target.checked; dirty(); });
+      el.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+        const act = b.dataset.act;
+        if (act === "del") cfg.messages.splice(i, 1);
+        if (act === "up" && i > 0) [cfg.messages[i - 1], cfg.messages[i]] = [cfg.messages[i], cfg.messages[i - 1]];
+        if (act === "down" && i < cfg.messages.length - 1) [cfg.messages[i + 1], cfg.messages[i]] = [cfg.messages[i], cfg.messages[i + 1]];
+        renderMessages(); dirty();
+      }));
+      list.appendChild(el);
+    });
+  }
+
+  function dirty() { $("save-status").textContent = "Modifications non enregistrées."; }
+
+  // Réglages : appliqués tout de suite.
+  $("skin").addEventListener("change", (e) => { cfg.skin = e.target.value; persist(); });
+  $("bg").addEventListener("change", (e) => { cfg.background = e.target.value; persist(); });
+  $("hold").addEventListener("change", (e) => {
+    const v = Math.min(120, Math.max(1, Number(e.target.value) || DEFAULTS.holdSeconds));
+    e.target.value = v; cfg.holdSeconds = v; persist();
+  });
+
+  $("add").addEventListener("click", () => { cfg.messages.push({ text: "[SYSTEM] ", raid: false }); renderMessages(); dirty(); });
+  $("save").addEventListener("click", () => {
+    cfg.messages = cfg.messages.filter((m) => m.text.trim());
+    renderMessages(); persist();
+    $("save-status").textContent = "Enregistré — la boucle repart du début.";
+  });
+
+  $("start").addEventListener("click", () => { cfg.running = true; persist(); });
+  $("stop").addEventListener("click", () => { cfg.running = false; persist(); });
+
+  function command(cmd) { localStorage.setItem(CMD_KEY, JSON.stringify({ ...cmd, t: Date.now() })); }
+  $("send").addEventListener("click", () => {
+    const text = $("live-text").value.trim();
+    if (text) command({ type: "TYPE", text, raid: $("live-raid").checked });
+  });
+  $("clear").addEventListener("click", () => command({ type: "CLEAR" }));
+
+  // Aperçu à l'échelle de la largeur disponible.
+  const wrap = $("preview-wrap"), frame = $("preview");
+  new ResizeObserver(() => { frame.style.transform = `scale(${wrap.clientWidth / 1920})`; }).observe(wrap);
+
+  renderSettings(); renderMessages(); renderStatus();
+</script>
+</body>
+</html>

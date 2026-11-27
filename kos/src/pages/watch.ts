@@ -1,4 +1,5 @@
 import "../theme.css";
+import { appUrl } from "../appUrl";
 import { ref, onValue } from "firebase/database";
 import { db } from "../firebase";
 import { requireMember, blockPage } from "../auth";
@@ -101,6 +102,7 @@ function renderRoomBar() {
   joinBtn.hidden = !list.length || select.value === myRoom;
   joinBtn.textContent = myRoom ? "Changer de salon" : "Rejoindre";
   $("room-leave").hidden = !myRoom;
+  $("room-share").hidden = !myRoom;
   $("room-link").textContent = list.length ? "Gérer les salons →" : "Crée un salon dans 🎨 Salons →";
 
   const people = $("people");
@@ -125,6 +127,18 @@ $("room-join").addEventListener("click", async () => {
   joinRoom(me, id).catch(() => detect("err", "Impossible de rejoindre ce salon.", false));
 });
 $("room-leave").addEventListener("click", () => leaveRoom(me, myRoom).catch(() => {}));
+$("room-share").addEventListener("click", async () => {
+  if (!myRoom) return;
+  const btn = $<HTMLButtonElement>("room-share");
+  const url = appUrl(`voir.html?salon=${encodeURIComponent(myRoom)}`);
+  try {
+    await navigator.clipboard.writeText(url);
+    btn.textContent = "Lien copié ✓";
+  } catch {
+    prompt("Copie ce lien et envoie-le à tes amis :", url);
+  }
+  setTimeout(() => (btn.textContent = "🔗 Lien spectateur"), 2000);
+});
 
 function enterRoom(room: string | null) {
   stopVideoWatch?.();

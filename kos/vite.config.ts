@@ -15,6 +15,7 @@ export default defineConfig({
         overlay: resolve(root, "overlay.html"),
         module: resolve(root, "module.html"),
         obs: resolve(root, "obs.html"),
+        voir: resolve(root, "voir.html"),
         player: resolve(root, "player.html"),
         login: resolve(root, "login.html"),
         relog: resolve(root, "relog.html"),

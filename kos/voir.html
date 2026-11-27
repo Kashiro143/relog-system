@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K-OS // WATCH-PARTY</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="/src/theme.css" />
+    <style>
+      body { min-height: 100vh; background: radial-gradient(ellipse at 50% -10%, #12202c, #05070a 60%); }
+      .wrap { max-width: 1400px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+      .top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+      .brand { font: 700 13px var(--font-mono); letter-spacing: 3px; color: var(--accent-neon); }
+      .brand .live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff3355; box-shadow: 0 0 8px #ff3355; margin-right: 8px; vertical-align: middle; animation: blink 1.2s steps(2) infinite; }
+      @keyframes blink { 50% { opacity: 0.2; } }
+      .room { font-size: 18px; font-weight: 700; }
+      .people { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+      .person { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 50%, var(--border)); font-size: 12px; }
+      .person .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+      .person.off { opacity: 0.5; }
+      .person.off .dot { box-shadow: none; }
+
+      .stage { position: relative; aspect-ratio: 16 / 9; width: 100%; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); }
+      .stage:fullscreen { border-radius: 0; border: 0; }
+      #video-root, #room-root { position: absolute; inset: 0; }
+      #room-root { pointer-events: none; }
+      .wait { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; color: var(--text-dim);
+        background: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 5% 8.9%, linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 5% 8.9%; }
+      .wait b { display: block; font: 700 clamp(14px, 2.4vw, 26px) var(--font-mono); letter-spacing: 4px; color: var(--accent-neon); margin-bottom: 10px; }
+      .wait b::before { content: "▌ "; animation: blink 0.8s steps(2) infinite; }
+      .sound-cta { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); z-index: 10; padding: 12px 22px; font-size: 15px; font-weight: 700; border-radius: 999px; box-shadow: 0 0 24px color-mix(in srgb, var(--accent-neon) 50%, transparent); }
+
+      .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+      .bar .title { flex: 1 1 260px; min-width: 0; }
+      .bar .title b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .bar .title small { color: var(--text-dim); font-size: 12px; }
+      .vol { display: flex; align-items: center; gap: 8px; }
+      .vol input { width: 130px; }
+      .note { font-size: 12px; color: var(--text-faint); text-align: center; margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <span class="brand"><span class="live"></span>K-OS // WATCH-PARTY</span>
+        <span class="room" id="room-name"></span>
+        <div class="people" id="people" aria-label="Streamers dans le salon"></div>
+      </header>
+
+      <div class="stage" id="stage">
+        <div id="video-root"></div>
+        <div id="room-root"></div>
+        <div class="wait" id="wait"><div><b>EN ATTENTE DU SIGNAL</b><span id="wait-text">Connexion au salon…</span></div></div>
+        <button class="primary sound-cta" id="sound-cta" hidden>🔊 Activer le son</button>
+      </div>
+
+      <div class="bar">
+        <div class="title"><b id="v-title"></b><small id="v-sub"></small></div>
+        <div class="vol">
+          <button class="btn-sm" id="mute" title="Couper / remettre le son">🔇</button>
+          <input type="range" id="volume" min="0" max="100" step="5" value="80" aria-label="Volume" />
+        </div>
+        <button class="btn-sm" id="fs" title="Plein écran">⛶ Plein écran</button>
+      </div>
+      <p class="note">La lecture est pilotée par les streamers du salon : tu regardes en même temps qu'eux.</p>
+    </div>
+    <script type="module" src="/src/pages/voir.ts"></script>
+  </body>
+</html>

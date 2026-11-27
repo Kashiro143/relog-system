@@ -17,6 +17,7 @@ export default defineConfig({
         login: resolve(root, "login.html"),
         relog: resolve(root, "relog.html"),
         room: resolve(root, "room.html"),
+        watch: resolve(root, "watch.html"),
         kashiroTerminal: resolve(root, "kashiro-terminal.html"),
         terminalOverlay: resolve(root, "modules/terminal/overlay.html"),
         pokemmoOverlay: resolve(root, "modules/pokemmo/overlay.html"),

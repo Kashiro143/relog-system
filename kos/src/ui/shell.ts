@@ -57,7 +57,8 @@ export function mountShell(member: Member, onSignOut: () => void) {
   const me = member.actorId;
   const reLog: NavItem[] = [
     { page: "relog", href: "relog.html", icon: "💬", label: "GIF", title: "Envoyer des GIF aux autres streams" },
-    { page: "room", href: "room.html", icon: "🎨", label: "Salons", title: "Dessiner, écrire, poser des GIF, watch-party" },
+    { page: "room", href: "room.html", icon: "🎨", label: "Salons", title: "Dessiner, écrire, poser des GIF ensemble" },
+    { page: "watch", href: "watch.html", icon: "📺", label: "Watch-party", title: "Regarder une vidéo ensemble, sur le stream de tout le salon" },
   ];
   if (me) reLog.push({ page: "player", href: `player.html?u=${encodeURIComponent(me)}`, icon: "🎮", label: "Mon player", title: "Ton module actuel et ton bouton panique" });
   const owner: NavItem[] = member.isOwner

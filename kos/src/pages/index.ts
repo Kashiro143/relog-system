@@ -30,7 +30,8 @@ if (me) {
 }
 links.push(
   { title: "Console GIF", hint: "Dock — envoyer des GIF", url: appUrl("relog.html") },
-  { title: "Salons", hint: "Dock ou navigateur — dessin, watch-party", url: appUrl("room.html") },
+  { title: "Salons", hint: "Dock ou navigateur — dessin, texte, GIF", url: appUrl("room.html") },
+  { title: "Watch-party", hint: "Dock ou navigateur — lancer et piloter une vidéo", url: appUrl("watch.html") },
 );
 if (member.isOwner) {
   links.push(

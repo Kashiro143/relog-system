@@ -128,35 +128,10 @@
           <div class="gif-panel" id="gif-panel" hidden><div id="picker"></div></div>
 
           <section class="watch" id="watch">
-            <h4>📺 Watch-party</h4>
-            <form class="watch-form" id="video-form">
-              <input id="video-url" placeholder="Lien YouTube (vidéo, short ou live)" autocomplete="off" />
-              <button type="submit" class="go">Lancer pour le salon</button>
-            </form>
-            <div id="video-controls" hidden>
-              <div class="watch-title"><span id="video-title"></span><small id="video-by"></small></div>
-              <div class="watch-row">
-                <button id="v-back" title="Reculer de 10 s">⏪ 10 s</button>
-                <button id="v-play" class="go">⏸ Pause</button>
-                <button id="v-fwd" title="Avancer de 10 s">10 s ⏩</button>
-                <span class="time" id="v-time">0:00 / 0:00</span>
-                <button id="v-stop" class="stop">■ Arrêter</button>
-              </div>
-              <input type="range" id="v-seek" min="0" max="100" step="1" value="0" />
-              <div class="watch-row">
-                <span class="lbl">Position</span>
-                <div class="mini-grid" id="v-cells"></div>
-                <span class="lbl">Taille</span>
-                <div class="group" id="v-sizes"><button data-w="0">S</button><button data-w="1">M</button><button data-w="2">L</button></div>
-              </div>
-            </div>
             <div class="watch-row">
-              <span class="lbl">Volume sur mon stream</span>
-              <input type="range" id="v-volume" min="0" max="100" step="5" />
-              <output id="v-volume-out"></output>
-              <label class="lbl"><input type="checkbox" id="v-listen" /> Écouter ici</label>
+              <span class="watch-title"><span>📺 Watch-party</span><small id="video-status">Aucune vidéo dans ce salon.</small></span>
+              <a class="btn go" href="watch.html" style="margin-left:auto; text-decoration:none;">Ouvrir la watch-party →</a>
             </div>
-            <p class="hint">Tout le salon voit la même chose au même moment ; chacun règle son propre volume. Dans OBS, coche « Contrôler l'audio via OBS » sur la source overlay Re:log pour gérer le son dans ton mixeur.<br />⚠ Diffuser une vidéo qui ne t'appartient pas peut valoir une réclamation DMCA sur Twitch.</p>
           </section>
         </div>
       </main>

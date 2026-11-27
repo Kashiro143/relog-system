@@ -12,11 +12,11 @@ import type { Unsubscribe } from "firebase/database";
 export function mountRoomDisplay(root: HTMLElement, videoRoot: HTMLElement, actorId: string): { setMuted(muted: boolean): void } {
   const view = createRoomView(root);
   const video = createVideoLayer(videoRoot);
-  let colors: Record<string, string> = {};
+  let actors: Record<string, { color?: string; name?: string }> = {};
   let stops: Unsubscribe[] = [];
 
-  watchActors((actors) => {
-    colors = Object.fromEntries(Object.values(actors).filter((a) => a?.id).map((a) => [a.id, a.color]));
+  watchActors((data) => {
+    actors = data;
   });
   watchVolume(actorId, (v) => video.setVolume(v));
 
@@ -30,7 +30,7 @@ export function mountRoomDisplay(root: HTMLElement, videoRoot: HTMLElement, acto
       watchStrokes(room, (m) => view.setStrokes(m)),
       watchItems(room, (m) => view.setItems(m)),
       watchCursors(room, (c) => view.setCursors(c)),
-      watchVideo(room, (v) => video.setVideo(v, v ? colors[v.by] : undefined)),
+      watchVideo(room, (v) => video.setVideo(v, v ? { color: actors[v.by]?.color, name: actors[v.by]?.name || v.by } : undefined)),
     ];
   });
 

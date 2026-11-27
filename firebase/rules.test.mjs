@@ -340,6 +340,24 @@ describe("watch-party", () => {
     await assertFails(anon().ref("relog/roomContent/salon/video").set(video()));
   });
 
+  test("accepte Twitch (VOD, clip) et les fichiers vidéo des hébergeurs connus, avec un style", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    const ref = db.ref("relog/roomContent/salon/video");
+    await assertSucceeds(ref.set(video({ source: "youtube", style: "kos", width: 1920 })));
+    await assertSucceeds(ref.set(video({ source: "twitch-vod", videoId: "2213456789", style: "plain" })));
+    await assertSucceeds(ref.set(video({ source: "twitch-clip", videoId: "FunnyClipSlug-abc123" })));
+    await assertSucceeds(ref.set(video({ source: "file", videoId: "https://video.twimg.com/ext_tw_video/1/pu/vid/1280x720/a.mp4?tag=12" })));
+    await assertSucceeds(ref.update({ style: "kos" }));
+    await assertFails(ref.update({ style: "neon" }));
+    await assertFails(ref.set(video({ source: "file", videoId: "https://evil.example/a.mp4" })));
+    await assertFails(ref.set(video({ source: "twitch-vod", videoId: "dQw4w9WgXcQ" })));
+    await assertFails(ref.set(video({ source: "vimeo" })));
+    // Changer la source sans changer l'identifiant ne passe pas.
+    await assertSucceeds(ref.set(video()));
+    await assertFails(ref.update({ source: "file" }));
+  });
+
   test("chacun règle le volume de la vidéo sur son propre stream", async () => {
     const db = as("r", REINDAL);
     await assertSucceeds(db.ref("relog/overlay/Reindal/videoVolume").set(35));

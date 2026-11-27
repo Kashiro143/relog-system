@@ -82,7 +82,9 @@
     if (params.get("skin") === "classic" || params.get("skin") === "techwear") cfg.skin = params.get("skin");
     if (Number(params.get("hold")) > 0) cfg.holdSeconds = Number(params.get("hold"));
     if (params.get("bg")) cfg.background = params.get("bg");
-    cfg.messages = (cfg.messages || []).filter((m) => m && typeof m.text === "string" && m.text.trim());
+    // Le panneau écrit "playlist" (messages actifs, dans l'ordre) ; "messages" = ancien format / défauts.
+    const list = Array.isArray(cfg.playlist) ? cfg.playlist : cfg.messages;
+    cfg.messages = (list || []).filter((m) => m && typeof m.text === "string" && m.text.trim() && m.active !== false);
     return cfg;
   }
 
@@ -143,6 +145,10 @@
     }
   }
 
+  function signature(c) {
+    return JSON.stringify([c.running, c.messages.map((m) => [m.text, !!m.raid])]);
+  }
+
   function restart() {
     const my = ++token;
     applyLook();
@@ -159,7 +165,14 @@
   }
 
   window.addEventListener("storage", (e) => {
-    if (e.key === CONFIG_KEY) { cfg = loadConfig(); restart(); }
+    if (e.key === CONFIG_KEY) {
+      // Style, fond ou durée : appliqués sans couper le message en cours.
+      // La boucle ne repart du début que si les messages ou l'état marche/arrêt changent.
+      const before = signature(cfg);
+      cfg = loadConfig();
+      applyLook();
+      if (signature(cfg) !== before) restart();
+    }
     if (e.key === CMD_KEY && e.newValue) {
       try {
         const cmd = JSON.parse(e.newValue);

@@ -5,7 +5,19 @@ Outil autonome, indépendant du K-OS : pas d'internet, pas de compte, pas d'inst
 | Fichier | Rôle |
 |---|---|
 | `display.html` | L'écran affiché en stream. Il tourne tout seul en boucle. |
-| `controller.html` | Le panneau : messages de la boucle, style, message en direct, aperçu. |
+| `controller.html` | Le panneau : aperçu, style, message en direct, bibliothèque de messages. |
+
+## Bibliothèque de messages
+
+Les messages sont rangés par **groupes** : Général, un jeu, un invité, un événement…
+Chaque groupe et chaque message a un interrupteur : **seuls les messages activés tournent
+dans la boucle**. Pour un stream League avec Saitho, activez Général + League + Saitho.
+
+- `▶` affiche un message tout de suite sans toucher à la boucle.
+- Cliquez sur un message pour le modifier (Ctrl + Entrée pour enregistrer, Échap pour annuler).
+- `✎` sur un groupe : le renommer, changer son type, le déplacer ou le supprimer.
+- **Sauvegarde** (en bas) : copiez le texte pour garder vos messages, collez-le pour les restaurer.
+  Les messages sont stockés par OBS : vider le cache d'OBS les efface.
 
 ## Adresses en ligne
 

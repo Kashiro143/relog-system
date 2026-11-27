@@ -307,3 +307,43 @@ describe("salons", () => {
     await assertFails(as("s", STRANGER).ref("relog/roomContent/salon/strokes/z").set(stroke()));
   });
 });
+
+describe("watch-party", () => {
+  const TS = { ".sv": "timestamp" };
+  const video = (over = {}) => ({ videoId: "dQw4w9WgXcQ", by: "Reindal", state: "playing", position: 0, updatedAt: TS, cell: 4, width: 720, ...over });
+
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.database().ref("relog/rooms/salon").set({ name: "Débat", by: "Kashiro", createdAt: 1 });
+    }),
+  );
+
+  test("un participant lance, met en pause et arrête la vidéo du salon", async () => {
+    const db = as("r", REINDAL);
+    await assertFails(db.ref("relog/roomContent/salon/video").set(video())); // pas encore dans le salon
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertSucceeds(db.ref("relog/roomContent/salon/video").set(video({ title: "Clip" })));
+    await assertSucceeds(db.ref("relog/roomContent/salon/video").update({ state: "paused", position: 42.5, updatedAt: TS }));
+    await assertSucceeds(db.ref("relog/roomContent/salon/video").update({ cell: 2, width: 1100 }));
+    await assertSucceeds(anon().ref("relog/roomContent/salon/video").get()); // lu par les overlays
+    await assertSucceeds(db.ref("relog/roomContent/salon/video").remove());
+  });
+
+  test("refuse les identifiants invalides, l'usurpation et les valeurs hors limites", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertFails(db.ref("relog/roomContent/salon/video").set(video({ videoId: "https://evil.example/x" })));
+    await assertFails(db.ref("relog/roomContent/salon/video").set(video({ by: "Kashiro" })));
+    await assertFails(db.ref("relog/roomContent/salon/video").set(video({ state: "rewind" })));
+    await assertFails(db.ref("relog/roomContent/salon/video").set(video({ width: 5000 })));
+    await assertFails(db.ref("relog/roomContent/salon/video").set(video({ extra: 1 })));
+    await assertFails(anon().ref("relog/roomContent/salon/video").set(video()));
+  });
+
+  test("chacun règle le volume de la vidéo sur son propre stream", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/videoVolume").set(35));
+    await assertFails(db.ref("relog/overlay/Reindal/videoVolume").set(150));
+    await assertFails(db.ref("relog/overlay/Titou/videoVolume").set(10));
+  });
+});

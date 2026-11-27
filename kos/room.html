@@ -60,6 +60,23 @@
       .status-line { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-top: 8px; }
       .status-line .err { color: var(--status-offline); }
       .gif-panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); --gp-max: 240px; --gp-min: 96px; }
+      .watch { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: grid; gap: 10px; }
+      .watch h4 { margin: 0; }
+      .watch-form { display: flex; gap: 6px; }
+      .watch-form input { flex: 1; min-width: 0; }
+      .watch .go { background: var(--accent-neon); color: #000; border-color: var(--accent-neon); }
+      .watch .stop { color: var(--status-offline); margin-left: auto; }
+      .watch-title { display: flex; flex-direction: column; gap: 2px; font-weight: 700; }
+      .watch-title small { font-weight: 400; color: var(--text-dim); font-size: 11px; }
+      .watch-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .watch-row button { padding: 6px 10px; font-size: 12px; }
+      .watch .time { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-dim); }
+      .watch .lbl { font-size: 11px; color: var(--text-dim); display: inline-flex; align-items: center; gap: 4px; }
+      #v-seek { width: 100%; }
+      #v-volume { width: 140px; }
+      .mini-grid { display: grid; grid-template-columns: repeat(3, 16px); gap: 2px; padding: 2px; background: #000; border: 1px solid var(--border); border-radius: 4px; }
+      .mini-grid button { width: 16px; height: 10px; padding: 0; border-radius: 2px; background: var(--panel-bg-alt); border: 1px solid var(--border); }
+      .mini-grid button.on { background: var(--accent-neon); border-color: var(--accent-neon); }
       .placeholder { color: var(--text-dim); text-align: center; padding: 80px 16px; border: 1px dashed var(--border); border-radius: 8px; }
       .placeholder b { color: var(--text-main); }
     </style>
@@ -105,12 +122,45 @@
 
           <div class="stage" id="stage">
             <video class="bg" id="bg-video" muted autoplay playsinline hidden></video>
+            <div id="video-view" style="position:absolute;inset:0;"></div>
             <div id="view"></div>
             <div class="capture" id="capture"></div>
           </div>
           <div class="status-line"><span id="hint"></span><span id="error" class="err"></span></div>
 
           <div class="gif-panel" id="gif-panel" hidden><div id="picker"></div></div>
+
+          <section class="watch" id="watch">
+            <h4>📺 Watch-party</h4>
+            <form class="watch-form" id="video-form">
+              <input id="video-url" placeholder="Lien YouTube (vidéo, short ou live)" autocomplete="off" />
+              <button type="submit" class="go">Lancer pour le salon</button>
+            </form>
+            <div id="video-controls" hidden>
+              <div class="watch-title"><span id="video-title"></span><small id="video-by"></small></div>
+              <div class="watch-row">
+                <button id="v-back" title="Reculer de 10 s">⏪ 10 s</button>
+                <button id="v-play" class="go">⏸ Pause</button>
+                <button id="v-fwd" title="Avancer de 10 s">10 s ⏩</button>
+                <span class="time" id="v-time">0:00 / 0:00</span>
+                <button id="v-stop" class="stop">■ Arrêter</button>
+              </div>
+              <input type="range" id="v-seek" min="0" max="100" step="1" value="0" />
+              <div class="watch-row">
+                <span class="lbl">Position</span>
+                <div class="mini-grid" id="v-cells"></div>
+                <span class="lbl">Taille</span>
+                <div class="group" id="v-sizes"><button data-w="0">S</button><button data-w="1">M</button><button data-w="2">L</button></div>
+              </div>
+            </div>
+            <div class="watch-row">
+              <span class="lbl">Volume sur mon stream</span>
+              <input type="range" id="v-volume" min="0" max="100" step="5" />
+              <output id="v-volume-out"></output>
+              <label class="lbl"><input type="checkbox" id="v-listen" /> Écouter ici</label>
+            </div>
+            <p class="hint">Tout le salon voit la même chose au même moment ; chacun règle son propre volume. Dans OBS, coche « Contrôler l'audio via OBS » sur la source overlay Re:log pour gérer le son dans ton mixeur.<br />⚠ Diffuser une vidéo qui ne t'appartient pas peut valoir une réclamation DMCA sur Twitch.</p>
+          </section>
         </div>
       </main>
     </div>

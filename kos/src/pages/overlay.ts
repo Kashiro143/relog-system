@@ -9,11 +9,12 @@ const kernel = new Kernel("overlay", { container });
 
 if (kernel.actorId) {
   const collective = document.getElementById("collective-layer")!;
-  mountRoomDisplay(document.getElementById("room-layer")!, kernel.actorId);
+  const roomDisplay = mountRoomDisplay(document.getElementById("room-layer")!, document.getElementById("video-layer")!, kernel.actorId);
   mountTerminalDisplay(document.getElementById("signal-layer")!, kernel.actorId);
   const gifs = mountGifDisplay(document.getElementById("gif-layer")!, kernel.actorId);
   watchMuted(kernel.actorId, (muted) => {
     collective.style.display = muted ? "none" : "";
     gifs.setMuted(muted);
+    roomDisplay.setMuted(muted);
   });
 }

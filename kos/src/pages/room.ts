@@ -33,6 +33,22 @@ import { createRoomView } from "../relog/roomView";
 import { mountGifPicker } from "../relog/gifPicker";
 import { pushRecent, type GifMedia } from "../relog/gifs";
 import { serverNow } from "../relog/serverTime";
+import { createVideoLayer } from "../relog/videoLayer";
+import {
+  VIDEO_WIDTHS,
+  controlVideo,
+  expectedPosition,
+  parseStartTime,
+  parseYouTubeId,
+  setVideoLayout,
+  setVideoTitle,
+  setVolume,
+  startVideo,
+  stopVideo,
+  watchVideo,
+  watchVolume,
+  type RoomVideo,
+} from "../relog/watch";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -180,6 +196,8 @@ $("create-form").addEventListener("submit", async (e) => {
 // ---------- Vue du salon ----------
 
 const stage = $("stage");
+const stageVideo = createVideoLayer($("video-view"), { muted: true, onError: () => showError("Cette vidéo ne peut pas être lue ici (intégration refusée par YouTube).") });
+let video: RoomVideo | null = null;
 const capture = $("capture");
 const view = createRoomView($("view"), { editable: true });
 
@@ -187,6 +205,9 @@ function enterRoom(roomId: string | null) {
   roomStops.forEach((stop) => stop());
   roomStops = [];
   view.clear();
+  video = null;
+  stageVideo.setVideo(null);
+  renderVideo();
   strokes = new Map();
   items = new Map();
   undoStack.length = 0;
@@ -208,6 +229,11 @@ function enterRoom(roomId: string | null) {
       const others = { ...c };
       delete others[me!];
       view.setCursors(others);
+    }),
+    watchVideo(roomId, (v) => {
+      video = v;
+      stageVideo.setVideo(v, v ? actors[v.by]?.color : undefined);
+      renderVideo();
     }),
   ];
   renderHint();
@@ -572,6 +598,94 @@ $("screen-bg").addEventListener("click", async () => {
     /* annulé par l'utilisateur */
   }
 });
+
+// ---------- Watch-party ----------
+
+const fmt = (sec: number) => {
+  const s = Math.max(0, Math.floor(sec));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
+};
+let seeking = false;
+
+function renderVideo() {
+  $("video-controls").hidden = !video;
+  if (!video) return;
+  $("video-title").textContent = video.title || "Vidéo YouTube";
+  $("video-by").textContent = `Lancée par ${actors[video.by]?.name || video.by}`;
+  $("v-play").textContent = video.state === "playing" ? "⏸ Pause" : "▶ Lecture";
+  const cells = $("v-cells");
+  if (!cells.children.length) {
+    for (let i = 0; i < 9; i++) {
+      const b = document.createElement("button");
+      b.addEventListener("click", () => myRoom && setVideoLayout(myRoom, { cell: i }));
+      cells.appendChild(b);
+    }
+  }
+  [...cells.children].forEach((b, i) => b.classList.toggle("on", i === video!.cell));
+  $("v-sizes").querySelectorAll<HTMLButtonElement>("button").forEach((b) => b.classList.toggle("on", VIDEO_WIDTHS[Number(b.dataset.w)] === video!.width));
+}
+
+// Barre de progression et titre, mis à jour à partir du lecteur local.
+setInterval(() => {
+  if (!video) return;
+  const t = stageVideo.time();
+  const pos = t.duration ? Math.min(t.current, t.duration) : expectedPosition(video, serverNow());
+  $("v-time").textContent = `${fmt(pos)} / ${t.duration ? fmt(t.duration) : "--:--"}`;
+  const seek = $<HTMLInputElement>("v-seek");
+  if (!seeking && t.duration) {
+    seek.max = String(Math.floor(t.duration));
+    seek.value = String(Math.floor(pos));
+  }
+  if (!video.title && t.title && video.by === me && myRoom) setVideoTitle(myRoom, t.title).catch(() => {});
+}, 500);
+
+$("video-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!myRoom) return;
+  const raw = $<HTMLInputElement>("video-url").value;
+  const id = parseYouTubeId(raw);
+  if (!id) return showError("Lien YouTube non reconnu.");
+  try {
+    await startVideo(myRoom, { videoId: id, by: me!, position: parseStartTime(raw), cell: video?.cell ?? 4, width: video?.width ?? VIDEO_WIDTHS[1] });
+    $<HTMLInputElement>("video-url").value = "";
+  } catch {
+    showError("Lancement refusé : as-tu bien rejoint le salon ?");
+  }
+});
+
+const now = () => (video ? expectedPosition(video, serverNow()) : 0);
+$("v-play").addEventListener("click", () => {
+  if (!myRoom || !video) return;
+  controlVideo(myRoom, video.state === "playing" ? "paused" : "playing", now()).catch(() => showError("Commande refusée."));
+});
+$("v-back").addEventListener("click", () => myRoom && video && controlVideo(myRoom, video.state, now() - 10));
+$("v-fwd").addEventListener("click", () => myRoom && video && controlVideo(myRoom, video.state, now() + 10));
+const seekInput = $<HTMLInputElement>("v-seek");
+seekInput.addEventListener("input", () => {
+  seeking = true;
+  $("v-time").textContent = `${fmt(Number(seekInput.value))} / ${fmt(Number(seekInput.max))}`;
+});
+seekInput.addEventListener("change", () => {
+  seeking = false;
+  if (myRoom && video) controlVideo(myRoom, video.state, Number(seekInput.value));
+});
+armed($<HTMLButtonElement>("v-stop"), () => myRoom && stopVideo(myRoom));
+$("v-sizes").addEventListener("click", (e) => {
+  const w = (e.target as HTMLElement).dataset.w;
+  if (w !== undefined && myRoom) setVideoLayout(myRoom, { width: VIDEO_WIDTHS[Number(w)] });
+});
+
+// Volume : celui de la vidéo sur MON stream (overlay OBS). "Écouter ici" active le son de l'aperçu.
+const volInput = $<HTMLInputElement>("v-volume");
+watchVolume(me, (v) => {
+  if (document.activeElement !== volInput) volInput.value = String(v);
+  $("v-volume-out").textContent = `${v} %`;
+  stageVideo.setVolume(v);
+});
+volInput.addEventListener("input", () => ($("v-volume-out").textContent = `${volInput.value} %`));
+volInput.addEventListener("change", () => setVolume(me!, Number(volInput.value)));
+$<HTMLInputElement>("v-listen").addEventListener("change", (e) => stageVideo.setMuted(!(e.target as HTMLInputElement).checked));
 
 // ---------- Données en direct ----------
 

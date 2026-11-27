@@ -72,6 +72,9 @@
           },
           "room": {
             ".validate": "newData.isString() && root.child('relog/rooms').child(newData.val()).exists()"
+          },
+          "videoVolume": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
           }
         }
       },
@@ -278,6 +281,37 @@
           },
           "$other": {
             ".validate": false
+          },
+          "video": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room)",
+            ".validate": "newData.hasChildren(['videoId', 'by', 'state', 'position', 'updatedAt', 'cell', 'width'])",
+            "videoId": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{11}$/)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            },
+            "by": {
+              ".validate": "newData.isString() && (newData.val() == data.val() || newData.val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val())"
+            },
+            "state": {
+              ".validate": "newData.val() == 'playing' || newData.val() == 'paused'"
+            },
+            "position": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400"
+            },
+            "updatedAt": {
+              ".validate": "newData.isNumber() && newData.val() <= now"
+            },
+            "cell": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8"
+            },
+            "width": {
+              ".validate": "newData.isNumber() && newData.val() >= 200 && newData.val() <= 1920"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         }
       }

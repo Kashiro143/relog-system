@@ -147,6 +147,13 @@ function twitchVodDriver(slot: HTMLElement, onReady: () => void, onError: (msg: 
   let ready = false;
   let booting = false;
   let loaded: string | null = null;
+  let started = false;
+  let wanted: { muted: boolean; volume: number } | null = null;
+  const applyWanted = () => {
+    if (!p || !wanted) return;
+    p.setMuted(wanted.muted);
+    if (!wanted.muted) p.setVolume(wanted.volume / 100);
+  };
   slot.id = `kos-twitch-${++uid}`;
   // Le lecteur Twitch se crée avec sa première vidéo : on se déclare prêt tout
   // de suite pour recevoir ce premier "load", puis à nouveau quand Twitch l'est.
@@ -170,6 +177,13 @@ function twitchVodDriver(slot: HTMLElement, onReady: () => void, onError: (msg: 
         });
         loaded = id;
         const bootAt = Date.now();
+        // Le son n'est appliqué qu'une fois l'image partie : activé avant, Twitch
+        // bloque la lecture sur son affiche (bouton lecture) dans OBS.
+        p.addEventListener(T.PLAYING, () => {
+          if (started) return;
+          started = true;
+          setTimeout(() => applyWanted(), 800);
+        });
         p.addEventListener(T.READY, () => {
           if (ready) return;
           ready = true;
@@ -207,10 +221,8 @@ function twitchVodDriver(slot: HTMLElement, onReady: () => void, onError: (msg: 
       return pl.getEnded() ? "ended" : pl.isPaused() ? "paused" : "playing";
     },
     audio: (muted, volume) => {
-      const pl = ok();
-      if (!pl) return;
-      pl.setMuted(muted);
-      if (!muted) pl.setVolume(volume / 100);
+      wanted = { muted, volume };
+      if (started) applyWanted();
     },
     destroy: () => slot.replaceChildren(),
   };

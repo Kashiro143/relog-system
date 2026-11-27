@@ -61,6 +61,8 @@ export interface Item {
   size: number;
   text?: string;
   url?: string;
+  /** GIF transparent (sticker GIPHY) : sans cadre. */
+  sticker?: boolean;
   fade: number;
   end: number;
 }
@@ -178,8 +180,11 @@ export function finishStroke(room: string, id: string, points: number[]) {
 export async function addItem(room: string, item: Omit<Item, "id" | "end">): Promise<string> {
   const id = push(content(room, "items")).key!;
   const record: Record<string, unknown> = { ...item, x: Math.round(item.x), y: Math.round(item.y), ts: serverTimestamp(), end: serverNow() };
-  if (item.type === "text") delete record.url;
-  else delete record.text;
+  if (item.type === "text") {
+    delete record.url;
+    delete record.sticker;
+  } else delete record.text;
+  if (!record.sticker) delete record.sticker;
   await set(content(room, `items/${id}`), record);
   return id;
 }

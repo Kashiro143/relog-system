@@ -9,6 +9,7 @@ import { mountGifPicker } from "../relog/gifPicker";
 
 const COOLDOWN_MS = 3000;
 const TARGETS_KEY = "kos.gif.targets";
+const MODE_KEY = "kos.gif.mode";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const member = await requireMember();
@@ -22,32 +23,55 @@ let actors: Record<string, Actor> = {};
 let overlays: Record<string, { muted?: boolean; gifZone?: Partial<GifZone> }> = {};
 let selected: GifMedia | null = null;
 let cooldownUntil = 0;
+let mode: "click" | "preview" = readLocal(MODE_KEY) === "preview" ? "preview" : "click";
 
-const targets = new Set<string>(loadTargets());
+const targets = new Set<string>(readTargets());
 
-function loadTargets(): string[] {
+function readLocal(key: string): string | null {
   try {
-    const list = JSON.parse(localStorage.getItem(TARGETS_KEY) || "[]");
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeLocal(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* stockage indisponible */
+  }
+}
+function readTargets(): string[] {
+  try {
+    const list = JSON.parse(readLocal(TARGETS_KEY) || "[]");
     return Array.isArray(list) ? list : [];
   } catch {
     return [];
-  }
-}
-function saveTargets() {
-  try {
-    localStorage.setItem(TARGETS_KEY, JSON.stringify([...targets]));
-  } catch {
-    /* rien */
   }
 }
 
 const isMuted = (id: string) => overlays[id]?.muted === true;
 const sendableTargets = () => [...targets].filter((id) => actors[id]?.name && !isMuted(id));
 
+let statusTimer: ReturnType<typeof setTimeout> | undefined;
 function status(kind: "ok" | "err" | "", text: string) {
   const el = $("status");
   el.className = `status ${kind}`;
   el.textContent = text;
+  clearTimeout(statusTimer);
+  if (text) statusTimer = setTimeout(() => renderHelp(), 5000);
+}
+
+/** Rappel par défaut sous la barre d'envoi. */
+function renderHelp() {
+  const n = sendableTargets().length;
+  const el = $("status");
+  el.className = "status";
+  el.textContent = !n
+    ? "Choisis d'abord à qui envoyer."
+    : mode === "click"
+      ? `Clique sur un GIF pour l'envoyer à ${n > 1 ? `${n} personnes` : actors[sendableTargets()[0]]?.name ?? "1 personne"}.`
+      : "Choisis un GIF, vérifie l'aperçu, puis Envoyer.";
 }
 
 // ---------- Destinataires ----------
@@ -62,6 +86,11 @@ function renderTargets() {
   const available = list.filter((a) => !isMuted(a.id));
   const allOn = available.length > 0 && available.every((a) => targets.has(a.id));
 
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = "À";
+  box.appendChild(label);
+
   const all = document.createElement("span");
   all.className = `target all${allOn ? " on" : ""}`;
   all.innerHTML = `<span class="dot"></span>Tout le monde`;
@@ -69,7 +98,6 @@ function renderTargets() {
     if (allOn) available.forEach((a) => targets.delete(a.id));
     else available.forEach((a) => targets.add(a.id));
     saveTargets();
-    renderTargets();
   });
   box.appendChild(all);
 
@@ -87,25 +115,43 @@ function renderTargets() {
       if (targets.has(a.id)) targets.delete(a.id);
       else targets.add(a.id);
       saveTargets();
-      renderTargets();
     });
     box.appendChild(chip);
   }
   updateSendButton();
 }
 
-// ---------- Choix du GIF ----------
+function saveTargets() {
+  writeLocal(TARGETS_KEY, JSON.stringify([...targets]));
+  renderTargets();
+  renderHelp();
+}
+
+// ---------- Mode d'envoi ----------
+
+function renderMode() {
+  $("mode").querySelectorAll<HTMLButtonElement>("button").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
+  $("preview-bar").hidden = mode !== "preview";
+  renderHelp();
+}
+$("mode").addEventListener("click", (e) => {
+  const m = (e.target as HTMLElement).dataset.mode;
+  if (m !== "click" && m !== "preview") return;
+  mode = m;
+  writeLocal(MODE_KEY, m);
+  renderMode();
+});
+
+// ---------- Choix et envoi ----------
 
 const picker = mountGifPicker($("picker"), {
   me,
-  onSelect: (gif) => {
-    select(gif);
-    status("", "");
-  },
+  keepSelection: false,
+  onPick: (gif) => (mode === "click" ? trySend(gif) : preview(gif)),
   onError: (msg) => status("err", msg),
 });
 
-function select(gif: GifMedia) {
+function preview(gif: GifMedia) {
   selected = gif;
   const thumb = $("sel-thumb");
   thumb.replaceChildren();
@@ -114,15 +160,13 @@ function select(gif: GifMedia) {
   if (isVideoUrl(src)) {
     const v = document.createElement("video");
     Object.assign(v, { muted: true, autoplay: true, loop: true, playsInline: true, src });
-    v.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:6px;";
     thumb.appendChild(v);
   } else {
     thumb.style.backgroundImage = `url("${src.replace(/"/g, "%22")}")`;
   }
+  $("sel-title").textContent = gif.title || (gif.sticker ? "Sticker" : "GIF");
   updateSendButton();
 }
-
-// ---------- Envoi ----------
 
 function updateSendButton() {
   const btn = $<HTMLButtonElement>("send-btn");
@@ -137,6 +181,7 @@ async function send(to: string[], gif: GifMedia) {
     url: gif.url,
     preview: gif.preview,
     title: gif.title,
+    sticker: gif.sticker,
     from: me!,
     fromName: self?.name || me!,
     color: self?.color || "#00d4ff",
@@ -147,19 +192,39 @@ async function send(to: string[], gif: GifMedia) {
   pruneMySends(to, me!).catch(() => {});
 }
 
-$("send-btn").addEventListener("click", async () => {
+async function trySend(gif: GifMedia) {
   const to = sendableTargets();
-  if (!selected || !to.length) return;
+  if (!to.length) {
+    status("err", "Choisis d'abord à qui envoyer.");
+    picker.flash(gif.url, "À qui ?", true);
+    const box = $("targets");
+    box.classList.remove("pulse");
+    void box.offsetWidth;
+    box.classList.add("pulse");
+    return;
+  }
+  const wait = cooldownUntil - Date.now();
+  if (wait > 0) {
+    picker.flash(gif.url, `Patiente ${Math.ceil(wait / 1000)} s`, true);
+    return;
+  }
   cooldownUntil = Date.now() + COOLDOWN_MS;
   updateSendButton();
   setTimeout(updateSendButton, COOLDOWN_MS + 50);
   try {
-    await send(to, selected);
+    await send(to, gif);
     $<HTMLInputElement>("caption").value = "";
+    picker.flash(gif.url, "Envoyé ✓");
     status("ok", `Envoyé à ${to.map((id) => actors[id]?.name || id).join(", ")} ✓`);
   } catch {
+    picker.flash(gif.url, "Refusé", true);
     status("err", "Envoi refusé : la personne a peut-être coupé son overlay.");
   }
+}
+
+$("send-btn").addEventListener("click", () => selected && trySend(selected));
+$<HTMLInputElement>("caption").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && mode === "preview" && selected) trySend(selected);
 });
 
 // ---------- Mon overlay ----------
@@ -181,7 +246,7 @@ function renderZone() {
   if (document.activeElement !== s) s.value = String(zone.seconds);
   $("zone-h-out").textContent = `${h.value} px`;
   $("zone-s-out").textContent = `${s.value} s`;
-  $("muted-note").style.display = isMuted(me!) ? "block" : "none";
+  $("muted-note").hidden = !isMuted(me!);
 }
 
 $("zone-h").addEventListener("input", (e) => ($("zone-h-out").textContent = `${(e.target as HTMLInputElement).value} px`));
@@ -190,7 +255,7 @@ $("zone-h").addEventListener("change", (e) => setGifZone(me!, { height: Number((
 $("zone-s").addEventListener("change", (e) => setGifZone(me!, { seconds: Number((e.target as HTMLInputElement).value) }));
 $("zone-test").addEventListener("click", async () => {
   const gif = selected || loadRecents()[0];
-  if (!gif) return status("err", "Choisis d'abord un GIF (recherche, favori ou lien), puis teste.");
+  if (!gif) return status("err", "Envoie ou choisis d'abord un GIF, puis teste.");
   if (isMuted(me!)) return status("err", "Ton overlay est coupé : réactive-le depuis ton player pour tester.");
   try {
     await send([me!], gif);
@@ -200,11 +265,15 @@ $("zone-test").addEventListener("click", async () => {
   }
 });
 
+// Réglages ouverts d'office sur grand écran, repliés dans un dock étroit.
+($("overlay-panel") as HTMLDetailsElement).open = window.innerWidth >= 960;
+
 // ---------- Données en direct ----------
 
 watchActors((data) => {
   actors = data;
   renderTargets();
+  renderHelp();
 });
 onValue(ref(db, "relog/overlay"), (snap) => {
   overlays = snap.val() ?? {};
@@ -212,4 +281,5 @@ onValue(ref(db, "relog/overlay"), (snap) => {
   renderZone();
 });
 
+renderMode();
 renderZone();

@@ -27,7 +27,11 @@ export interface GifMedia {
   /** Petite version pour les listes, si connue. */
   preview?: string;
   title?: string;
+  /** Sticker GIPHY : image transparente, affichée sans cadre ni fond. */
+  sticker?: boolean;
 }
+
+export type GiphyKind = "gifs" | "stickers";
 
 export interface GifSend extends GifMedia {
   from: string;
@@ -81,6 +85,10 @@ export function normalizeGifLink(input: string): GifMedia | null {
     const slug = parts[0] === "gifs" || parts[0] === "stickers" || parts[0] === "embed" ? parts[parts.length - 1] : "";
     const id = slug?.split("-").pop();
     if (!id) return null;
+    if (parts[0] === "stickers") {
+      // WebP animé : garde la transparence (le MP4 et le GIF de GIPHY la perdent ou la dégradent).
+      return { url: `https://media.giphy.com/media/${id}/giphy.webp`, preview: `https://media.giphy.com/media/${id}/200w.webp`, sticker: true };
+    }
     return { url: `https://media.giphy.com/media/${id}/giphy.gif`, preview: `https://media.giphy.com/media/${id}/200w.gif` };
   }
 
@@ -96,6 +104,7 @@ export function sendGif(targets: string[], gif: Omit<GifSend, "ts">) {
   if (!payload.caption) delete payload.caption;
   if (!payload.preview) delete payload.preview;
   if (!payload.title) delete payload.title;
+  if (!payload.sticker) delete payload.sticker;
   const updates: Record<string, unknown> = {};
   for (const target of targets) {
     const id = push(ref(db, `relog/gifs/${target}`)).key!;
@@ -169,6 +178,7 @@ export function addFavorite(actorId: string, gif: GifMedia) {
   const fav: Favorite = { url: gif.url, addedAt: Date.now() };
   if (gif.preview) fav.preview = gif.preview;
   if (gif.title) fav.title = gif.title;
+  if (gif.sticker) fav.sticker = true;
   return set(ref(db, `relog/favorites/${actorId}/${favoriteKey(gif.url)}`), fav);
 }
 
@@ -211,6 +221,7 @@ export function setGiphyKey(key: string) {
 interface GiphyImage {
   url?: string;
   mp4?: string;
+  webp?: string;
 }
 interface GiphyItem {
   id: string;
@@ -219,22 +230,25 @@ interface GiphyItem {
 }
 
 /** Recherche (ou tendances si la requête est vide), filtrée PG-13 pour rester diffusable. */
-export async function searchGiphy(apiKey: string, q: string, offset = 0): Promise<GifMedia[]> {
-  const params = new URLSearchParams({ api_key: apiKey, limit: "24", offset: String(offset), rating: "pg-13", bundle: "messaging_non_clips" });
+export async function searchGiphy(apiKey: string, q: string, opts: { offset?: number; kind?: GiphyKind } = {}): Promise<GifMedia[]> {
+  const kind = opts.kind ?? "gifs";
+  const params = new URLSearchParams({ api_key: apiKey, limit: "24", offset: String(opts.offset ?? 0), rating: "pg-13", bundle: "messaging_non_clips" });
   const endpoint = q.trim() ? "search" : "trending";
   if (q.trim()) {
     params.set("q", q.trim());
     params.set("lang", "fr");
   }
-  const res = await fetch(`https://api.giphy.com/v1/gifs/${endpoint}?${params}`);
+  const res = await fetch(`https://api.giphy.com/v1/${kind}/${endpoint}?${params}`);
   if (!res.ok) throw new Error(res.status === 401 || res.status === 403 ? "Clé GIPHY refusée." : res.status === 429 ? "Limite de recherches GIPHY atteinte, réessaie dans un moment." : `GIPHY a répondu ${res.status}.`);
   const json = (await res.json()) as { data: GiphyItem[] };
+  const sticker = kind === "stickers";
   return json.data
-    .map((item) => ({
-      // MP4 : bien plus léger qu'un GIF pour l'overlay OBS.
-      url: item.images.original.mp4 || item.images.downsized_medium?.url || item.images.original.url || "",
-      preview: item.images.fixed_width.url,
+    .map((item): GifMedia => ({
+      // GIF : MP4, bien plus léger pour l'overlay OBS. Sticker : WebP animé, qui garde la transparence.
+      url: (sticker ? item.images.original.webp || item.images.original.url : item.images.original.mp4 || item.images.downsized_medium?.url || item.images.original.url) || "",
+      preview: item.images.fixed_width.webp || item.images.fixed_width.url,
       title: item.title,
+      ...(sticker ? { sticker: true } : {}),
     }))
     .map((g) => ({ ...g, url: g.url.split("?")[0] }))
     .filter((g) => isAllowedMediaUrl(g.url));

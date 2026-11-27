@@ -18,6 +18,7 @@ const STYLE = `
 .kos-gif.row-1 { top: 50%; translate: 0 -50%; }
 .kos-gif.row-2 { bottom: ${MARGIN}px; }
 .kos-gif-frame { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 2px var(--c), 0 0 28px color-mix(in srgb, var(--c) 55%, transparent); background: #000; }
+.kos-gif-frame.sticker { background: transparent; box-shadow: none; border-radius: 0; overflow: visible; filter: drop-shadow(0 0 14px rgba(0,0,0,0.6)) drop-shadow(0 0 3px var(--c)); }
 .kos-gif-frame img, .kos-gif-frame video { display: block; height: var(--h); width: auto; max-width: 800px; object-fit: contain; }
 .kos-gif-tag { font: 700 18px/1 "JetBrains Mono", Consolas, monospace; letter-spacing: 2px; color: #fff; background: rgba(0,0,0,0.75);
   border-left: 4px solid var(--c); padding: 7px 12px; border-radius: 4px; max-width: 640px; text-transform: uppercase; }
@@ -97,7 +98,7 @@ export function mountGifDisplay(root: HTMLElement, actorId: string): GifDisplay 
       el.style.setProperty("--h", `${Math.min(900, Math.max(120, zone.height))}px`);
 
       const frame = document.createElement("div");
-      frame.className = "kos-gif-frame";
+      frame.className = `kos-gif-frame${gif.sticker ? " sticker" : ""}`;
       frame.appendChild(media);
 
       const tag = document.createElement("div");

@@ -411,7 +411,8 @@ function openTextInput(x: number, y: number) {
 
 const picker = mountGifPicker($("picker"), {
   me,
-  onSelect: (gif) => {
+  keepSelection: true,
+  onPick: (gif) => {
     state.gif = gif;
     renderHint();
   },
@@ -421,7 +422,7 @@ const picker = mountGifPicker($("picker"), {
 async function placeGif(x: number, y: number) {
   if (!state.gif || !myRoom) return showError("Choisis d'abord un GIF ci-dessous.");
   try {
-    const id = await addItem(myRoom, { type: "gif", by: me!, color: currentColor(), x, y, size: SIZES.gif[state.size], url: state.gif.url, fade: state.fade });
+    const id = await addItem(myRoom, { type: "gif", by: me!, color: currentColor(), x, y, size: SIZES.gif[state.size], url: state.gif.url, sticker: !!state.gif.sticker, fade: state.fade });
     undoStack.push(`items/${id}`);
     pushRecent(state.gif);
     picker.refresh();

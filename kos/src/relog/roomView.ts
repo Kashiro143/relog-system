@@ -16,6 +16,7 @@ const STYLE = `
   -webkit-text-stroke: calc(var(--k) * var(--s) * 0.09px) #000; paint-order: stroke fill; text-shadow: 0 0 calc(var(--k) * 14px) rgba(0,0,0,0.6); }
 .kos-room-item img, .kos-room-item video { display: block; height: calc(var(--k) * var(--s) * 1px); width: auto; border-radius: calc(var(--k) * 8px);
   box-shadow: 0 0 0 calc(var(--k) * 2px) var(--c), 0 0 calc(var(--k) * 20px) color-mix(in srgb, var(--c) 50%, transparent); }
+.kos-room-item.sticker img, .kos-room-item.sticker video { box-shadow: none; border-radius: 0; filter: drop-shadow(0 0 calc(var(--k) * 10px) rgba(0,0,0,0.55)); }
 .kos-room.editable .kos-room-items.movable { pointer-events: auto; }
 .kos-room.editable .kos-room-items.movable .kos-room-item { cursor: grab; }
 .kos-room-item.selected { outline: 2px dashed #fff; outline-offset: 6px; border-radius: 6px; }
@@ -196,7 +197,7 @@ export function createRoomView(root: HTMLElement, opts: { editable?: boolean } =
     let el = itemEls.get(it.id);
     if (!el) {
       el = document.createElement("div");
-      el.className = "kos-room-item";
+      el.className = `kos-room-item${it.sticker ? " sticker" : ""}`;
       el.dataset.id = it.id;
       if (it.type === "text") {
         const t = document.createElement("div");

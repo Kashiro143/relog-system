@@ -171,6 +171,8 @@ describe("envoi de GIF", () => {
   test("un membre envoie un GIF à un autre, en son nom", async () => {
     await assertSucceeds(as("r", REINDAL).ref("relog/gifs/Kashiro/g1").set(gif({ caption: "gg", preview: "https://media.giphy.com/media/abc123/200w.gif" })));
     await assertSucceeds(anon().ref("relog/gifs/Kashiro").get()); // l'overlay OBS le lit
+    await assertSucceeds(as("r", REINDAL).ref("relog/gifs/Kashiro/g2").set(gif({ url: "https://media.giphy.com/media/abc123/giphy.webp", sticker: true })));
+    await assertFails(as("r", REINDAL).ref("relog/gifs/Kashiro/g3").set(gif({ sticker: "oui" })));
   });
   test("envoi groupé : tout passe, ou rien si un destinataire a coupé", async () => {
     const db = as("r", REINDAL);
@@ -275,6 +277,7 @@ describe("salons", () => {
     await assertSucceeds(db.ref("relog/roomContent/salon/strokes/s1").update({ pts: "10,10,20,20,30,30", done: true, end: 5 }));
     await assertSucceeds(db.ref("relog/roomContent/salon/items/t1").set(text()));
     await assertSucceeds(db.ref("relog/roomContent/salon/items/g1").set(gifItem()));
+    await assertSucceeds(db.ref("relog/roomContent/salon/items/g9").set({ ...gifItem("https://media.giphy.com/media/abc123/giphy.webp"), sticker: true }));
     await assertSucceeds(db.ref("relog/roomContent/salon/items/t1").update({ x: 100, y: 200 }));
     await assertSucceeds(db.ref("relog/roomContent/salon/cursors/Reindal").set(cursor));
     await assertFails(db.ref("relog/roomContent/autre/strokes/s2").set(stroke())); // pas dans ce salon

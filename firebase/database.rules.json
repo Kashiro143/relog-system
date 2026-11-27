@@ -69,6 +69,9 @@
             "$other": {
               ".validate": false
             }
+          },
+          "room": {
+            ".validate": "newData.isString() && root.child('relog/rooms').child(newData.val()).exists()"
           }
         }
       },
@@ -137,6 +140,136 @@
           ".read": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists())",
           ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))",
           ".validate": "newData.isString() && newData.val().length <= 100"
+        }
+      },
+      "rooms": {
+        ".read": true,
+        "$room": {
+          ".write": "(!data.exists() && (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && newData.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()) || (!newData.exists() && ((auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || data.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()))",
+          ".validate": "newData.hasChildren(['name', 'by', 'createdAt'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 40 && newData.val().length >= 1"
+          },
+          "by": {
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "roomContent": {
+        ".read": true,
+        "$room": {
+          ".write": "!newData.exists() && ((auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || root.child('relog/rooms').child($room).child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val())",
+          "strokes": {
+            "$id": {
+              ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room && (!newData.exists() || (newData.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() && (!data.exists() || data.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()))))",
+              ".validate": "newData.hasChildren(['by', 'color', 'width', 'pts', 'fade', 'ts', 'done'])",
+              "by": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "color": {
+                ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
+              },
+              "width": {
+                ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 60"
+              },
+              "pts": {
+                ".validate": "newData.isString() && newData.val().length <= 20000"
+              },
+              "fade": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120"
+              },
+              "ts": {
+                ".validate": "newData.isNumber() && newData.val() <= now"
+              },
+              "end": {
+                ".validate": "newData.isNumber()"
+              },
+              "done": {
+                ".validate": "newData.isBoolean()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "items": {
+            "$id": {
+              ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room && (!newData.exists() || (newData.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() && (!data.exists() || data.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()))))",
+              ".validate": "newData.hasChildren(['type', 'by', 'color', 'x', 'y', 'size', 'fade', 'ts', 'end']) && ((newData.child('type').val() == 'text' && newData.child('text').exists()) || (newData.child('type').val() == 'gif' && newData.child('url').exists()))",
+              "type": {
+                ".validate": "newData.val() == 'text' || newData.val() == 'gif'"
+              },
+              "by": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "color": {
+                ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
+              },
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+              },
+              "size": {
+                ".validate": "newData.isNumber() && newData.val() >= 8 && newData.val() <= 900"
+              },
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 200 && newData.val().length >= 1"
+              },
+              "url": {
+                ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^https:\\/\\/(media[0-9]*\\.giphy\\.com|i\\.giphy\\.com|media[0-9]*\\.tenor\\.com|c\\.tenor\\.com|cdn\\.discordapp\\.com|media\\.discordapp\\.net|i\\.imgur\\.com)\\//)"
+              },
+              "fade": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120"
+              },
+              "ts": {
+                ".validate": "newData.isNumber() && newData.val() <= now"
+              },
+              "end": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "cursors": {
+            "$actor": {
+              ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor) && (!newData.exists() || root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room)",
+              ".validate": "newData.hasChildren(['x', 'y', 'ts', 'on', 'color', 'name'])",
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+              },
+              "ts": {
+                ".validate": "newData.isNumber() && newData.val() <= now"
+              },
+              "on": {
+                ".validate": "newData.isBoolean()"
+              },
+              "color": {
+                ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },

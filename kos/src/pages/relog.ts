@@ -4,25 +4,8 @@ import { db } from "../firebase";
 import { requireMember, blockPage } from "../auth";
 import { watchActors } from "../registry";
 import type { Actor } from "../types";
-import {
-  addFavorite,
-  favoriteKey,
-  isVideoUrl,
-  loadRecents,
-  normalizeGifLink,
-  pruneMySends,
-  pushRecent,
-  removeFavorite,
-  searchGiphy,
-  sendGif,
-  setGifZone,
-  watchFavorites,
-  watchGiphyKey,
-  DEFAULT_ZONE,
-  type Favorite,
-  type GifMedia,
-  type GifZone,
-} from "../relog/gifs";
+import { isVideoUrl, loadRecents, pruneMySends, pushRecent, sendGif, setGifZone, DEFAULT_ZONE, type GifMedia, type GifZone } from "../relog/gifs";
+import { mountGifPicker } from "../relog/gifPicker";
 
 const COOLDOWN_MS = 3000;
 const TARGETS_KEY = "kos.gif.targets";
@@ -37,12 +20,8 @@ if (!me) {
 
 let actors: Record<string, Actor> = {};
 let overlays: Record<string, { muted?: boolean; gifZone?: Partial<GifZone> }> = {};
-let favorites: Record<string, Favorite> = {};
-let giphyKey: string | null = null;
 let selected: GifMedia | null = null;
 let cooldownUntil = 0;
-let tab = "search";
-let searchLoadedFor: string | null = null;
 
 const targets = new Set<string>(loadTargets());
 
@@ -77,7 +56,9 @@ function renderTargets() {
   const box = $("targets");
   box.replaceChildren();
   // Un nœud sans nom n'est pas un membre (ex : statut "en ligne" orphelin).
-  const list = Object.values(actors).filter((a) => a?.id && a.name).sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : a.name.localeCompare(b.name)));
+  const list = Object.values(actors)
+    .filter((a) => a?.id && a.name)
+    .sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : a.name.localeCompare(b.name)));
   const available = list.filter((a) => !isMuted(a.id));
   const allOn = available.length > 0 && available.every((a) => targets.has(a.id));
 
@@ -113,110 +94,16 @@ function renderTargets() {
   updateSendButton();
 }
 
-// ---------- Grilles de GIF ----------
+// ---------- Choix du GIF ----------
 
-function tile(gif: GifMedia): HTMLElement {
-  const el = document.createElement("div");
-  el.className = `tile${selected?.url === gif.url ? " sel" : ""}`;
-  el.title = gif.title || "";
-  const src = gif.preview || gif.url;
-  if (isVideoUrl(src)) {
-    const v = document.createElement("video");
-    Object.assign(v, { muted: true, autoplay: true, loop: true, playsInline: true, src });
-    el.appendChild(v);
-  } else {
-    const img = document.createElement("img");
-    img.loading = "lazy";
-    img.src = src;
-    img.alt = gif.title || "GIF";
-    el.appendChild(img);
-  }
-  const isFav = !!favorites[favoriteKey(gif.url)];
-  const star = document.createElement("button");
-  star.className = `star${isFav ? " fav" : ""}`;
-  star.textContent = isFav ? "★" : "☆";
-  star.title = isFav ? "Retirer des favoris" : "Ajouter aux favoris";
-  star.addEventListener("click", (e) => {
-    e.stopPropagation();
-    (isFav ? removeFavorite(me!, gif.url) : addFavorite(me!, gif)).catch(() => status("err", "Favori non enregistré."));
-  });
-  el.appendChild(star);
-  el.addEventListener("click", () => select(gif));
-  return el;
-}
-
-function fillGrid(id: string, list: GifMedia[], emptyText: string) {
-  const grid = $(id);
-  grid.replaceChildren();
-  if (!list.length) {
-    const p = document.createElement("div");
-    p.className = "empty";
-    p.textContent = emptyText;
-    grid.appendChild(p);
-    return;
-  }
-  list.forEach((g) => grid.appendChild(tile(g)));
-}
-
-let lastSearch: GifMedia[] = [];
-
-function renderGrids() {
-  if (tab === "search") {
-    if (!giphyKey) fillGrid("search-grid", [], "La recherche GIPHY n'est pas encore activée : Kashiro doit ajouter une clé GIPHY dans la Forge. En attendant, utilise l'onglet Lien.");
-    else fillGrid("search-grid", lastSearch, searchLoadedFor === null ? "Chargement..." : "Aucun résultat.");
-  }
-  if (tab === "favorites") {
-    const list = Object.values(favorites).sort((a, b) => b.addedAt - a.addedAt);
-    fillGrid("fav-grid", list, "Aucun favori : clique sur ☆ sur un GIF pour le garder ici.");
-  }
-  if (tab === "recents") fillGrid("recent-grid", loadRecents(), "Les GIF que tu envoies apparaîtront ici.");
-}
-
-async function runSearch(q: string) {
-  if (!giphyKey) return renderGrids();
-  searchLoadedFor = null;
-  renderGrids();
-  try {
-    lastSearch = await searchGiphy(giphyKey, q);
-    searchLoadedFor = q;
-  } catch (err) {
-    lastSearch = [];
-    searchLoadedFor = q;
-    status("err", err instanceof Error ? err.message : "Recherche impossible.");
-  }
-  renderGrids();
-}
-
-function showTab(name: string) {
-  tab = name;
-  for (const b of $("tabs").querySelectorAll<HTMLButtonElement>("button")) b.classList.toggle("on", b.dataset.tab === name);
-  for (const t of ["search", "favorites", "recents", "link"]) $(`tab-${t}`).hidden = t !== name;
-  if (name === "search" && giphyKey && searchLoadedFor === null && !lastSearch.length) runSearch("");
-  if (name === "link") $<HTMLInputElement>("link-input").focus();
-  renderGrids();
-}
-
-$("tabs").addEventListener("click", (e) => {
-  const name = (e.target as HTMLElement).dataset.tab;
-  if (name) showTab(name);
-});
-$("search-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-  runSearch($<HTMLInputElement>("search-q").value);
-});
-$("link-input").addEventListener("input", (e) => {
-  const value = (e.target as HTMLInputElement).value.trim();
-  if (!value) return;
-  const gif = normalizeGifLink(value);
-  if (gif) {
+const picker = mountGifPicker($("picker"), {
+  me,
+  onSelect: (gif) => {
     select(gif);
     status("", "");
-  } else {
-    status("err", "Lien non pris en charge : GIPHY, Tenor (média), Discord ou Imgur uniquement.");
-  }
+  },
+  onError: (msg) => status("err", msg),
 });
-
-// ---------- Sélection et envoi ----------
 
 function select(gif: GifMedia) {
   selected = gif;
@@ -232,9 +119,10 @@ function select(gif: GifMedia) {
   } else {
     thumb.style.backgroundImage = `url("${src.replace(/"/g, "%22")}")`;
   }
-  renderGrids();
   updateSendButton();
 }
+
+// ---------- Envoi ----------
 
 function updateSendButton() {
   const btn = $<HTMLButtonElement>("send-btn");
@@ -255,6 +143,7 @@ async function send(to: string[], gif: GifMedia) {
     caption: $<HTMLInputElement>("caption").value.trim() || undefined,
   });
   pushRecent(gif);
+  picker.refresh();
   pruneMySends(to, me!).catch(() => {});
 }
 
@@ -268,7 +157,6 @@ $("send-btn").addEventListener("click", async () => {
     await send(to, selected);
     $<HTMLInputElement>("caption").value = "";
     status("ok", `Envoyé à ${to.map((id) => actors[id]?.name || id).join(", ")} ✓`);
-    if (tab === "recents") renderGrids();
   } catch {
     status("err", "Envoi refusé : la personne a peut-être coupé son overlay.");
   }
@@ -301,7 +189,7 @@ $("zone-s").addEventListener("input", (e) => ($("zone-s-out").textContent = `${(
 $("zone-h").addEventListener("change", (e) => setGifZone(me!, { height: Number((e.target as HTMLInputElement).value) }));
 $("zone-s").addEventListener("change", (e) => setGifZone(me!, { seconds: Number((e.target as HTMLInputElement).value) }));
 $("zone-test").addEventListener("click", async () => {
-  const gif = selected || Object.values(favorites)[0] || loadRecents()[0];
+  const gif = selected || loadRecents()[0];
   if (!gif) return status("err", "Choisis d'abord un GIF (recherche, favori ou lien), puis teste.");
   if (isMuted(me!)) return status("err", "Ton overlay est coupé : réactive-le depuis ton player pour tester.");
   try {
@@ -323,19 +211,5 @@ onValue(ref(db, "relog/overlay"), (snap) => {
   renderTargets();
   renderZone();
 });
-watchFavorites(me, (data) => {
-  favorites = data;
-  renderGrids();
-});
-watchGiphyKey((key) => {
-  const changed = key !== giphyKey;
-  giphyKey = key;
-  if (changed) {
-    lastSearch = [];
-    searchLoadedFor = null;
-    if (tab === "search") showTab("search");
-  }
-});
 
-showTab("search");
 renderZone();

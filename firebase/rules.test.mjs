@@ -228,3 +228,79 @@ describe("zone des GIF, favoris et clé GIPHY", () => {
     await assertFails(anon().ref("relog/settings/giphyKey").get());
   });
 });
+
+describe("salons", () => {
+  const TS = { ".sv": "timestamp" };
+  const stroke = (by = "Reindal") => ({ by, color: "#ffb547", width: 8, pts: "10,10,20,20", fade: 15, ts: TS, done: false });
+  const text = (by = "Reindal") => ({ type: "text", by, color: "#ffb547", x: 5000, y: 5000, size: 60, text: "salut", fade: 15, ts: TS, end: 1 });
+  const gifItem = (url = "https://media.giphy.com/media/abc123/giphy.mp4") => ({ type: "gif", by: "Reindal", color: "#ffb547", x: 100, y: 100, size: 320, url, fade: 0, ts: TS, end: 1 });
+  const cursor = { x: 1, y: 2, ts: TS, on: true, color: "#ffb547", name: "Reindal" };
+
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.database();
+      await db.ref("relog/rooms").set({
+        salon: { name: "Débat", by: "Kashiro", createdAt: 1 },
+        autre: { name: "Autre", by: "Reindal", createdAt: 1 },
+      });
+      await db.ref("relog/overlay/Kashiro/room").set("salon");
+      await db.ref("relog/roomContent/salon/strokes/k1").set({ ...stroke("Kashiro"), ts: 1 });
+      await db.ref("relog/roomContent/salon/items/k2").set({ ...text("Kashiro"), ts: 1 });
+    }),
+  );
+
+  test("créer un salon en son nom, le supprimer si on l'a créé", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/rooms/neuf").set({ name: "Neuf", by: "Reindal", createdAt: TS }));
+    await assertFails(db.ref("relog/rooms/faux").set({ name: "Faux", by: "Kashiro", createdAt: TS }));
+    await assertFails(db.ref("relog/rooms/vide").set({ name: "", by: "Reindal", createdAt: TS }));
+    await assertFails(db.ref("relog/rooms/salon").remove()); // créé par Kashiro
+    await assertSucceeds(db.ref().update({ "relog/rooms/autre": null, "relog/roomContent/autre": null }));
+    await assertFails(anon().ref("relog/rooms/x").set({ name: "X", by: "Reindal", createdAt: TS }));
+  });
+
+  test("rejoindre un salon existant seulement", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertFails(db.ref("relog/overlay/Reindal/room").set("inexistant"));
+    await assertFails(db.ref("relog/overlay/Titou/room").set("salon"));
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").remove());
+  });
+
+  test("il faut avoir rejoint le salon pour y dessiner, écrire ou poser un GIF", async () => {
+    const db = as("r", REINDAL);
+    await assertFails(db.ref("relog/roomContent/salon/strokes/s1").set(stroke()));
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertSucceeds(db.ref("relog/roomContent/salon/strokes/s1").set(stroke()));
+    await assertSucceeds(db.ref("relog/roomContent/salon/strokes/s1").update({ pts: "10,10,20,20,30,30", done: true, end: 5 }));
+    await assertSucceeds(db.ref("relog/roomContent/salon/items/t1").set(text()));
+    await assertSucceeds(db.ref("relog/roomContent/salon/items/g1").set(gifItem()));
+    await assertSucceeds(db.ref("relog/roomContent/salon/items/t1").update({ x: 100, y: 200 }));
+    await assertSucceeds(db.ref("relog/roomContent/salon/cursors/Reindal").set(cursor));
+    await assertFails(db.ref("relog/roomContent/autre/strokes/s2").set(stroke())); // pas dans ce salon
+  });
+
+  test("refuse l'usurpation, la modification des éléments des autres et les contenus invalides", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertFails(db.ref("relog/roomContent/salon/strokes/s3").set(stroke("Kashiro")));
+    await assertFails(db.ref("relog/roomContent/salon/strokes/k1").update({ pts: "1,1" }));
+    await assertFails(db.ref("relog/roomContent/salon/items/k2").update({ x: 1 }));
+    await assertFails(db.ref("relog/roomContent/salon/items/g2").set(gifItem("https://evil.example/a.gif")));
+    const { text: _omit, ...noText } = text();
+    await assertFails(db.ref("relog/roomContent/salon/items/t2").set(noText)); // texte sans texte
+    await assertFails(db.ref("relog/roomContent/salon/items/t3").set({ ...text(), x: 20000 }));
+    await assertFails(db.ref("relog/roomContent/salon/strokes/s4").set({ ...stroke(), width: 500 }));
+    await assertFails(db.ref("relog/roomContent/salon/cursors/Kashiro").set({ ...cursor, name: "Kashiro" }));
+    await assertFails(db.ref("relog/roomContent/salon/bidon").set({ a: 1 }));
+  });
+
+  test("un participant peut effacer ce qu'il y a dans le salon ; le contenu est public en lecture", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertSucceeds(db.ref().update({ "relog/roomContent/salon/strokes/k1": null, "relog/roomContent/salon/items/k2": null }));
+    await assertSucceeds(anon().ref("relog/roomContent/salon").get());
+    await assertFails(anon().ref("relog/roomContent/salon/strokes/z").set(stroke()));
+    await assertFails(as("s", STRANGER).ref("relog/roomContent/salon/strokes/z").set(stroke()));
+  });
+});

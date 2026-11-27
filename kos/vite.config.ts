@@ -13,6 +13,7 @@ export default defineConfig({
         forge: resolve(root, "forge.html"),
         master: resolve(root, "master.html"),
         overlay: resolve(root, "overlay.html"),
+        module: resolve(root, "module.html"),
         player: resolve(root, "player.html"),
         login: resolve(root, "login.html"),
         relog: resolve(root, "relog.html"),

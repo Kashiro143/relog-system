@@ -23,7 +23,8 @@ const links: LinkDef[] = [];
 if (me) {
   const u = encodeURIComponent(me);
   links.push(
-    { title: "Overlay Re:log", hint: "Source Navigateur 1920 × 1080 — GIF, salons, signaux, module", url: `${appUrl("overlay.html")}?u=${u}` },
+    { title: "Overlay Re:log", hint: "Source Navigateur 1920 × 1080 — GIF, salons, signaux, watch-party (sans le module)", url: `${appUrl("overlay.html")}?u=${u}&module=0` },
+    { title: "Module (ex. PokeMMO)", hint: "Source Navigateur 1920 × 1080 — seulement le module choisi, à mettre dans les scènes voulues", url: `${appUrl("module.html")}?u=${u}` },
     { title: "Mon player", hint: "Dock ou navigateur — module et bouton panique", url: `${appUrl("player.html")}?u=${u}` },
   );
   ($("tool-player") as HTMLAnchorElement).href = `player.html?u=${u}`;

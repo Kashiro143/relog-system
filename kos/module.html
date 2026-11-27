@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>K-OS // MODULE</title>
+    <style>
+      html, body { margin: 0; padding: 0; width: 1920px; height: 1080px; background: transparent; overflow: hidden; }
+      #module-container { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: transparent; }
+    </style>
+  </head>
+  <body data-role="overlay">
+    <!-- Seulement le module du membre (ex. équipe PokeMMO), séparé de l'overlay Re:log. -->
+    <iframe id="module-container" src="about:blank" allowtransparency="true"></iframe>
+    <script type="module" src="/src/pages/module.ts"></script>
+  </body>
+</html>

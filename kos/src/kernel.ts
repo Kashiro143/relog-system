@@ -11,6 +11,10 @@ export interface KernelOptions {
   /** Acteur imposé par la page (ex: player connecté) ; sinon lu dans ?u=. */
   actorId?: string;
   onModeChange?: (modeId: string) => void;
+  /** false : ne charge pas le module (overlay Re:log seul, module dans sa propre source). */
+  modules?: boolean;
+  /** false : ne signale pas la présence (une 2ᵉ source ne doit pas passer le membre hors ligne en se fermant). */
+  presence?: boolean;
 }
 
 /**
@@ -35,8 +39,8 @@ export class Kernel {
       return;
     }
 
-    this.announcePresence();
-    this.listenForModeChanges(options.onModeChange);
+    if (options.presence !== false) this.announcePresence();
+    if (options.modules !== false) this.listenForModeChanges(options.onModeChange);
   }
 
   private announcePresence() {

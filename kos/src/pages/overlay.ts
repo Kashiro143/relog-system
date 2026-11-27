@@ -5,7 +5,9 @@ import { mountGifDisplay } from "../relog/gifDisplay";
 import { mountRoomDisplay } from "../relog/roomDisplay";
 
 const container = document.getElementById("module-container") as HTMLIFrameElement;
-const kernel = new Kernel("overlay", { container });
+// ?module=0 : le module (ex. équipe PokeMMO) est affiché par sa propre source OBS (module.html).
+const withModule = new URLSearchParams(location.search).get("module") !== "0";
+const kernel = new Kernel("overlay", { container, modules: withModule });
 
 if (kernel.actorId) {
   const collective = document.getElementById("collective-layer")!;

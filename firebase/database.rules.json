@@ -1,0 +1,66 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "auth": {
+      "owner": {
+        ".read": "auth != null && auth.token.email_verified == true",
+        ".write": "auth != null && auth.token.email_verified == true && (!data.exists() || data.val() == auth.token.email.toLowerCase().replace('.', ','))",
+        ".validate": "newData.isString() && newData.val() == auth.token.email.toLowerCase().replace('.', ',')"
+      },
+      "invites": {
+        ".read": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))",
+        ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))",
+        "$key": {
+          ".read": "auth != null && auth.token.email_verified == true && $key == auth.token.email.toLowerCase().replace('.', ',')",
+          ".validate": "newData.hasChildren(['actorId', 'email']) && newData.child('actorId').isString()"
+        }
+      }
+    },
+    "registry": {
+      ".read": true,
+      "users": {
+        ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))",
+        "$actor": {
+          "status": {
+            ".write": true,
+            ".validate": "(newData.val() == 'online' || newData.val() == 'offline') && root.child('registry/users').child($actor).child('name').exists()"
+          }
+        }
+      },
+      "modes": {
+        ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))"
+      }
+    },
+    "users": {
+      ".read": true,
+      ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))"
+    },
+    "terminal": {
+      "archives": {
+        ".read": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists())",
+        ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))"
+      },
+      "live": {
+        ".read": true,
+        "$actor": {
+          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child($actor).child('muted').val() != true)"
+        }
+      }
+    },
+    "relog": {
+      "overlay": {
+        ".read": true,
+        "$actor": {
+          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)"
+        }
+      }
+    },
+    "live_data": {
+      ".read": true,
+      "$actor": {
+        ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)"
+      }
+    }
+  }
+}

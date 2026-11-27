@@ -1,5 +1,4 @@
 import {
-  getAuth,
   onAuthStateChanged,
   signOut as fbSignOut,
   signInWithPopup,
@@ -7,14 +6,14 @@ import {
   type User,
 } from "firebase/auth";
 import { ref, get, set, remove, onValue, type Unsubscribe } from "firebase/database";
-import { app, db } from "./firebase";
+import { auth, db } from "./firebase";
 import { appUrl } from "./appUrl";
 
 // Connexion par compte Google : l'adresse vérifiée est liée au membre.
 // Kashiro invite une adresse depuis la Forge : auth/invites/{emailKey} = { actorId, email }.
 // Le propriétaire du K-OS est désigné par auth/owner = emailKey (revendiqué une seule fois).
 
-export const auth = getAuth(app);
+export { auth };
 
 export interface Invite {
   actorId: string;

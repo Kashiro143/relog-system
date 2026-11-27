@@ -1,10 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
+import { getAuth } from "firebase/auth";
 
 // Projet Firebase "relog-system" — hérité du K-OS v1.
-// Clé client publique par design (sécurité assurée par les Realtime Database
-// Rules côté serveur, pas par le secret de cette clé). Voir _archive/ pour
-// l'historique et penser à restreindre les règles avant toute diffusion large.
+// Clé client publique par design : la sécurité vient des règles Realtime
+// Database (firebase/database.rules.json), pas du secret de cette clé.
 const firebaseConfig = {
   apiKey: "AIzaSyA6KWfJaMKOyy8KzJCRS6Went1vx_4S_MQ",
   authDomain: "relog-system.firebaseapp.com",
@@ -18,3 +18,6 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
+// Enregistré partout (y compris dans les modules chargés en iframe) pour que
+// chaque écriture porte l'identité Google de la personne connectée.
+export const auth = getAuth(app);

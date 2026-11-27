@@ -16,12 +16,16 @@
       .space nav { display: flex; flex-direction: column; gap: 8px; }
       .space a { text-decoration: none; }
       .soon { color: var(--text-dim); font-size: 0.8rem; margin-top: 14px; }
+      #account { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-dim); }
+      #account .links { display: flex; gap: 8px; }
+      #account a, #account button { text-decoration: none; padding: 6px 12px; }
     </style>
   </head>
   <body>
     <div class="hub">
       <h1>K-OS</h1>
       <p class="sub">Re:log system console</p>
+      <div id="account" class="panel"></div>
 
       <div class="spaces">
         <section class="panel space">
@@ -44,5 +48,6 @@
         </section>
       </div>
     </div>
+    <script type="module" src="/src/pages/index.ts"></script>
   </body>
 </html>

@@ -15,10 +15,25 @@
       .list-item .del { width: auto; flex: none; background: var(--status-offline); color: white; padding: 4px 10px; font-size: 0.75rem; }
       .checks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 0.8rem; }
       .checks label { display: flex; align-items: center; gap: 6px; text-transform: none; color: var(--text-main); }
+      #invite-panel { grid-column: 1 / -1; }
+      #invite-panel .row { display: grid; grid-template-columns: 1fr 200px auto; gap: 10px; align-items: end; }
+      #invite-panel .row button { width: auto; margin-top: 0; }
+      #invite-panel .hint { color: var(--text-dim); font-size: 0.8rem; margin: 0 0 8px; }
+      #login-row { display: flex; gap: 6px; margin-top: 4px; }
+      #login-row input { flex: 1; font-size: 11px; color: #888; }
+      #login-row button { width: auto; margin-top: 0; }
+      #owner-claim { border-color: var(--accent-neon); margin-top: 24px; display: none; }
+      #owner-claim button { width: auto; }
+      @media (max-width: 760px) { .grid, #invite-panel .row { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
     <h1>K-OS // FORGE_ADMIN</h1>
+    <section class="panel" id="owner-claim">
+      <h3>Aucun propriétaire</h3>
+      <p class="hint" style="color:var(--text-dim)">Le K-OS n'a pas encore de propriétaire. Revendique-le avec l'adresse connectée : Master, Forge et Terminal te seront alors réservés.</p>
+      <button id="owner-claim-btn">Devenir propriétaire</button>
+    </section>
     <div class="grid">
       <section class="panel" id="actor-panel">
         <h3>Acteurs (Re:log)</h3>
@@ -46,6 +61,19 @@
         <input id="mode-player" placeholder="modules/pokemmo/player.html" />
         <button id="mode-create">Forger le mode</button>
         <div id="mode-list"></div>
+      </section>
+
+      <section class="panel" id="invite-panel">
+        <h3>Invitations (compte Google)</h3>
+        <p class="hint">Lie l'adresse Gmail d'un membre à son profil, puis envoie-lui le lien de connexion : il se connecte en un clic avec ce compte Google.</p>
+        <div class="row">
+          <div><label>Adresse e-mail</label><input id="invite-email" type="email" placeholder="membre@gmail.com" /></div>
+          <div><label>Membre</label><select id="invite-actor"></select></div>
+          <button id="invite-create">Inviter</button>
+        </div>
+        <label>Lien à envoyer au membre</label>
+        <div id="login-row"><input id="login-link" readonly /><button id="login-copy">📋</button></div>
+        <div id="invite-list"></div>
       </section>
     </div>
 

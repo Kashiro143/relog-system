@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K-OS // CONNEXION</title>
+    <link rel="stylesheet" href="/src/theme.css" />
+    <style>
+      body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+      .login { max-width: 420px; width: 100%; }
+      .login h1 { color: var(--accent-neon); letter-spacing: 4px; font-weight: 300; margin: 0 0 4px; }
+      .login .sub { color: var(--text-dim); font-size: 0.85rem; margin: 0 0 20px; }
+      .msg { font-size: 0.85rem; margin-top: 14px; line-height: 1.4; }
+      .msg.ok { color: var(--status-online); }
+      .msg.err { color: var(--status-offline); }
+      #google { width: 100%; background: #fff; color: #111; }
+      #google:hover { background: #e8eef5; color: #111; }
+      .actions { display: flex; gap: 8px; margin-top: 16px; }
+      .actions > * { flex: 1; text-align: center; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class="login panel">
+      <h1>K-OS</h1>
+      <p class="sub" id="sub">Connexion au collectif Re:log</p>
+      <div id="view"></div>
+    </div>
+    <script type="module" src="/src/pages/login.ts"></script>
+  </body>
+</html>

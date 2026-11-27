@@ -5,6 +5,8 @@ import type { Role } from "./types";
 
 export interface KernelOptions {
   container: HTMLIFrameElement;
+  /** Acteur imposé par la page (ex: player connecté) ; sinon lu dans ?u=. */
+  actorId?: string;
   onModeChange?: (modeId: string) => void;
 }
 
@@ -21,7 +23,7 @@ export class Kernel {
 
   constructor(role: Role, options: KernelOptions) {
     this.role = role;
-    this.actorId = new URLSearchParams(window.location.search).get("u") ?? "";
+    this.actorId = options.actorId ?? new URLSearchParams(window.location.search).get("u") ?? "";
     this.container = options.container;
 
     if (!this.actorId) {

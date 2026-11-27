@@ -3,6 +3,10 @@ import { watchActors, watchModes, createActor, deleteActor, createMode, deleteMo
 import type { Permissions } from "../types";
 import { PERMISSION_TYPES } from "../permissions";
 import { flashError, armConfirmDelete } from "../ui/dialogs";
+import { requireMember, watchInvites, watchOwner, createInvite, deleteInvite, claimOwnership, emailKey } from "../auth";
+import { appUrl } from "../appUrl";
+
+const member = await requireMember({ ownerOnly: true });
 
 const permsContainer = document.getElementById("actor-perms")!;
 permsContainer.innerHTML = PERMISSION_TYPES.map(
@@ -43,6 +47,7 @@ document.getElementById("mode-create")!.addEventListener("click", () => {
 });
 
 watchActors((actors) => {
+  renderInviteActorOptions(actors);
   const list = document.getElementById("actor-list")!;
   list.innerHTML = Object.values(actors)
     .map(
@@ -62,5 +67,51 @@ watchModes((modes) => {
     .join("");
   list.querySelectorAll<HTMLButtonElement>(".del").forEach((btn) => {
     armConfirmDelete(btn, () => deleteMode(btn.dataset.id!));
+  });
+});
+
+// --- Propriétaire et invitations ---
+
+const ownerClaim = document.getElementById("owner-claim")!;
+watchOwner((ownerKey) => {
+  ownerClaim.style.display = ownerKey ? "none" : "block";
+});
+document.getElementById("owner-claim-btn")!.addEventListener("click", () => claimOwnership(member.email));
+
+const loginLink = document.getElementById("login-link") as HTMLInputElement;
+loginLink.value = appUrl("login.html");
+document.getElementById("login-copy")!.addEventListener("click", () => navigator.clipboard.writeText(loginLink.value));
+
+const inviteActor = document.getElementById("invite-actor") as HTMLSelectElement;
+function renderInviteActorOptions(actors: Record<string, { id: string; name: string }>) {
+  const current = inviteActor.value;
+  inviteActor.innerHTML = Object.values(actors)
+    .map((a) => `<option value="${a.id}">${a.name}</option>`)
+    .join("");
+  if (current) inviteActor.value = current;
+}
+
+const invitePanel = document.getElementById("invite-panel")!;
+document.getElementById("invite-create")!.addEventListener("click", async () => {
+  const emailInput = document.getElementById("invite-email") as HTMLInputElement;
+  const email = emailInput.value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return flashError(invitePanel, "Adresse e-mail invalide.");
+  if (/[#$\[\]\/<>"']/.test(email)) return flashError(invitePanel, "Cette adresse contient un caractère non pris en charge.");
+  if (!inviteActor.value) return flashError(invitePanel, "Choisis un membre.");
+  await createInvite(email, inviteActor.value);
+  emailInput.value = "";
+});
+
+watchInvites((invites) => {
+  const list = document.getElementById("invite-list")!;
+  const myKey = emailKey(member.email);
+  list.innerHTML = Object.entries(invites)
+    .map(
+      ([key, inv]) =>
+        `<div class="list-item"><span>${inv.email} → <strong>${inv.actorId}</strong>${key === myKey ? " (toi)" : ""}</span><button class="del" data-key="${key}">×</button></div>`,
+    )
+    .join("");
+  list.querySelectorAll<HTMLButtonElement>(".del").forEach((btn) => {
+    armConfirmDelete(btn, () => deleteInvite(btn.dataset.key!));
   });
 });

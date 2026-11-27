@@ -4,6 +4,9 @@ import type { Actor, ModuleDefinition } from "../types";
 import { renderMasterSignalPanel } from "../modules/terminal/masterSignal";
 import { renderPokemmoMasterPanel } from "../modules/pokemmo/masterPanel";
 import { appUrl } from "../appUrl";
+import { requireMember } from "../auth";
+
+await requireMember({ ownerOnly: true });
 
 let selectedActorId: string | null = null;
 let actors: Record<string, Actor> = {};

@@ -8,24 +8,28 @@ export function renderMasterSignalPanel(container: HTMLElement, actorId: string)
   let skin: Skin = "classic";
 
   container.innerHTML = `
-    <div class="panel" style="margin-bottom:16px;">
-      <h4>Signal K-OS — vers l'overlay de ${actorId}</h4>
-      <p id="ms-muted" style="display:none; color:var(--status-offline); font-size:0.8rem; margin:0 0 10px;">🛑 ${actorId} a coupé son overlay Re:log : rien ne s'affichera chez lui.</p>
-      <textarea id="ms-text" placeholder="Message à injecter en direct..." rows="3" style="width:100%; margin-bottom:8px; font-family:var(--font-mono); background:#000; color:var(--text-main); border:1px solid var(--border); border-radius:4px; padding:8px;"></textarea>
-      <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-        <label style="font-size:0.8rem; display:flex; align-items:center; gap:6px;">
-          <input type="checkbox" id="ms-raid" /> RAID (glitch)
+    <div class="panel" style="display:grid; gap:10px;">
+      <h4 style="margin:0">Signal K-OS — vers l'overlay de ${actorId}</h4>
+      <p id="ms-muted" class="feedback err" hidden>🛑 ${actorId} a coupé son overlay Re:log : rien ne s'affichera chez lui.</p>
+      <textarea id="ms-text" class="mono" rows="3" placeholder="Message à afficher… (Ctrl + Entrée pour envoyer)"></textarea>
+      <div class="btn-row">
+        <label class="check"><input type="checkbox" id="ms-raid" /> Mode RAID</label>
+        <label class="check push">Style
+          <select id="ms-skin">
+            <option value="classic">Classique</option>
+            <option value="techwear">Techwear</option>
+          </select>
         </label>
-        <select id="ms-skin" style="margin-left:auto;">
-          <option value="classic">Skin : Classique</option>
-          <option value="techwear">Skin : Techwear</option>
-        </select>
       </div>
-      <button id="ms-send" style="width:100%; margin-bottom:8px;">Envoyer</button>
-      <button id="ms-reset" style="width:100%; color:var(--status-offline); border-color:var(--status-offline);">Effacer l'écran</button>
-      <hr style="border-color:var(--border); margin:14px 0;" />
+      <div class="btn-row">
+        <button id="ms-send" class="primary">Envoyer</button>
+        <button id="ms-reset" class="danger push">Effacer l'écran</button>
+      </div>
+      <div class="feedback" id="ms-feedback" aria-live="polite"></div>
+      <hr style="border:none; border-top:1px solid var(--border); margin:4px 0;" />
+      <div class="field-label">Archives</div>
       <div id="ms-archives"></div>
-      <p style="color:var(--text-dim); font-size:0.7rem; margin-top:10px;">S'affiche sur l'overlay Re:log de ${actorId} (lien "Overlay" dans la barre latérale).</p>
+      <p class="hint" style="margin:0">S'affiche sur l'overlay Re:log de ${actorId}.</p>
     </div>
   `;
 
@@ -35,21 +39,42 @@ export function renderMasterSignalPanel(container: HTMLElement, actorId: string)
 
   skinSelect.addEventListener("change", () => (skin = skinSelect.value as Skin));
 
-  container.querySelector("#ms-send")!.addEventListener("click", () => {
+  const feedbackEl = container.querySelector<HTMLElement>("#ms-feedback")!;
+  let feedbackTimer: ReturnType<typeof setTimeout> | undefined;
+  async function fire(run: () => Promise<unknown>, ok: string) {
+    try {
+      await run();
+      feedbackEl.className = "feedback ok";
+      feedbackEl.textContent = ok;
+    } catch {
+      feedbackEl.className = "feedback err";
+      feedbackEl.textContent = "Envoi refusé : overlay coupé ?";
+    }
+    clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(() => (feedbackEl.textContent = ""), 3000);
+  }
+  const sendText = () => {
     if (!text.value.trim()) return;
-    dispatchLive(actorId, { type: "TYPE", text: text.value, raid: raid.checked, skin });
+    fire(() => dispatchLive(actorId, { type: "TYPE", text: text.value, raid: raid.checked, skin }), "Envoyé ✓");
+  };
+  container.querySelector("#ms-send")!.addEventListener("click", sendText);
+  text.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      sendText();
+    }
   });
 
-  container.querySelector("#ms-reset")!.addEventListener("click", () => resetLive(actorId));
+  container.querySelector("#ms-reset")!.addEventListener("click", () => fire(() => resetLive(actorId), "Écran effacé ✓"));
 
   const mutedNotice = container.querySelector<HTMLElement>("#ms-muted")!;
   const stopMuted = watchMuted(actorId, (muted) => {
-    mutedNotice.style.display = muted ? "block" : "none";
+    mutedNotice.hidden = !muted;
   });
 
   const stopArchives = renderArchiveLibrary(container.querySelector("#ms-archives")!, {
     editable: false,
-    onFire: (archive) => dispatchLive(actorId, { type: "TYPE", text: archive.text, raid: archive.raid, skin }),
+    onFire: (archive) => fire(() => dispatchLive(actorId, { type: "TYPE", text: archive.text, raid: archive.raid, skin }), `« ${archive.label || archive.id} » affiché ✓`),
   });
 
   return () => {

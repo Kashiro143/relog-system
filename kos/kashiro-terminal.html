@@ -2,29 +2,33 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>K-OS // TERMINAL</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <style>
-      .page { max-width: 640px; }
-      .panel h4 { margin: 0 0 12px 0; }
-      #link-row { display: flex; gap: 6px; margin-top: 8px; }
-      #link-row input { flex: 1; font-size: 11px; color: #888; }
+      .page { max-width: 1100px; }
+      .term-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+      .term-col { display: grid; gap: 14px; }
+      @media (max-width: 860px) { .term-grid { grid-template-columns: 1fr; } }
+      .obs-link { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+      .obs-link .field-label { margin-right: 4px; }
+      .obs-link input { flex: 1; min-width: 180px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
     </style>
   </head>
   <body>
     <main class="page">
-    <header class="page-head"><h1>💻 Terminal</h1><p>Le virus Kashiro écrit sur ton overlay : messages en direct, archives et séquences.</p></header>
+      <header class="page-head">
+        <h1>💻 Terminal</h1>
+        <p>Le virus Kashiro écrit sur ton overlay : messages en direct, archives et séquences.</p>
+      </header>
 
-    <div class="panel" style="margin-bottom:16px;">
-      <h4>Overlay OBS</h4>
-      <div id="link-row">
-        <input id="link-overlay" readonly />
-        <button id="copy-overlay" style="width:auto;">📋</button>
-      </div>
-    </div>
+      <section class="panel obs-link" aria-label="Lien OBS">
+        <span class="field-label">Overlay OBS</span>
+        <input id="link-overlay" readonly aria-label="Lien de l'overlay du terminal" />
+        <button id="copy-overlay" class="btn-sm">Copier</button>
+      </section>
 
-    <div id="terminal-panel"></div>
-
+      <div id="terminal-panel"></div>
     </main>
     <script type="module" src="/src/pages/kashiro-terminal.ts"></script>
   </body>

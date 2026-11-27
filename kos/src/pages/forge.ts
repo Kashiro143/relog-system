@@ -5,6 +5,7 @@ import { PERMISSION_TYPES } from "../permissions";
 import { flashError, armConfirmDelete } from "../ui/dialogs";
 import { requireMember, watchInvites, watchOwner, createInvite, deleteInvite, claimOwnership, emailKey } from "../auth";
 import { appUrl } from "../appUrl";
+import { watchGiphyKey, setGiphyKey } from "../relog/gifs";
 
 const member = await requireMember({ ownerOnly: true });
 
@@ -114,4 +115,17 @@ watchInvites((invites) => {
   list.querySelectorAll<HTMLButtonElement>(".del").forEach((btn) => {
     armConfirmDelete(btn, () => deleteInvite(btn.dataset.key!));
   });
+});
+
+// --- Clé GIPHY (recherche de GIF dans la console Re:log) ---
+
+const giphyInput = document.getElementById("giphy-key") as HTMLInputElement;
+const giphyStatus = document.getElementById("giphy-status")!;
+watchGiphyKey((key) => {
+  if (document.activeElement !== giphyInput) giphyInput.value = key ?? "";
+  giphyStatus.textContent = key ? "Recherche GIPHY active ✓" : "Pas de clé : la recherche est désactivée (les liens collés marchent quand même).";
+});
+document.getElementById("giphy-save")!.addEventListener("click", async () => {
+  await setGiphyKey(giphyInput.value);
+  giphyStatus.textContent = giphyInput.value.trim() ? "Clé enregistrée ✓" : "Clé retirée.";
 });

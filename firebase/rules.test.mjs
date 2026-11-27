@@ -154,3 +154,77 @@ describe("revendication du propriétaire", () => {
     await assertFails(as("s", STRANGER).ref("auth/owner").set("inconnu@gmail,com"));
   });
 });
+
+describe("envoi de GIF", () => {
+  const GIF = "https://media.giphy.com/media/abc123/giphy.mp4";
+  const gif = (over = {}) => ({ url: GIF, from: "Reindal", fromName: "Reindal", color: "#ffb547", ts: { ".sv": "timestamp" }, ...over });
+
+  beforeEach(() =>
+    env.withSecurityRulesDisabled((ctx) =>
+      ctx.database().ref("relog/gifs").set({
+        Reindal: { k1: { url: GIF, from: "Kashiro", fromName: "Kashiro", color: "#00d4ff", ts: 1 } },
+        Titou: { k2: { url: GIF, from: "Kashiro", fromName: "Kashiro", color: "#00d4ff", ts: 1 } },
+      }),
+    ),
+  );
+
+  test("un membre envoie un GIF à un autre, en son nom", async () => {
+    await assertSucceeds(as("r", REINDAL).ref("relog/gifs/Kashiro/g1").set(gif({ caption: "gg", preview: "https://media.giphy.com/media/abc123/200w.gif" })));
+    await assertSucceeds(anon().ref("relog/gifs/Kashiro").get()); // l'overlay OBS le lit
+  });
+  test("envoi groupé : tout passe, ou rien si un destinataire a coupé", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref().update({ "relog/gifs/Kashiro/m1": gif(), "relog/gifs/Reindal/m2": gif() }));
+    await assertFails(db.ref().update({ "relog/gifs/Kashiro/m3": gif(), "relog/gifs/Titou/m4": gif() }));
+  });
+  test("refuse l'usurpation, les cibles coupées ou inconnues, les liens hors liste et les vieux GIF", async () => {
+    const db = as("r", REINDAL);
+    await assertFails(db.ref("relog/gifs/Kashiro/x1").set(gif({ from: "Kashiro" })));
+    await assertFails(db.ref("relog/gifs/Titou/x2").set(gif()));
+    await assertFails(db.ref("relog/gifs/Fantome/x3").set(gif()));
+    await assertFails(db.ref("relog/gifs/Kashiro/x4").set(gif({ url: "https://evil.example/track.gif" })));
+    await assertFails(db.ref("relog/gifs/Kashiro/x5").set(gif({ url: "http://media.giphy.com/media/abc/giphy.gif" })));
+    await assertFails(db.ref("relog/gifs/Kashiro/x6").set(gif({ ts: Date.now() - 120000 })));
+    await assertFails(db.ref("relog/gifs/Kashiro/x7").set(gif({ extra: "nope" })));
+    await assertFails(db.ref("relog/gifs/Kashiro/x8").set(gif({ caption: "x".repeat(121) })));
+  });
+  test("personne d'extérieur ne peut envoyer", async () => {
+    await assertFails(anon().ref("relog/gifs/Kashiro/a1").set(gif()));
+    await assertFails(as("s", STRANGER).ref("relog/gifs/Kashiro/a2").set(gif()));
+  });
+  test("on supprime ses envois et ce qu'on reçoit, rien d'autre, et on ne réécrit pas un GIF", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/gifs/Kashiro/mine").set(gif()));
+    await assertFails(db.ref("relog/gifs/Kashiro/mine").set(gif({ caption: "modifié" })));
+    await assertSucceeds(db.ref("relog/gifs/Kashiro/mine").remove());
+    await assertSucceeds(db.ref("relog/gifs/Reindal/k1").remove()); // reçu
+    await assertFails(db.ref("relog/gifs/Titou/k2").remove()); // ni envoyé ni reçu
+  });
+});
+
+describe("zone des GIF, favoris et clé GIPHY", () => {
+  const FAV = { url: "https://media.giphy.com/media/abc123/giphy.gif", addedAt: 1 };
+  test("chacun règle sa zone, dans les limites", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/overlay/Reindal/gifZone").update({ cell: 4, height: 320, seconds: 6 }));
+    await assertFails(db.ref("relog/overlay/Reindal/gifZone").update({ cell: 12 }));
+    await assertFails(db.ref("relog/overlay/Reindal/gifZone").update({ x: 1 }));
+    await assertFails(db.ref("relog/overlay/Titou/gifZone").update({ cell: 0 }));
+  });
+  test("les favoris sont privés", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/favorites/Reindal/f1").set(FAV));
+    await assertSucceeds(db.ref("relog/favorites/Reindal").get());
+    await assertFails(db.ref("relog/favorites/Kashiro").get());
+    await assertFails(db.ref("relog/favorites/Kashiro/f1").set(FAV));
+    await assertFails(db.ref("relog/favorites/Reindal/f2").set({ ...FAV, url: "https://evil.example/a.gif" }));
+    await assertFails(anon().ref("relog/favorites/Reindal").get());
+  });
+  test("la clé GIPHY : Kashiro l'écrit, les invités la lisent", async () => {
+    await assertSucceeds(as("k", OWNER).ref("relog/settings/giphyKey").set("abcDEF123"));
+    await assertSucceeds(as("r", REINDAL).ref("relog/settings/giphyKey").get());
+    await assertFails(as("r", REINDAL).ref("relog/settings/giphyKey").set("pirate"));
+    await assertFails(as("s", STRANGER).ref("relog/settings/giphyKey").get());
+    await assertFails(anon().ref("relog/settings/giphyKey").get());
+  });
+});

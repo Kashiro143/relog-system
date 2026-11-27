@@ -18,10 +18,10 @@
       #invite-panel { grid-column: 1 / -1; }
       #invite-panel .row { display: grid; grid-template-columns: 1fr 200px auto; gap: 10px; align-items: end; }
       #invite-panel .row button { width: auto; margin-top: 0; }
-      #invite-panel .hint { color: var(--text-dim); font-size: 0.8rem; margin: 0 0 8px; }
-      #login-row { display: flex; gap: 6px; margin-top: 4px; }
-      #login-row input { flex: 1; font-size: 11px; color: #888; }
-      #login-row button { width: auto; margin-top: 0; }
+      #invite-panel .hint, #giphy-panel .hint { color: var(--text-dim); font-size: 0.8rem; margin: 0 0 8px; }
+      #login-row, #giphy-row { display: flex; gap: 6px; margin-top: 4px; }
+      #login-row input, #giphy-row input { flex: 1; font-size: 11px; color: #888; }
+      #login-row button, #giphy-row button { width: auto; margin-top: 0; }
       #owner-claim { border-color: var(--accent-neon); margin-top: 24px; display: none; }
       #owner-claim button { width: auto; }
       @media (max-width: 760px) { .grid, #invite-panel .row { grid-template-columns: 1fr; } }
@@ -74,6 +74,13 @@
         <label>Lien à envoyer au membre</label>
         <div id="login-row"><input id="login-link" readonly /><button id="login-copy">📋</button></div>
         <div id="invite-list"></div>
+      </section>
+
+      <section class="panel" id="giphy-panel" style="grid-column: 1 / -1;">
+        <h3>Recherche de GIF (GIPHY)</h3>
+        <p class="hint">Clé gratuite à créer sur developers.giphy.com (« Create an API Key », type API). Elle active la recherche dans la console Re:log de tout le groupe.</p>
+        <div id="giphy-row"><input id="giphy-key" placeholder="Clé API GIPHY" autocomplete="off" /><button id="giphy-save">Enregistrer</button></div>
+        <p class="hint" id="giphy-status"></p>
       </section>
     </div>
 

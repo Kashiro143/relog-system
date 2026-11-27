@@ -52,7 +52,91 @@
       "overlay": {
         ".read": true,
         "$actor": {
-          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)"
+          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+          "muted": {
+            ".validate": "newData.isBoolean()"
+          },
+          "gifZone": {
+            "cell": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8"
+            },
+            "height": {
+              ".validate": "newData.isNumber() && newData.val() >= 100 && newData.val() <= 900"
+            },
+            "seconds": {
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "gifs": {
+        ".read": true,
+        "$target": {
+          "$id": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (!data.exists() && (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && newData.child('from').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() && root.child('relog/overlay').child($target).child('muted').val() != true && root.child('registry/users').child($target).child('name').exists()) || (!newData.exists() && (data.child('from').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $target)))",
+            ".validate": "newData.hasChildren(['url', 'from', 'fromName', 'color', 'ts'])",
+            "url": {
+              ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^https:\\/\\/(media[0-9]*\\.giphy\\.com|i\\.giphy\\.com|media[0-9]*\\.tenor\\.com|c\\.tenor\\.com|cdn\\.discordapp\\.com|media\\.discordapp\\.net|i\\.imgur\\.com)\\//)"
+            },
+            "preview": {
+              ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^https:\\/\\/(media[0-9]*\\.giphy\\.com|i\\.giphy\\.com|media[0-9]*\\.tenor\\.com|c\\.tenor\\.com|cdn\\.discordapp\\.com|media\\.discordapp\\.net|i\\.imgur\\.com)\\//)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            },
+            "from": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "fromName": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "color": {
+              ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{3,8}$/)"
+            },
+            "caption": {
+              ".validate": "newData.isString() && newData.val().length <= 120"
+            },
+            "ts": {
+              ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 60000"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "favorites": {
+        "$actor": {
+          ".read": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+          "$fav": {
+            ".validate": "newData.hasChildren(['url', 'addedAt'])",
+            "url": {
+              ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^https:\\/\\/(media[0-9]*\\.giphy\\.com|i\\.giphy\\.com|media[0-9]*\\.tenor\\.com|c\\.tenor\\.com|cdn\\.discordapp\\.com|media\\.discordapp\\.net|i\\.imgur\\.com)\\//)"
+            },
+            "preview": {
+              ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^https:\\/\\/(media[0-9]*\\.giphy\\.com|i\\.giphy\\.com|media[0-9]*\\.tenor\\.com|c\\.tenor\\.com|cdn\\.discordapp\\.com|media\\.discordapp\\.net|i\\.imgur\\.com)\\//)"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            },
+            "addedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "settings": {
+        "giphyKey": {
+          ".read": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists())",
+          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))",
+          ".validate": "newData.isString() && newData.val().length <= 100"
         }
       }
     },

@@ -34,7 +34,7 @@ interface TwitchPlayer {
   seek(s: number): void;
   getCurrentTime(): number;
   getDuration(): number;
-  getPaused(): boolean;
+  isPaused(): boolean;
   getEnded(): boolean;
   setVolume(v: number): void;
   setMuted(m: boolean): void;
@@ -197,7 +197,7 @@ function twitchVodDriver(slot: HTMLElement, onReady: () => void, onError: (msg: 
     status: () => {
       const pl = ok();
       if (!pl) return "buffering";
-      return pl.getEnded() ? "ended" : pl.getPaused() ? "paused" : "playing";
+      return pl.getEnded() ? "ended" : pl.isPaused() ? "paused" : "playing";
     },
     audio: (muted, volume) => {
       const pl = ok();

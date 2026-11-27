@@ -230,9 +230,9 @@ interface GiphyItem {
 }
 
 /** Recherche (ou tendances si la requête est vide), filtrée PG-13 pour rester diffusable. */
-export async function searchGiphy(apiKey: string, q: string, opts: { offset?: number; kind?: GiphyKind } = {}): Promise<GifMedia[]> {
+export async function searchGiphy(apiKey: string, q: string, opts: { offset?: number; kind?: GiphyKind; limit?: number } = {}): Promise<GifMedia[]> {
   const kind = opts.kind ?? "gifs";
-  const params = new URLSearchParams({ api_key: apiKey, limit: "24", offset: String(opts.offset ?? 0), rating: "pg-13", bundle: "messaging_non_clips" });
+  const params = new URLSearchParams({ api_key: apiKey, limit: String(opts.limit ?? 24), offset: String(opts.offset ?? 0), rating: "pg-13", bundle: "messaging_non_clips" });
   const endpoint = q.trim() ? "search" : "trending";
   if (q.trim()) {
     params.set("q", q.trim());

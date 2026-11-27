@@ -65,6 +65,7 @@ function feedback(el: HTMLElement, kind: "ok" | "err" | "", text: string) {
 
 let state: ObsState | null = null;
 let plan: Plan = {};
+let showNested = false;
 
 $("conn-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -127,8 +128,15 @@ function renderScenes() {
   if (!state) return;
   const body = $("scene-rows");
   body.replaceChildren();
-  for (const s of state.scenes) {
+  const main = state.scenes.filter((s) => s.kind === "main");
+  const nested = state.scenes.filter((s) => s.kind === "nested");
+  // Une sous-scène déjà équipée ou modifiée reste visible pour qu'on la voie.
+  const touched = (s: (typeof nested)[number]) => !!s.items.relog || !!s.items.module || !!plan[s.name]?.relog || !!plan[s.name]?.module;
+  const rowsToShow = [...main, ...nested.filter((s) => showNested || touched(s))];
+  const hiddenNested = nested.filter((s) => !showNested && !touched(s)).length;
+  for (const s of rowsToShow) {
     const tr = document.createElement("tr");
+    if (s.kind === "nested") tr.className = "nested";
     const name = document.createElement("td");
     name.textContent = s.name;
     tr.appendChild(name);
@@ -155,6 +163,23 @@ function renderScenes() {
     }
     body.appendChild(tr);
   }
+  if (nested.length) {
+    const tr = document.createElement("tr");
+    tr.className = "toggle";
+    const td = document.createElement("td");
+    td.colSpan = 3;
+    const btn = document.createElement("button");
+    btn.className = "btn-sm";
+    btn.textContent = showNested ? "▴ Masquer les sous-scènes" : `▾ ${hiddenNested} sous-scène${hiddenNested > 1 ? "s" : ""} masquée${hiddenNested > 1 ? "s" : ""}`;
+    btn.title = "Scènes utilisées comme source dans d'autres scènes (Chanson, Alerte…) : le K-OS n'y est généralement pas utile.";
+    btn.addEventListener("click", () => {
+      showNested = !showNested;
+      renderScenes();
+    });
+    td.appendChild(btn);
+    tr.appendChild(td);
+    if (showNested || hiddenNested) body.appendChild(tr);
+  }
   summarize();
 }
 
@@ -180,7 +205,8 @@ function summarize() {
 $("make-watch").addEventListener("change", summarize);
 
 function setAll(part: Part, value: boolean) {
-  for (const k of Object.keys(plan)) plan[k][part] = value;
+  // « Partout » = les scènes principales, pas les sous-scènes.
+  for (const s of state?.scenes ?? []) if (s.kind === "main" || !value) plan[s.name][part] = value;
   renderScenes();
 }
 $("all-relog").addEventListener("click", () => setAll("relog", true));

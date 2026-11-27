@@ -23,6 +23,9 @@
       .scene-table input { width: 18px; height: 18px; accent-color: var(--accent-neon); }
       .scene-table .src { display: block; font-size: 10px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; margin: 2px auto 0; }
       .scene-table .chg { color: var(--accent-neon); }
+      .scene-table tr.nested td:first-child { color: var(--text-dim); padding-left: 20px; }
+      .scene-table tr.nested td:first-child::before { content: "↳ "; color: var(--text-faint); }
+      .scene-table tr.toggle td { border-bottom: 0; padding-top: 10px; }
       .legend { display: grid; gap: 4px; font-size: 12px; color: var(--text-dim); margin: 0 0 12px; }
       .legend b { color: var(--text-main); }
       .summary { font-size: 13px; color: var(--text-dim); min-height: 18px; }

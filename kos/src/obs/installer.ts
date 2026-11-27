@@ -27,6 +27,8 @@ export const WATCH_SCENE = "K-OS · Watch-party";
 
 export interface SceneState {
   name: string;
+  /** main : scène qu'on affiche ; nested : utilisée comme source dans une autre scène ; separator : ligne "=====" de rangement. */
+  kind: "main" | "nested" | "separator";
   /** Élément de scène déjà présent pour chaque partie. */
   items: Partial<Record<Part, { sourceName: string; sceneItemId: number }>>;
 }
@@ -95,14 +97,20 @@ export async function readState(obs: ObsClient, actorId: string): Promise<ObsSta
   // GetSceneList renvoie les scènes de bas en haut de la liste OBS.
   const ordered = [...scenes].sort((a, b) => b.sceneIndex - a.sceneIndex);
   const out: SceneState[] = [];
+  const nested = new Set<string>();
   for (const s of ordered) {
-    const { sceneItems } = await obs.request<{ sceneItems: { sourceName: string; sceneItemId: number }[] }>("GetSceneItemList", { sceneName: s.sceneName });
+    const { sceneItems } = await obs.request<{ sceneItems: { sourceName: string; sceneItemId: number; sourceType?: string }[] }>("GetSceneItemList", { sceneName: s.sceneName });
     const items: SceneState["items"] = {};
     for (const it of sceneItems) {
+      if (it.sourceType === "OBS_SOURCE_TYPE_SCENE") nested.add(it.sourceName);
       const part = partByInput.get(it.sourceName);
       if (part && !items[part]) items[part] = { sourceName: it.sourceName, sceneItemId: it.sceneItemId };
     }
-    out.push({ name: s.sceneName, items });
+    out.push({ name: s.sceneName, kind: "main", items });
+  }
+  for (const s of out) {
+    if (/^[\s=\-_~*#.|]+$/.test(s.name)) s.kind = "separator";
+    else if (nested.has(s.name)) s.kind = "nested";
   }
   return { canvas: { w: video.baseWidth, h: video.baseHeight }, scenes: out, inputs: found };
 }
@@ -120,8 +128,8 @@ export function defaultPlan(state: ObsState): Plan {
   for (const s of state.scenes) {
     const relog = s.items.relog;
     plan[s.name] = {
-      relog: anyRelog ? !!relog : true,
-      module: anyRelog ? !!s.items.module || (!!relog && relogShowsModule.has(relog.sourceName)) : true,
+      relog: anyRelog || s.kind !== "main" ? !!relog : true,
+      module: anyRelog || s.kind !== "main" ? !!s.items.module || (!!relog && relogShowsModule.has(relog.sourceName)) : true,
     };
   }
   return plan;
@@ -149,7 +157,7 @@ export async function applyPlan(
     step(`Création de la scène « ${WATCH_SCENE} »…`);
     await obs.request("CreateScene", { sceneName: WATCH_SCENE });
     res.created.push(WATCH_SCENE);
-    scenes.unshift({ name: WATCH_SCENE, items: {} });
+    scenes.unshift({ name: WATCH_SCENE, kind: "main", items: {} });
     plan[WATCH_SCENE] = { relog: true, module: false };
   }
 

@@ -342,7 +342,10 @@ const STYLE = `
 .kos-video.kos:not(.full) .hud.bottom { bottom: auto; top: calc(100% + var(--b) + var(--k, 1) * 8px); padding: 0 calc(var(--cut) * 0.5); background: none; font-size: calc(var(--k, 1) * 13px); }
 .kos-video .pause { position: absolute; inset: 0; z-index: 4; display: none; place-items: center; font: 800 calc(var(--k, 1) * 34px) "JetBrains Mono", Consolas, monospace; letter-spacing: calc(var(--k, 1) * 6px); color: var(--c, #00d4ff); background: rgba(0,0,0,0.9); backdrop-filter: blur(calc(var(--k, 1) * 8px)); text-shadow: 0 0 calc(var(--k, 1) * 14px) var(--c, #00d4ff); }
 /* La pause masque aussi l'interface que YouTube affiche sur une vidéo arrêtée. */
-.kos-video.paused .pause, .kos-video.ended .pause { display: grid; }
+.kos-video.paused .pause, .kos-video.ended .pause, .kos-video.resuming .pause { display: grid; }
+/* À la reprise, YouTube réaffiche son titre quelques secondes : on le cache sous un fondu. */
+.kos-video.resuming .pause { animation: kosv-fade 3s ease-in forwards; }
+@keyframes kosv-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 .kos-video.plain .pause { color: #fff; text-shadow: none; font-size: calc(var(--k, 1) * 26px); }
 .kos-video .boot { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: #000; color: var(--c, #00d4ff); font: 700 calc(var(--k, 1) * 22px) "JetBrains Mono", Consolas, monospace; letter-spacing: calc(var(--k, 1) * 4px); transition: opacity 0.5s; }
 .kos-video .boot span { animation: kosv-blink 0.8s steps(2) infinite; }
@@ -422,6 +425,9 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
   let autoMuted = false;
   /** Moment du dernier chargement : sans image au bout de 15 s, on l'explique. */
   let loadAt = 0;
+  let resumeTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Début de lecture constaté : l'écran de démarrage reste 2,5 s (titre YouTube). */
+  let playingSince = 0;
 
   function place() {
     if (!frame || !video) return;
@@ -545,8 +551,24 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
     frame.querySelector(".ttl")!.textContent = video.title || driver?.title?.() || "";
     frame.querySelector(".by")!.textContent = meta.name ? `▸ ${meta.name}` : "";
     const paused = video.state !== "playing";
-    if (paused !== frame.classList.contains("paused")) wake();
+    const wasPaused = frame.classList.contains("paused");
+    if (paused !== wasPaused) wake();
     frame.classList.toggle("paused", paused);
+    if (wasPaused && !paused && sourceOf(video) === "youtube") {
+      const pause = frame.querySelector<HTMLElement>(".pause")!;
+      pause.textContent = "▶ REPRISE DU SIGNAL";
+      frame.classList.add("resuming");
+      clearTimeout(resumeTimer);
+      const f = frame;
+      resumeTimer = setTimeout(() => {
+        f.classList.remove("resuming");
+        pause.textContent = "❚❚ EN PAUSE";
+      }, 3000);
+    } else if (paused) {
+      clearTimeout(resumeTimer);
+      frame.classList.remove("resuming");
+      frame.querySelector(".pause")!.textContent = "❚❚ EN PAUSE";
+    }
   }
 
   function renderProgress() {
@@ -557,7 +579,9 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
     dc.textContent = dur ? fmt(dur) : "";
     frame.querySelector<HTMLElement>(".bar i")!.style.width = dur ? `${Math.min(100, (cur / dur) * 100)}%` : "0";
     const st = driver.status();
-    if (st === "playing" || st === "paused" || st === "ended") frame.classList.add("live");
+    if (st === "playing") playingSince ||= Date.now();
+    const settled = st === "paused" || st === "ended" || (st === "playing" && (driverKind !== "youtube" || Date.now() - playingSince > 2500));
+    if (settled) frame.classList.add("live");
     const ended = st === "ended" && video?.state === "playing";
     if (ended !== frame.classList.contains("ended")) {
       frame.classList.toggle("ended", ended);
@@ -577,6 +601,7 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
       clearError();
       frame?.classList.remove("live");
       loadAt = Date.now();
+      playingSince = 0;
       applyAudio();
       driver.load(video.videoId, expected, video.state === "playing");
       return;

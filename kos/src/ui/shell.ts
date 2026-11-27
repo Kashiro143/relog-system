@@ -63,7 +63,7 @@ export function mountShell(member: Member, onSignOut: () => void) {
   if (me) reLog.push({ page: "player", href: `player.html?u=${encodeURIComponent(me)}`, icon: "🎮", label: "Mon player", title: "Ton module actuel et ton bouton panique" });
   const owner: NavItem[] = member.isOwner
     ? [
-        { page: "master", href: "master.html", icon: "📡", label: "Groupe", title: "Piloter les overlays du groupe" },
+        { page: "master", href: "master.html", icon: "📡", label: "Tableau de bord", title: "Ton stream, les modules du groupe et les signaux" },
         { page: "forge", href: "forge.html", icon: "👥", label: "Membres", title: "Membres, modes, invitations, clé GIPHY" },
         { page: "kashiro-terminal", href: "kashiro-terminal.html", icon: "💻", label: "Terminal", title: "Terminal virus de Kashiro" },
       ]

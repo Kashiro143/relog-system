@@ -3,6 +3,9 @@ import { db } from "./firebase";
 import { appUrl } from "./appUrl";
 import type { Role } from "./types";
 
+/** Mode "aucun module" : l'overlay et la page joueur se vident. */
+export const IDLE_MODE = "idle";
+
 export interface KernelOptions {
   container: HTMLIFrameElement;
   /** Acteur imposé par la page (ex: player connecté) ; sinon lu dans ?u=. */
@@ -20,6 +23,7 @@ export class Kernel {
   readonly actorId: string;
   readonly role: Role;
   private container: HTMLIFrameElement;
+  private requestedMode = "";
 
   constructor(role: Role, options: KernelOptions) {
     this.role = role;
@@ -44,22 +48,29 @@ export class Kernel {
 
   private listenForModeChanges(onModeChange?: (modeId: string) => void) {
     onValue(ref(db, `users/${this.actorId}/currentMode`), (snapshot) => {
-      const modeId = snapshot.val();
-      if (!modeId) return;
+      const modeId = snapshot.val() || IDLE_MODE;
       this.loadModule(modeId);
       onModeChange?.(modeId);
     });
   }
 
   private loadModule(modeId: string) {
+    this.requestedMode = modeId;
+    if (modeId === IDLE_MODE) return this.clearModule();
     onValue(
       ref(db, `registry/modes/${modeId}`),
       (snapshot) => {
         const mode = snapshot.val();
+        if (this.requestedMode !== modeId) return; // un autre mode a été demandé entre-temps
         const url = this.role === "overlay" ? mode?.overlayUrl : mode?.playerUrl;
         if (url) this.container.src = `${appUrl(url)}?u=${encodeURIComponent(this.actorId)}`;
+        else this.clearModule();
       },
       { onlyOnce: true },
     );
+  }
+
+  private clearModule() {
+    if (this.container.getAttribute("src") !== "about:blank") this.container.src = "about:blank";
   }
 }

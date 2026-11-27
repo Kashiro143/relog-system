@@ -5,6 +5,7 @@ import { renderMasterSignalPanel } from "../modules/terminal/masterSignal";
 import { renderPokemmoMasterPanel } from "../modules/pokemmo/masterPanel";
 import { appUrl } from "../appUrl";
 import { requireMember } from "../auth";
+import { IDLE_MODE } from "../kernel";
 
 await requireMember({ ownerOnly: true });
 
@@ -53,17 +54,20 @@ function renderControls() {
   panelCleanups.forEach((fn) => fn());
   panelCleanups = [];
 
+  const current = actor?.currentMode || IDLE_MODE;
   const modeButtons = Object.values(modes)
     .map(
       (m) =>
-        `<button class="mode-btn ${actor?.currentMode === m.id ? "active" : ""}" data-mode="${m.id}">${m.label}</button>`,
+        `<button class="mode-btn ${current === m.id ? "active" : ""}" data-mode="${m.id}">${m.label}</button>`,
     )
     .join("");
+  const idleButton = `<button class="mode-btn ${current === IDLE_MODE ? "active" : ""}" data-mode="${IDLE_MODE}" title="Masque le module sur l'overlay de ce membre">⏹ Aucun (masquer)</button>`;
 
   controlZone.innerHTML = `
     <div class="panel" style="margin-bottom:16px;">
       <h4>Module affiché</h4>
       ${modeButtons || '<p style="color:var(--text-dim)">Aucun mode : ajoute-en un dans la page Membres.</p>'}
+      ${idleButton}
     </div>
     <div id="mode-panel" style="margin-bottom:16px;"></div>
     <div id="signal-panel"></div>`;

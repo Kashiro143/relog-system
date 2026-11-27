@@ -80,6 +80,7 @@ export function mountShell(member: Member, onSignOut: () => void) {
     <a class="brand" href="${appUrl("")}" title="Accueil du K-OS">K-OS</a>
     <div class="links">
       ${link({ page: "index", href: "", icon: "🏠", label: "Accueil", title: "Accueil et liens OBS" })}
+      ${me ? link({ page: "obs", href: "obs.html", icon: "🧩", label: "Installer OBS", title: "Ajouter le K-OS dans tes scènes OBS automatiquement" }) : ""}
       <span class="sep"></span><span class="grp">Re:log</span>
       ${reLog.map(link).join("")}
       ${owner.length ? `<span class="sep"></span><span class="grp">Gestion</span>${owner.map(link).join("")}` : ""}

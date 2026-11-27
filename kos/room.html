@@ -6,11 +6,8 @@
     <title>K-OS // SALONS</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <style>
-      body { padding: 12px; }
-      [hidden] { display: none !important; }
-      .wrap { display: grid; gap: 12px; max-width: 1500px; margin: 0 auto; }
+      .wrap { display: grid; gap: 12px; max-width: 1500px; margin: 0 auto; padding: 16px; }
       @media (min-width: 1000px) { .wrap { grid-template-columns: 260px minmax(0, 1fr); align-items: start; } .wrap > header { grid-column: 1 / -1; } }
-      header h1 { margin: 0; font-size: 14px; font-weight: 400; letter-spacing: 3px; color: var(--accent-neon); padding-right: 260px; }
       .panel { padding: 14px; }
       .panel h4 { font-size: 11px; letter-spacing: 2px; margin-bottom: 10px; }
       .hint { font-size: 11px; color: var(--text-dim); margin: 8px 0 0; }
@@ -83,7 +80,7 @@
   </head>
   <body>
     <div class="wrap">
-      <header><h1>K-OS // SALONS RE:LOG</h1></header>
+      <header class="page-head"><h1>🎨 Salons</h1><p>Tout ce qui se passe dans un salon apparaît sur le stream de chaque participant.</p></header>
 
       <aside class="panel">
         <h4>Salons</h4>

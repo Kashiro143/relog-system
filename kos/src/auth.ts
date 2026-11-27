@@ -8,9 +8,10 @@ import {
 import { ref, get, set, remove, onValue, type Unsubscribe } from "firebase/database";
 import { auth, db } from "./firebase";
 import { appUrl } from "./appUrl";
+import { mountShell } from "./ui/shell";
 
 // Connexion par compte Google : l'adresse vérifiée est liée au membre.
-// Kashiro invite une adresse depuis la Forge : auth/invites/{emailKey} = { actorId, email }.
+// Kashiro invite une adresse depuis la page Membres : auth/invites/{emailKey} = { actorId, email }.
 // Le propriétaire du K-OS est désigné par auth/owner = emailKey (revendiqué une seule fois).
 
 export { auth };
@@ -137,7 +138,7 @@ export function blockPage(title: string, message: string, withSignOut = true) {
  * À appeler en tête des pages protégées. Redirige vers login.html si personne
  * n'est connecté ; bloque la page si l'adresse n'a pas le droit d'y être.
  * ownerOnly laisse passer tant qu'aucun propriétaire n'a été revendiqué
- * (premier passage de Kashiro dans la Forge).
+ * (premier passage de Kashiro dans la page Membres).
  */
 export async function requireMember(opts: { ownerOnly?: boolean } = {}): Promise<Member> {
   const user = await currentUser();
@@ -154,29 +155,11 @@ export async function requireMember(opts: { ownerOnly?: boolean } = {}): Promise
     blockPage("Adresse non invitée", `${member.email} n'est liée à aucun membre Re:log. Demande une invitation à Kashiro.`);
     return new Promise<Member>(() => {});
   }
-  mountAccountBadge(member);
-  return member;
-}
-
-/** Petit rappel discret du compte connecté, avec déconnexion. */
-function mountAccountBadge(member: Member) {
-  const badge = document.createElement("div");
-  badge.id = "kos-account";
-  badge.style.cssText =
-    "position:fixed;right:12px;top:12px;z-index:200;display:flex;gap:8px;align-items:center;" +
-    "background:var(--panel-bg);border:1px solid var(--border);border-radius:6px;padding:4px 6px 4px 10px;" +
-    "font-size:11px;color:var(--text-dim);max-width:calc(100vw - 24px);";
-  const label = member.isOwner ? "propriétaire" : member.actorId ?? "";
-  badge.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(member.email)} · ${escapeHtml(label)}</span>`;
-  const out = document.createElement("button");
-  out.textContent = "Déconnexion";
-  out.style.cssText = "padding:3px 8px;font-size:11px;";
-  out.addEventListener("click", async () => {
+  mountShell(member, async () => {
     await signOut();
     window.location.href = loginUrl();
   });
-  badge.appendChild(out);
-  document.body.appendChild(badge);
+  return member;
 }
 
 // --- Gestion des invitations (Forge) ---

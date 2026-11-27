@@ -2,41 +2,47 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>K-OS // MASTER</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K-OS // GROUPE</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <style>
-      body { display: flex; height: 100vh; }
-      #sidebar { width: 280px; background: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+      .layout { display: flex; height: calc(100vh - var(--shell-h)); }
+      #sidebar { width: 280px; flex: none; background: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
       #sidebar h3 { padding: 20px; margin: 0; font-size: 0.8rem; letter-spacing: 2px; color: var(--accent-neon); text-transform: uppercase; border-bottom: 1px solid var(--border); }
       .actor-row { padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; gap: 10px; }
       .actor-row:hover, .actor-row.selected { background: var(--accent-low); }
       .actor-row.selected { border-left: 3px solid var(--accent-neon); }
-      #stage { flex: 1; display: flex; flex-direction: column; }
+      #stage { flex: 1; display: flex; flex-direction: column; min-width: 0; }
       header { background: var(--panel-bg); padding: 18px 32px; border-bottom: 1px solid var(--border); }
       header .target { font-weight: 800; color: var(--accent-neon); }
+      header h1 { margin: 0 0 2px; font-size: 18px; }
+      header p { margin: 0; color: var(--text-dim); font-size: 13px; }
+      @media (max-width: 760px) { .layout { flex-direction: column; height: auto; } #sidebar { width: 100%; } }
       #control-zone { padding: 32px; flex: 1; overflow-y: auto; }
       #link-hub { margin-top: auto; padding: 20px; border-top: 1px solid var(--border); display: none; }
       #link-hub label { display: block; font-size: 10px; color: var(--accent-neon); margin-top: 8px; }
       #link-hub .row { display: flex; gap: 5px; margin-top: 4px; }
-      #link-hub input { flex: 1; font-size: 10px; color: #888; }
-      .empty { color: #444; text-align: center; margin-top: 100px; }
+      #link-hub input { flex: 1; min-width: 0; font-size: 10px; color: var(--text-dim); }
+      .empty { color: var(--text-dim); text-align: center; margin-top: 100px; }
     </style>
   </head>
   <body>
+    <div class="layout">
     <aside id="sidebar">
-      <h3>Acteurs_sync</h3>
+      <h3>Membres du groupe</h3>
       <div id="actor-list"></div>
       <div id="link-hub">
-        <label>Overlay</label>
+        <label>Overlay Re:log</label>
         <div class="row"><input id="link-overlay" readonly /><button data-copy="link-overlay">📋</button></div>
         <label>Player</label>
         <div class="row"><input id="link-player" readonly /><button data-copy="link-player">📋</button></div>
       </div>
     </aside>
     <main id="stage">
-      <header>CIBLE : <span class="target" id="target-display">AUCUNE</span></header>
-      <div id="control-zone"><p class="empty">Sélectionnez un acteur pour agir</p></div>
+      <header><h1>📡 Groupe</h1><p>Membre sélectionné : <span class="target" id="target-display">aucun</span></p></header>
+      <div id="control-zone"><p class="empty">Choisis un membre à gauche pour changer son module ou lui envoyer un signal.</p></div>
     </main>
+    </div>
 
     <script type="module" src="/src/pages/master.ts"></script>
   </body>

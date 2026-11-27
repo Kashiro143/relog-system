@@ -55,7 +55,7 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 const member = await requireMember();
 const me = member.actorId;
 if (!me) {
-  blockPage("Membre non lié", "Ton adresse n'est liée à aucun membre Re:log : demande à Kashiro de t'inviter depuis la Forge.");
+  blockPage("Membre non lié", "Ton adresse n'est liée à aucun membre Re:log : demande à Kashiro de t'inviter depuis la page Membres.");
   throw new Error("[K-OS] membre non lié");
 }
 

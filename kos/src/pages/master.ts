@@ -36,7 +36,7 @@ function renderActorList() {
 
 function selectActor(id: string) {
   selectedActorId = id;
-  targetDisplay.textContent = id.toUpperCase();
+  targetDisplay.textContent = actors[id]?.name ?? id;
   renderActorList();
   renderControls();
 
@@ -62,8 +62,8 @@ function renderControls() {
 
   controlZone.innerHTML = `
     <div class="panel" style="margin-bottom:16px;">
-      <h4>Univers actuel</h4>
-      ${modeButtons || '<p style="color:var(--text-dim)">Aucun mode forgé — utilisez la Forge.</p>'}
+      <h4>Module affiché</h4>
+      ${modeButtons || '<p style="color:var(--text-dim)">Aucun mode : ajoute-en un dans la page Membres.</p>'}
     </div>
     <div id="mode-panel" style="margin-bottom:16px;"></div>
     <div id="signal-panel"></div>`;

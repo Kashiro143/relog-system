@@ -282,7 +282,7 @@ export function mountGifPicker(
         const p = document.createElement("p");
         p.className = "gp-hint";
         p.style.marginTop = "10px";
-        p.textContent = "Recherche GIPHY pas encore activée (clé à ajouter dans la Forge) : favoris, récents et liens collés fonctionnent.";
+        p.textContent = "Recherche GIPHY pas encore activée (clé à ajouter dans la page Membres) : favoris, récents et liens collés fonctionnent.";
         body.appendChild(p);
       }
       paintCovers();
@@ -312,7 +312,7 @@ export function mountGifPicker(
     // Résultats de recherche ou d'une tuile
     body.appendChild(head(view.title === "À la une" ? (sticker ? "📈 Autocollants à la une" : "📈 GIF à la une") : `« ${view.title} »`));
     if (!giphyKey) {
-      body.appendChild(grid([], "La recherche GIPHY n'est pas encore activée : Kashiro doit ajouter une clé GIPHY dans la Forge."));
+      body.appendChild(grid([], "La recherche GIPHY n'est pas encore activée : Kashiro doit ajouter une clé GIPHY dans la page Membres."));
       return;
     }
     body.appendChild(grid(results, loading ? "Chargement..." : "Aucun résultat."));

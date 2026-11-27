@@ -2,12 +2,10 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>K-OS // FORGE</title>
+    <title>K-OS // MEMBRES</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <style>
-      body { padding: 30px; }
-      h1 { color: var(--accent-neon); font-weight: 300; letter-spacing: 2px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .panel label { display: block; font-size: 0.75rem; color: var(--text-dim); margin: 12px 0 4px; text-transform: uppercase; }
       .panel input, .panel select { width: 100%; }
       .panel > button { width: 100%; margin-top: 16px; }
@@ -22,13 +20,14 @@
       #login-row, #giphy-row { display: flex; gap: 6px; margin-top: 4px; }
       #login-row input, #giphy-row input { flex: 1; font-size: 11px; color: #888; }
       #login-row button, #giphy-row button { width: auto; margin-top: 0; }
-      #owner-claim { border-color: var(--accent-neon); margin-top: 24px; display: none; }
+      #owner-claim { border-color: var(--accent-neon); display: none; }
       #owner-claim button { width: auto; }
       @media (max-width: 760px) { .grid, #invite-panel .row { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
-    <h1>K-OS // FORGE_ADMIN</h1>
+    <main class="page">
+    <header class="page-head"><h1>👥 Membres</h1><p>Membres du Re:log, modes d'overlay, invitations et réglages du groupe.</p></header>
     <section class="panel" id="owner-claim">
       <h3>Aucun propriétaire</h3>
       <p class="hint" style="color:var(--text-dim)">Le K-OS n'a pas encore de propriétaire. Revendique-le avec l'adresse connectée : Master, Forge et Terminal te seront alors réservés.</p>
@@ -36,7 +35,7 @@
     </section>
     <div class="grid">
       <section class="panel" id="actor-panel">
-        <h3>Acteurs (Re:log)</h3>
+        <h3>Membres</h3>
         <label>ID unique</label>
         <input id="actor-id" placeholder="ex: kashiro" />
         <label>Nom affiché</label>
@@ -45,12 +44,12 @@
         <input id="actor-color" type="color" value="#00d4ff" />
         <label>Permissions</label>
         <div class="checks" id="actor-perms"></div>
-        <button id="actor-create">Forger l'acteur</button>
+        <button id="actor-create" class="primary">Ajouter le membre</button>
         <div id="actor-list"></div>
       </section>
 
       <section class="panel" id="mode-panel">
-        <h3>Modes / univers</h3>
+        <h3>Modes d'overlay</h3>
         <label>ID du mode</label>
         <input id="mode-id" placeholder="ex: pokemmo" />
         <label>Nom affiché</label>
@@ -59,7 +58,7 @@
         <input id="mode-overlay" placeholder="modules/pokemmo/overlay.html" />
         <label>URL player</label>
         <input id="mode-player" placeholder="modules/pokemmo/player.html" />
-        <button id="mode-create">Forger le mode</button>
+        <button id="mode-create" class="primary">Ajouter le mode</button>
         <div id="mode-list"></div>
       </section>
 
@@ -84,6 +83,7 @@
       </section>
     </div>
 
+    </main>
     <script type="module" src="/src/pages/forge.ts"></script>
   </body>
 </html>

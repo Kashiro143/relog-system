@@ -5,12 +5,16 @@
   --accent-neon: #00d4ff;
   --accent-low: rgba(0, 212, 255, 0.1);
   --text-main: #e0e6ed;
-  --text-dim: #636e72;
+  /* Texte secondaire : contraste suffisant sur fond sombre (lisibilité). */
+  --text-dim: #8d98a3;
+  --text-faint: #5d666f;
   --status-online: #00ff88;
   --status-offline: #ff4757;
   --border: #23272e;
   --font-ui: "Inter", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Consolas", monospace;
+  --radius: 8px;
+  --shell-h: 48px;
 }
 
 * {
@@ -22,13 +26,32 @@ body {
   color: var(--text-main);
   font-family: var(--font-ui);
   margin: 0;
+  line-height: 1.4;
 }
+
+[hidden] { display: none !important; }
+
+a { color: var(--accent-neon); }
+
+:focus-visible { outline: 2px solid var(--accent-neon); outline-offset: 2px; }
+
+/* --- Mise en page commune des pages du K-OS --- */
+.page { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+.page-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.page-head h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; color: var(--text-main); }
+.page-head p { margin: 0; color: var(--text-dim); font-size: 13px; }
+.hint { font-size: 12px; color: var(--text-dim); }
+.btn-primary, button.primary { background: var(--accent-neon); border-color: var(--accent-neon); color: #001018; }
+.btn-primary:hover, button.primary:hover { background: var(--accent-neon); color: #001018; filter: brightness(1.12); }
+.btn-danger, button.danger { color: var(--status-offline); }
+.btn-danger:hover, button.danger:hover { border-color: var(--status-offline); background: rgba(255, 71, 87, 0.12); color: var(--status-offline); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .panel {
   background: var(--panel-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 18px;
 }
 
 .panel h3,
@@ -44,8 +67,8 @@ button,
   background: var(--panel-bg-alt);
   border: 1px solid var(--border);
   color: var(--text-main);
-  padding: 10px 18px;
-  border-radius: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
@@ -66,14 +89,20 @@ button.active,
 }
 
 input,
-select {
+select,
+textarea {
   background: #000;
   border: 1px solid var(--border);
   color: var(--text-main);
   padding: 8px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   font-family: var(--font-ui);
+  font-size: 13px;
 }
+
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-neon); }
+
+input[type="range"], input[type="checkbox"], input[type="color"] { padding: 0; }
 
 .status-dot {
   width: 8px;

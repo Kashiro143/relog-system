@@ -7,49 +7,64 @@
     <title>K-OS</title>
     <link rel="stylesheet" href="/src/theme.css" />
     <style>
-      body { padding: 48px 16px; }
-      .hub { max-width: 760px; margin: 0 auto; }
-      .hub h1 { color: var(--accent-neon); letter-spacing: 4px; font-weight: 300; margin: 0; }
-      .hub .sub { color: var(--text-dim); margin: 6px 0 32px; }
-      .spaces { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-      .space p.desc { color: var(--text-dim); font-size: 0.85rem; margin: -6px 0 16px; }
-      .space nav { display: flex; flex-direction: column; gap: 8px; }
-      .space a { text-decoration: none; }
-      .soon { color: var(--text-dim); font-size: 0.8rem; margin-top: 14px; }
-      #account { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-dim); }
-      #account .links { display: flex; gap: 8px; }
-      #account a, #account button { text-decoration: none; padding: 6px 12px; }
+      .status-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel-bg); font-size: 13px; }
+      .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); }
+      .pill.ok .dot { background: var(--status-online); box-shadow: 0 0 6px var(--status-online); }
+      .pill.warn { border-color: var(--status-offline); color: var(--status-offline); }
+      .pill.warn .dot { background: var(--status-offline); }
+      .pill b { font-weight: 700; }
+
+      .section-title { margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+      .tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+      .tool { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; padding: 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-bg); color: var(--text-main); text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
+      .tool:hover { border-color: var(--accent-neon); transform: translateY(-1px); }
+      .tool .ico { grid-row: span 2; font-size: 24px; line-height: 1; }
+      .tool b { font-size: 15px; }
+      .tool span { font-size: 12px; color: var(--text-dim); }
+
+      .links { display: grid; gap: 10px; }
+      .link-row { display: grid; grid-template-columns: minmax(160px, 220px) 1fr; gap: 6px 14px; align-items: center; }
+      .link-row .what b { display: block; font-size: 13px; }
+      .link-row .what small { color: var(--text-dim); font-size: 11px; }
+      .link-row .field { display: flex; gap: 6px; }
+      .link-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+      .link-row button { padding: 6px 12px; font-size: 12px; }
+      @media (max-width: 640px) { .link-row { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
-    <div class="hub">
-      <h1>K-OS</h1>
-      <p class="sub">Re:log system console</p>
-      <div id="account" class="panel"></div>
+    <main class="page">
+      <header class="page-head">
+        <h1 id="hello">K-OS</h1>
+        <p>Ton espace stream et les outils du collectif Re:log.</p>
+      </header>
 
-      <div class="spaces">
-        <section class="panel space">
-          <h3>Mon stream</h3>
-          <p class="desc">Modules, widgets et effets pour le stream de Kashiro uniquement.</p>
-          <nav>
-            <a class="btn" href="kashiro-terminal.html">Terminal — starting soon</a>
-          </nav>
-          <p class="soon">À venir : pont Twitch, jauge de puissance, avatar.</p>
-        </section>
+      <section class="status-row" id="status" aria-label="État de mon overlay"></section>
 
-        <section class="panel space">
-          <h3>Re:log</h3>
-          <p class="desc">Outils partagés avec le collectif, un overlay unique par membre.</p>
-          <nav>
-            <a class="btn" href="room.html">Salons — dessiner, écrire, poser des GIF</a>
-            <a class="btn" href="relog.html">Console Re:log — envoyer des GIF</a>
-            <a class="btn" href="master.html">Contrôle du groupe</a>
-            <a class="btn" href="forge.html">Membres &amp; modes</a>
-          </nav>
-          <p class="soon">À venir : watch-party.</p>
+      <h2 class="section-title">Re:log — avec le groupe</h2>
+      <section class="tools">
+        <a class="tool" href="relog.html"><span class="ico">💬</span><b>GIF</b><span>Envoyer un GIF ou un autocollant sur le stream des autres, en un clic.</span></a>
+        <a class="tool" href="room.html"><span class="ico">🎨</span><b>Salons</b><span>Dessiner, écrire, poser des GIF et regarder une vidéo ensemble.</span></a>
+        <a class="tool" id="tool-player" href="player.html"><span class="ico">🎮</span><b>Mon player</b><span>Ton module du moment (PokeMMO...) et ton bouton panique.</span></a>
+      </section>
+
+      <div id="owner-tools" hidden>
+        <h2 class="section-title">Mon stream & gestion</h2>
+        <section class="tools">
+          <a class="tool" href="kashiro-terminal.html"><span class="ico">💻</span><b>Terminal</b><span>Messages du virus Kashiro sur ton overlay, en direct.</span></a>
+          <a class="tool" href="starting-soon/controller.html"><span class="ico">⏳</span><b>Starting soon</b><span>Outil autonome : écran d'attente en boucle et ses messages.</span></a>
+          <a class="tool" href="master.html"><span class="ico">📡</span><b>Groupe</b><span>Changer le module de chaque membre, envoyer des signaux.</span></a>
+          <a class="tool" href="forge.html"><span class="ico">👥</span><b>Membres</b><span>Membres, modes, invitations et clé GIPHY.</span></a>
         </section>
       </div>
-    </div>
+
+      <section class="panel">
+        <h3 style="margin-bottom:6px">Mes liens OBS</h3>
+        <p class="hint" style="margin:0 0 14px">Copie un lien et colle-le dans OBS : source « Navigateur » pour un overlay (1920 × 1080), ou Docks → « Docks Internet personnalisés » pour un panneau.</p>
+        <div class="links" id="links"></div>
+      </section>
+    </main>
     <script type="module" src="/src/pages/index.ts"></script>
   </body>
 </html>

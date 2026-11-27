@@ -25,7 +25,7 @@ function showSignInButton() {
       const member = await resolveMember(auth.currentUser!);
       if (!member.actorId && !member.isOwner && !member.ownerUnclaimed) {
         await signOut();
-        message("err", `${member.email} n'est pas invitée. Demande à Kashiro de l'ajouter dans la Forge.`);
+        message("err", `${member.email} n'est pas invitée. Demande à Kashiro de l'ajouter dans la page Membres.`);
         return;
       }
       window.location.replace(next);

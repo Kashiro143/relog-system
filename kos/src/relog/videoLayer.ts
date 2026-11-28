@@ -465,6 +465,8 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
   // la vidéo n'a pas joué quelques secondes. Une vidéo chargée en pause est donc
   // d'abord lue en muet ~4 s derrière l'écran de démarrage, puis mise en pause.
   let priming = false;
+  /** Depuis quand le lecteur YouTube joue la vraie vidéo, au bon endroit (0 : pas le cas). */
+  let trackSince = 0;
   const canPrime = () => driverKind === "youtube" && !opts.nativeControls;
   /** Commandes natives : délai pendant lequel on ne lit pas les gestes de l'utilisateur (chargement, ordre reçu). */
   let graceUntil = 0;
@@ -492,7 +494,9 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
 
   function applyAudio() {
     if (!driver || !ready) return;
-    driver.audio(muted || autoMuted || priming, volume);
+    // YouTube reste muette tant que l'écran de démarrage est affiché : une pub éventuelle ne s'entend pas.
+    const booting = driverKind === "youtube" && !opts.nativeControls && !frame?.classList.contains("live");
+    driver.audio(muted || autoMuted || priming || booting, volume);
   }
 
   function showError(msg: string) {
@@ -614,8 +618,17 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
     const st = driver.status();
     if (st === "playing") playingSince ||= Date.now();
     else if (st === "paused" && !priming) playingSince = 0;
-    const settled = !priming && (st === "paused" || st === "ended" || (st === "playing" && (driverKind !== "youtube" || Date.now() - playingSince > 2500)));
-    if (settled) frame.classList.add("live");
+    // Pendant une pub YouTube, la position ne correspond pas à la vidéo : on
+    // ne compte que le temps passé sur la vraie vidéo.
+    const exp = video ? expectedPosition(video, serverNow()) : cur;
+    const onTrack = video?.state === "playing" ? Math.abs(cur - exp) < 3 : cur >= exp - 1 && cur <= exp + 10;
+    if (st === "playing" && onTrack) trackSince ||= Date.now();
+    else trackSince = 0;
+    const settled = !priming && (st === "paused" || st === "ended" || (st === "playing" && (driverKind !== "youtube" || (!!trackSince && Date.now() - trackSince > 2500))));
+    if (settled && !frame.classList.contains("live")) {
+      frame.classList.add("live");
+      applyAudio(); // son rendu une fois la vraie vidéo à l'écran (pas la pub)
+    }
     const ended = st === "ended" && video?.state === "playing";
     if (ended !== frame.classList.contains("ended")) {
       frame.classList.toggle("ended", ended);
@@ -636,6 +649,7 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
       frame?.classList.remove("live");
       loadAt = Date.now();
       playingSince = 0;
+      trackSince = 0;
       priming = video.state !== "playing" && canPrime();
       applyAudio();
       driver.load(video.videoId, expected, video.state === "playing" || priming);
@@ -643,7 +657,8 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
       return;
     }
     renderProgress();
-    if (frame && !frame.classList.contains("live") && !errorShown && Date.now() - loadAt > 15000) {
+    // (une pub YouTube en cours « joue » : ce n'est pas une panne)
+    if (frame && !frame.classList.contains("live") && !errorShown && Date.now() - loadAt > 15000 && driver.status() !== "playing") {
       showError(
         kind === "twitch-vod"
           ? "La VOD Twitch ne démarre pas : privée, réservée aux abonnés ou supprimée ?"
@@ -685,8 +700,8 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
         driver.play();
       } else stuck = 0;
     } else if (priming) {
-      // Lecture muette jusqu'à ce que YouTube ait retiré son titre (ou 12 s au plus).
-      if (Date.now() - loadAt < 12000 && !(st === "playing" && playingSince && Date.now() - playingSince > 4000)) return;
+      // Lecture muette jusqu'à 4 s sur la vraie vidéo (pubs comprises : 90 s au plus).
+      if (Date.now() - loadAt < 90000 && !(st === "playing" && trackSince && Date.now() - trackSince > 4000)) return;
       priming = false;
       driver.pause();
       driver.seek(expected);
@@ -694,7 +709,7 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
     } else {
       // Pause demandée juste après une reprise : YouTube montre encore son titre.
       // On continue en muet jusqu'à 4 s de lecture, puis on revient figer l'image.
-      if (canPrime() && st === "playing" && playingSince && Date.now() - playingSince < 4000) {
+      if (canPrime() && st === "playing" && trackSince && Date.now() - trackSince < 4000) {
         priming = true;
         loadAt = Date.now();
         applyAudio();

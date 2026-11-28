@@ -227,7 +227,7 @@ function renderVideo() {
   empty.hidden = has;
   empty.textContent = !myRoom
     ? "Rejoins ou crée une watch-party (en haut) pour lancer ou voir une vidéo."
-    : "Aucune vidéo pour l'instant. Colle un lien à droite pour en lancer une.";
+    : "Aucun signal sur ce canal. Colle un lien à droite pour lancer la transmission.";
   $<HTMLButtonElement>("video-go").disabled = !myRoom;
   renderLayout();
   if (!video) return;
@@ -255,7 +255,7 @@ setInterval(() => {
 }, 500);
 
 const now = () => (video ? expectedPosition(video, serverNow()) : 0);
-const refused = () => detect("err", "Commande refusée : as-tu bien rejoint cette watch-party ?", false);
+const refused = () => detect("err", "Transmission refusée : tu n'as pas rejoint cette watch-party.", false);
 $("v-play").addEventListener("click", () => {
   if (!myRoom || !video) return;
   if (sourceOf(video) === "twitch-clip") return void controlVideo(myRoom, "playing", 0).catch(refused);
@@ -279,7 +279,7 @@ armConfirmDelete($<HTMLButtonElement>("v-stop"), () => myRoom && stopVideo(myRoo
 const urlInput = $<HTMLInputElement>("video-url");
 function updateDetect() {
   const raw = urlInput.value.trim();
-  if (!raw) return detect("", myRoom ? "YouTube, Twitch ou fichier vidéo." : "Rejoins d'abord une watch-party.");
+  if (!raw) return detect("", myRoom ? "YouTube, Twitch ou fichier vidéo." : "Aucun canal : rejoins d'abord une watch-party.");
   const r = parseVideoLink(raw);
   if ("error" in r) detect("err", r.error);
   else detect("ok", `${SOURCE_LABELS[r.source]} reconnu ✓${r.start ? ` · départ à ${fmt(r.start)}` : ""}`);
@@ -288,14 +288,14 @@ urlInput.addEventListener("input", updateDetect);
 
 $("video-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!myRoom) return detect("err", "Rejoins d'abord une watch-party.", false);
+  if (!myRoom) return detect("err", "Aucun canal : rejoins d'abord une watch-party.", false);
   const r = parseVideoLink(urlInput.value);
   if ("error" in r) return detect("err", r.error);
   const l = shown();
   try {
     await startVideo(myRoom, { source: r.source, videoId: r.id, by: me, position: r.start, cell: l.cell, width: l.width, style: l.style });
     urlInput.value = "";
-    detect("ok", "Lancée pour toute la watch-party ✓", false);
+    detect("ok", "Transmission lancée pour toute la watch-party ✓", false);
   } catch {
     refused();
   }

@@ -23,12 +23,13 @@
       .tool b { font-size: 15px; }
       .tool span { font-size: 12px; color: var(--text-dim); }
 
-      .links { display: grid; gap: 10px; }
-      .link-row { display: grid; grid-template-columns: minmax(160px, 220px) 1fr; gap: 6px 14px; align-items: center; }
-      .link-row .what b { display: block; font-size: 13px; }
-      .link-row .what small { color: var(--text-dim); font-size: 11px; }
+      .links { display: grid; gap: 0; }
+      .link-row { display: grid; grid-template-columns: minmax(170px, 240px) 1fr; gap: 6px 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(140,165,255,0.12); }
+      .link-row:last-child { border-bottom: 0; }
+      .link-row .what b { display: block; font-size: 13.5px; color: #fff; }
+      .link-row .what small { display: block; margin-top: 2px; color: var(--text-dim); font-size: 12px; line-height: 1.35; }
       .link-row .field { display: flex; gap: 6px; }
-      .link-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+      .link-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 12px; color: #d6defb; }
       .link-row button { padding: 6px 12px; font-size: 12px; }
       @media (max-width: 640px) { .link-row { grid-template-columns: 1fr; } }
     </style>

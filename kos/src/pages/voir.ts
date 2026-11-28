@@ -90,7 +90,7 @@ function start() {
     if (!r) {
       roomName = "";
       $("room-name").textContent = "";
-      wait("Cette watch-party n'existe plus. Demande un nouveau lien aux streamers.");
+      wait("Canal fermé : cette watch-party n'existe plus. Demande un nouveau lien aux streamers.");
       layer.setVideo(null);
       return;
     }
@@ -103,7 +103,7 @@ function start() {
       layer.setVideo(null);
       $("v-title").textContent = "";
       $("v-sub").textContent = "";
-      wait(roomName ? "Aucune vidéo pour l'instant : elle apparaîtra ici dès qu'un streamer en lance une." : "Connexion au salon…");
+      wait(roomName ? "Canal ouvert, aucun signal pour l'instant : la vidéo apparaîtra dès qu'un streamer la lance." : "Connexion au salon…");
       applyAudio();
       return;
     }

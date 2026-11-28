@@ -76,7 +76,7 @@ $("conn-form").addEventListener("submit", async (e) => {
   const port = Number(portInput.value);
   if (!Number.isInteger(port) || port < 1 || port > 65535) return feedback(connFb, "err", "Port invalide (par défaut : 4455).");
   connBtn.disabled = true;
-  feedback(connFb, "", "Connexion à OBS…");
+  feedback(connFb, "", "Liaison avec OBS…");
   try {
     const { obsVersion } = await obs.connect(port, passInput.value);
     try {
@@ -96,7 +96,7 @@ $("conn-form").addEventListener("submit", async (e) => {
 
 obs.onClose = () => {
   onDisconnected();
-  feedback(connFb, "err", "Connexion à OBS perdue (OBS fermé ?). Reconnecte-toi.");
+  feedback(connFb, "err", "Liaison OBS perdue (OBS fermé ?). Relance la connexion.");
 };
 
 function onDisconnected() {

@@ -315,12 +315,12 @@ export function mountGifPicker(
       body.appendChild(grid([], "La recherche GIPHY n'est pas encore activée : Kashiro doit ajouter une clé GIPHY dans la page Membres."));
       return;
     }
-    body.appendChild(grid(results, loading ? "Chargement..." : "Aucun résultat."));
+    body.appendChild(grid(results, loading ? "Recherche du signal…" : "Aucun signal trouvé."));
     if (results.length) {
       if (!exhausted) {
         const more = document.createElement("button");
         more.className = "gp-more";
-        more.textContent = loading ? "Chargement..." : "Plus de résultats";
+        more.textContent = loading ? "Recherche du signal…" : "Plus de résultats";
         more.disabled = loading;
         more.addEventListener("click", () => search(true));
         body.appendChild(more);

@@ -218,7 +218,7 @@ async function trySend(gif: GifMedia) {
     status("ok", `Envoyé à ${to.map((id) => actors[id]?.name || id).join(", ")} ✓`);
   } catch {
     picker.flash(gif.url, "Refusé", true);
-    status("err", "Envoi refusé : la personne a peut-être coupé son overlay.");
+    status("err", "Transmission refusée : la personne a peut-être coupé son overlay.");
   }
 }
 

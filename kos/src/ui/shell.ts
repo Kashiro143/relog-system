@@ -43,13 +43,15 @@ const STYLE = `
 }
 
 .kos-status { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; height: var(--status-h); display: flex; align-items: center; gap: 16px; padding-right: max(14px, env(safe-area-inset-right, 0px)); background: #000; font: 11px var(--font-mono); color: var(--text-dim); }
-.kos-status .pw { position: relative; flex: none; width: 56px; height: 100%; background: #000; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); border-right: 1px solid rgba(0,212,255,0.4); }
-.kos-status .pw::before { content: ""; position: absolute; left: 18px; top: 8px; width: 13px; height: 13px; border: 2px solid var(--accent-neon); border-radius: 50%; border-top-color: transparent; filter: drop-shadow(0 0 4px var(--accent-neon)); }
-.kos-status .pw::after { content: ""; position: absolute; left: 24px; top: 5px; width: 2px; height: 8px; background: var(--accent-neon); }
+.kos-status .pw { flex: none; display: grid; place-items: center; width: 50px; height: 100%; border-right: 1px solid rgba(0,212,255,0.35); }
+.kos-status .pw svg { width: 17px; height: 17px; fill: none; stroke: var(--accent-neon); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(0,212,255,0.8)); }
 .kos-status .net.ok { color: var(--status-online); }
 .kos-status .net.bad { color: var(--status-offline); }
 .kos-status .push { margin-left: auto; }
 .kos-status .clock { color: #fff; font-variant-numeric: tabular-nums; }
+.kos-status .snd { padding: 2px 8px; font: 11px var(--font-mono); background: transparent; border: 1px solid rgba(140,165,255,0.3); color: var(--text-dim); box-shadow: none; }
+.kos-status .snd.on { color: var(--accent-neon); border-color: var(--accent-neon); }
+@media (max-width: 520px) { .kos-status .who { display: none; } }
 @media (max-width: 520px) { .kos-status .ver { display: none; } }
 
 .kos-boot { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(120% 90% at 20% 0%, #0d2cf0, #030a6e 60%, #020652); cursor: pointer; transition: opacity .35s, visibility .35s; }
@@ -143,7 +145,7 @@ function mountStatusBar(member: Member) {
   const bar = document.createElement("footer");
   bar.className = "kos-status";
   bar.setAttribute("aria-label", "État du K-OS");
-  bar.innerHTML = `<span class="pw" aria-hidden="true"></span><span class="net">● connexion…</span><span class="who"></span><span class="ver">K-OS v2</span><span class="clock push"></span>`;
+  bar.innerHTML = `<span class="pw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg></span><span class="net">● connexion…</span><span class="who"></span><span class="ver">K-OS v2</span><button class="snd push" type="button" title="Sons d'interface (bips discrets au clic)"></button><span class="clock"></span>`;
   bar.querySelector(".who")!.textContent = member.actorId ? `membre · ${member.actorId}` : member.email;
   document.body.appendChild(bar);
   const net = bar.querySelector<HTMLElement>(".net")!;
@@ -152,6 +154,7 @@ function mountStatusBar(member: Member) {
     net.className = `net ${ok ? "ok" : "bad"}`;
     net.textContent = ok ? "● signal stable" : "● signal perdu, reconnexion…";
   });
+  setupSounds(bar.querySelector<HTMLButtonElement>(".snd")!);
   const clock = bar.querySelector<HTMLElement>(".clock")!;
   const tick = () => (clock.textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   tick();
@@ -198,4 +201,56 @@ function bootSequence(member: Member) {
   };
   el.addEventListener("click", close);
   step();
+}
+
+/** Sons d'interface synthétisés (aucun fichier) : coupés par défaut, réglage gardé par navigateur. */
+function setupSounds(btn: HTMLButtonElement) {
+  const KEY = "kos.sound";
+  let on = false;
+  try {
+    on = localStorage.getItem(KEY) === "1";
+  } catch {}
+  let ctx: AudioContext | null = null;
+  const beep = (freq: number, dur = 0.05, vol = 0.04, type: OscillatorType = "square") => {
+    if (!on) return;
+    ctx ??= new AudioContext();
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    o.frequency.exponentialRampToValueAtTime(freq * 1.5, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  };
+  const render = () => {
+    btn.classList.toggle("on", on);
+    btn.textContent = on ? "♪ son" : "♪ muet";
+    btn.setAttribute("aria-pressed", String(on));
+  };
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    on = !on;
+    try {
+      localStorage.setItem(KEY, on ? "1" : "0");
+    } catch {}
+    render();
+    beep(880, 0.07, 0.05);
+  });
+  render();
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const el = (e.target as HTMLElement).closest("button, a[href], input[type=checkbox], select, .seg span");
+      if (!el || el === btn) return;
+      if (el.matches("button.primary, .btn-primary")) beep(660, 0.08, 0.05);
+      else if (el.matches("button.danger")) beep(220, 0.09, 0.05, "sawtooth");
+      else if (el.matches("a[href]")) beep(520, 0.06, 0.035, "triangle");
+      else beep(440, 0.035, 0.03);
+    },
+    true,
+  );
 }

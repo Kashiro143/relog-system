@@ -120,7 +120,7 @@ function renderRooms() {
   if (!list.length) {
     const p = document.createElement("div");
     p.className = "empty";
-    p.textContent = "Aucun salon pour l'instant : crée le premier.";
+    p.textContent = "Aucun salon actif sur le réseau : ouvre le premier.";
     box.appendChild(p);
     return;
   }
@@ -338,7 +338,7 @@ function beginStroke(x: number, y: number) {
   const id = newStrokeId(myRoom!);
   drawing = { id, points: [x, y], flushTimer: null };
   startStroke(myRoom!, id, { by: me!, color: currentColor(), width: SIZES.pen[state.size], points: [x, y], fade: state.fade }).catch(() =>
-    showError("Dessin refusé : as-tu bien rejoint le salon ?"),
+    showError("Transmission refusée : rejoins d'abord ce salon."),
   );
   undoStack.push(`strokes/${id}`);
   view.setLocalStroke(localStroke());
@@ -390,7 +390,7 @@ function beginShape(x: number, y: number) {
   const id = newStrokeId(myRoom!);
   shaping = { id, points: [x, y, x, y], timer: null };
   startStroke(myRoom!, id, { by: me!, color: currentColor(), width: SIZES.pen[state.size], points: shaping.points, fade: state.fade, shape: state.shape }).catch(() =>
-    showError("Dessin refusé : as-tu bien rejoint le salon ?"),
+    showError("Transmission refusée : rejoins d'abord ce salon."),
   );
   undoStack.push(`strokes/${id}`);
   view.setLocalStroke(shapeStroke());
@@ -826,7 +826,7 @@ function renderVideo() {
   const partyName = roomParty ? parties[roomParty]?.name : null;
   const joined = !!roomParty && myParty === roomParty;
   $("video-status").textContent = !roomParty
-    ? "Aucune vidéo dans ce salon : choisis une watch-party pour dessiner dessus."
+    ? "Aucun signal vidéo dans ce salon : branche une watch-party pour dessiner dessus."
     : video
       ? `${video.state === "playing" ? "▶" : "❚❚"} ${video.title || SOURCE_LABELS[sourceOf(video)]}`
       : `${partyName || "Watch-party"} · aucune vidéo pour l'instant`;
@@ -840,7 +840,7 @@ function renderVideo() {
 }
 
 const wpNow = () => (video ? expectedPosition(video, serverNow()) : 0);
-const wpRefused = () => showError("Commande refusée : rejoins d'abord cette watch-party.");
+const wpRefused = () => showError("Transmission refusée : rejoins d'abord cette watch-party.");
 function wpControl(state: RoomVideo["state"], position: number) {
   if (!roomParty || !video || myParty !== roomParty) return;
   controlVideo(roomParty, state, position).catch(wpRefused);

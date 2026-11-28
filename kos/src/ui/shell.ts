@@ -59,7 +59,7 @@ const STYLE = `
 .kos-boot .box { position: relative; width: min(460px, calc(100vw - 32px)); background: rgba(3,8,52,0.85); padding: 34px 22px 20px; }
 .kos-boot .box::after { content: ""; position: absolute; inset: 5px -5px -5px 5px; border: 1px solid rgba(0,212,255,0.7); border-left: 0; border-top: 0; }
 .kos-boot .tab { position: absolute; left: 0; top: -14px; background: #000; color: #fff; font: 400 13px var(--font-display); letter-spacing: 7px; padding: 7px 14px; }
-.kos-boot .tab::after { content: ""; display: inline-block; width: 44px; height: 10px; margin-left: 12px; vertical-align: middle; background: repeating-linear-gradient(115deg, var(--accent-neon) 0 6px, transparent 6px 11px); }
+.kos-boot .tab::after { content: ""; display: inline-block; width: 40px; height: 14px; margin-left: 12px; vertical-align: middle; background: var(--stripes); }
 .kos-boot pre { margin: 0; min-height: 118px; font: 12px/1.7 var(--font-mono); color: #9fdcff; white-space: pre-wrap; }
 .kos-boot pre b { color: var(--accent-neon); font-weight: 600; }
 .kos-boot .bar { height: 3px; margin-top: 14px; background: rgba(255,255,255,0.08); overflow: hidden; }
@@ -105,7 +105,7 @@ export function mountShell(member: Member, onSignOut: () => void) {
   nav.className = "kos-shell";
   nav.setAttribute("aria-label", "Navigation K-OS");
   nav.innerHTML = `
-    <a class="brand" href="${appUrl("")}" title="Accueil du K-OS">K-OS<b>////</b></a>
+    <a class="brand" href="${appUrl("")}" title="Accueil du K-OS">K-OS<b>///</b></a>
     <div class="links">
       ${link({ page: "index", href: "", icon: "🏠", label: "Accueil", title: "Accueil et liens OBS" })}
       ${me ? link({ page: "obs", href: "obs.html", icon: "🧩", label: "Installer OBS", title: "Ajouter le K-OS dans tes scènes OBS automatiquement" }) : ""}

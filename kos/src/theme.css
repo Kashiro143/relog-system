@@ -40,6 +40,8 @@
   --cut: 10px;
   --shell-h: 50px;
   --status-h: 30px;
+  /* Les trois barres /// de l'overlay. */
+  --stripes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 14'%3E%3Cg fill='%2300d4ff'%3E%3Cpath d='M6 0h7L7 14H0z'/%3E%3Cpath d='M19 0h7l-6 14h-7z'/%3E%3Cpath d='M32 0h7l-6 14h-7z'/%3E%3C/g%3E%3C/svg%3E") no-repeat center / contain;
 }
 
 * { box-sizing: border-box; }
@@ -105,11 +107,11 @@ a { color: var(--accent-neon); }
 .page-head h1::after {
   content: "";
   display: inline-block;
-  width: 46px;
-  height: 10px;
+  width: 40px;
+  height: 14px;
   margin-left: 14px;
   vertical-align: middle;
-  background: repeating-linear-gradient(115deg, var(--accent-neon) 0 6px, transparent 6px 11px);
+  background: var(--stripes);
 }
 .page-head p { margin: 0; color: var(--text-dim); font-size: 13px; flex-basis: 100%; }
 .hint { font-size: 12px; color: var(--text-dim); }
@@ -150,9 +152,9 @@ a { color: var(--accent-neon); }
 .panel h3::after,
 .panel h4::after {
   content: "";
-  width: 34px;
-  height: 9px;
-  background: repeating-linear-gradient(115deg, var(--accent-neon) 0 5px, transparent 5px 9px);
+  width: 30px;
+  height: 11px;
+  background: var(--stripes);
 }
 
 /* --- Boutons --- */

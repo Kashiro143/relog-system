@@ -97,14 +97,15 @@ interface Driver {
 
 let uid = 0;
 
-function youtubeDriver(slot: HTMLElement, onReady: () => void, onError: (msg: string) => void): Driver {
+function youtubeDriver(slot: HTMLElement, onReady: () => void, onError: (msg: string) => void, native = false): Driver {
   let p: YTPlayer | null = null;
   let ready = false;
   loadYouTube().then(() => {
     p = new window.YT!.Player(slot, {
       width: "100%",
       height: "100%",
-      playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, playsinline: 1, iv_load_policy: 3, fs: 0, origin: location.origin },
+      // native : vraie interface YouTube (sous-titres, qualité, vitesse, plein écran), pour le pilote seulement.
+      playerVars: { controls: native ? 1 : 0, disablekb: native ? 0 : 1, modestbranding: 1, rel: 0, playsinline: 1, iv_load_policy: 3, fs: native ? 1 : 0, origin: location.origin },
       events: {
         onReady: () => {
           ready = true;
@@ -373,6 +374,8 @@ const STYLE = `
 .kos-video .boot { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: #000; color: var(--c, #00d4ff); font: 700 calc(var(--k, 1) * 22px) "JetBrains Mono", Consolas, monospace; letter-spacing: calc(var(--k, 1) * 4px); transition: opacity 0.5s; }
 .kos-video .boot span { animation: kosv-blink 0.8s steps(2) infinite; }
 .kos-video.live .boot { opacity: 0; pointer-events: none; }
+.kos-video.native .slot, .kos-video.native .slot > *, .kos-video.native iframe { pointer-events: auto; }
+.kos-video.native .fx, .kos-video.native .pause, .kos-video.native.live .boot, .kos-video.native.full .hud { display: none !important; }
 .kos-video.plain .boot { display: none; }
 .kos-video.kos.enter { animation: kosv-in 0.75s cubic-bezier(.2,.9,.3,1) both; }
 .kos-video.kos.leave { animation: kosv-out 0.45s ease-in both; }
@@ -429,7 +432,15 @@ export interface VideoLayer {
   destroy(): void;
 }
 
-export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onError?: (msg: string) => void } = {}): VideoLayer {
+export interface VideoLayerOptions {
+  muted?: boolean;
+  onError?: (msg: string) => void;
+  /** Interface YouTube cliquable ; ses pauses / sauts sont remontés par onUserControl au lieu d'être annulés. */
+  nativeControls?: boolean;
+  onUserControl?: (state: "playing" | "paused", position: number) => void;
+}
+
+export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}): VideoLayer {
   injectStyleOnce();
   let video: RoomVideo | null = null;
   let meta: VideoMeta = {};
@@ -451,6 +462,8 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
   let resumeTimer: ReturnType<typeof setTimeout> | undefined;
   /** Début de lecture constaté : l'écran de démarrage reste 2,5 s (titre YouTube). */
   let playingSince = 0;
+  /** Commandes natives : délai pendant lequel on ne lit pas les gestes de l'utilisateur (chargement, ordre reçu). */
+  let graceUntil = 0;
 
   function place() {
     if (!frame || !video) return;
@@ -502,7 +515,7 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
 
   function buildFrame() {
     frame = document.createElement("div");
-    frame.className = "kos-video enter";
+    frame.className = `kos-video enter${opts.nativeControls ? " native" : ""}`;
     frame.innerHTML = `
       <div class="edge"></div>
       <div class="screen"><div class="slot"></div><div class="fx"></div>
@@ -543,7 +556,7 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
       kind === "twitch-vod" ? twitchVodDriver(inner, onReady, onErr)
       : kind === "twitch-clip" ? twitchClipDriver(inner, onReady)
       : kind === "file" ? fileDriver(inner, onReady, onErr)
-      : youtubeDriver(inner, onReady, onErr);
+      : youtubeDriver(inner, onReady, onErr, !!opts.nativeControls);
   }
 
   function teardown() {
@@ -628,6 +641,7 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
       playingSince = 0;
       applyAudio();
       driver.load(video.videoId, expected, video.state === "playing");
+      graceUntil = Date.now() + 4000;
       return;
     }
     renderProgress();
@@ -642,6 +656,17 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
     const st = driver.status();
     const current = driver.current();
     const duration = driver.duration();
+    // Interface YouTube native : une pause, une lecture ou un saut fait à la
+    // main devient un ordre pour toute la watch-party (au lieu d'être annulé).
+    if (opts.nativeControls && opts.onUserControl && driverKind === "youtube" && st !== "buffering" && Date.now() >= graceUntil) {
+      const want = video.state === "playing";
+      const moved = Math.abs(current - expected) > 3;
+      if ((want && st === "paused") || (!want && st === "playing") || (moved && st !== "ended")) {
+        graceUntil = Date.now() + 3000;
+        opts.onUserControl(st === "playing" ? "playing" : "paused", current);
+        return;
+      }
+    }
     if (video.state === "playing") {
       if (duration && expected >= duration) return; // vidéo terminée pour tout le monde
       if (Math.abs(current - expected) > DRIFT_S && st !== "buffering") {
@@ -676,6 +701,8 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
         frame.classList.add("glitch");
         wake();
       }
+      // Ordre reçu (pause, lecture, saut) : on laisse le lecteur le suivre avant de relire les gestes.
+      if (prev && (prev.state !== next.state || prev.position !== next.position || prev.updatedAt !== next.updatedAt)) graceUntil = Date.now() + 3000;
       ensureDriver();
       renderHud();
       place();

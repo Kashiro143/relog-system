@@ -34,6 +34,7 @@ import { mountGifPicker } from "../relog/gifPicker";
 import { pushRecent, type GifMedia } from "../relog/gifs";
 import { serverNow } from "../relog/serverTime";
 import { createVideoLayer } from "../relog/videoLayer";
+import { createScreenShare, type ScreenShare } from "../relog/screenShare";
 import { SOURCE_LABELS, controlVideo, expectedPosition, sourceOf, watchMyParty, watchParties, watchVideo, watchVolume, type PartyMeta, type RoomVideo } from "../relog/watch";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -197,6 +198,7 @@ function enterRoom(roomId: string | null) {
   state.selectedItem = null;
   $("no-room").hidden = !!roomId;
   $("room-ui").hidden = !roomId;
+  setupShare(roomId);
   if (!roomId) return;
   roomStops = [
     watchStrokes(roomId, (m) => {
@@ -549,32 +551,83 @@ armed($<HTMLButtonElement>("clear-all"), () => {
   removeContent(myRoom, paths).catch(() => showError("Effacement refusé."));
 });
 
-// --- Mon écran en fond (local uniquement) ---
+// --- Partage d'écran au salon (WebRTC, membres du salon) ---
 
-let screenStream: MediaStream | null = null;
-$("screen-bg").addEventListener("click", async () => {
-  const video = $<HTMLVideoElement>("bg-video");
-  if (screenStream) {
-    screenStream.getTracks().forEach((t) => t.stop());
-    screenStream = null;
-    video.hidden = true;
-    $("screen-bg").textContent = "🖥 Mon écran en fond";
-    return;
+let share: ScreenShare | null = null;
+let sharer: string | null = null;
+
+function screenBadge(text: string | null) {
+  let b = document.getElementById("screen-badge");
+  if (!b) {
+    b = document.createElement("span");
+    b.id = "screen-badge";
+    b.className = "screen-badge";
+    $("stage").appendChild(b);
   }
-  if (!navigator.mediaDevices?.getDisplayMedia) return showError("Ce navigateur ne permet pas de capturer l'écran (ouvre la page dans Chrome ou Edge).");
-  try {
-    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-    video.srcObject = screenStream;
-    video.hidden = false;
-    $("screen-bg").textContent = "🖥 Retirer l'écran";
-    screenStream.getVideoTracks()[0].addEventListener("ended", () => {
-      screenStream = null;
-      video.hidden = true;
-      $("screen-bg").textContent = "🖥 Mon écran en fond";
+  b.hidden = !text;
+  b.textContent = text ?? "";
+}
+
+function showScreen(stream: MediaStream | null) {
+  const v = $<HTMLVideoElement>("bg-video");
+  v.srcObject = stream;
+  v.hidden = !stream;
+  if (stream) v.play().catch(() => {});
+}
+
+function renderShareButton() {
+  const btn = $("screen-bg");
+  const mine = !!share?.sharing;
+  btn.textContent = mine ? "🖥 Arrêter le partage" : sharer ? "🖥 Partager à la place" : "🖥 Partager mon écran";
+  btn.title = mine
+    ? "Ton écran est envoyé aux membres du salon"
+    : sharer
+      ? `${actors[sharer]?.name || sharer} partage son écran : le tien le remplacera`
+      : "Les membres du salon voient ton écran en fond (pas sur les streams)";
+  const name = sharer ? actors[sharer]?.name || sharer : null;
+  screenBadge(mine ? "🖥 Tu partages ton écran au salon" : name ? `🖥 Écran de ${name}` : null);
+}
+
+function setupShare(roomId: string | null) {
+  share?.destroy();
+  share = null;
+  sharer = null;
+  showScreen(null);
+  if (roomId && me) {
+    share = createScreenShare(roomId, me, {
+      onRemote: (stream) => showScreen(stream),
+      onSharer: (by) => {
+        sharer = by;
+        if (!by || by !== me) {
+          if (!by) showScreen(null);
+        }
+        renderShareButton();
+      },
+      onError: (msg) => showError(msg),
     });
-  } catch {
-    /* annulé par l'utilisateur */
   }
+  renderShareButton();
+}
+
+$("screen-bg").addEventListener("click", async () => {
+  if (!share) return showError("Rejoins d'abord un salon.");
+  if (share.sharing) {
+    share.stop();
+    showScreen(null);
+    return renderShareButton();
+  }
+  try {
+    const stream = await share.start();
+    showScreen(stream); // aperçu local
+    stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+      showScreen(null);
+      renderShareButton();
+    });
+  } catch (err) {
+    if (err instanceof Error && /navigateur/.test(err.message)) showError(err.message);
+    /* sinon : annulé par l'utilisateur */
+  }
+  renderShareButton();
 });
 
 // ---------- Watch-party (indépendante du salon) ----------

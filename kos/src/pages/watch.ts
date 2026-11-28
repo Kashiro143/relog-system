@@ -79,7 +79,26 @@ function detect(kind: "ok" | "err" | "", text: string, sticky = true) {
   if (!sticky) errTimer = setTimeout(() => updateDetect(), 4000);
 }
 
-const layer = createVideoLayer($("video-root"), { muted: true, onError: (msg) => detect("err", msg, false) });
+// Lecteur d'aperçu. Avec « Commandes YouTube », il montre la vraie interface
+// YouTube (sous-titres, qualité, vitesse, plein écran) et ses pauses / sauts
+// sont envoyés à toute la watch-party.
+const NATIVE_KEY = "kos.watch.native";
+let nativeControls = false;
+try {
+  nativeControls = localStorage.getItem(NATIVE_KEY) === "1";
+} catch {}
+let lastVolume = 100;
+function makeLayer() {
+  return createVideoLayer($("video-root"), {
+    muted: !$<HTMLInputElement>("v-listen").checked,
+    onError: (msg) => detect("err", msg, false),
+    nativeControls,
+    onUserControl: (state, position) => {
+      if (myRoom && video) controlVideo(myRoom, state, position).catch(refused);
+    },
+  });
+}
+let layer = makeLayer();
 
 // ---------- Watch-party (indépendante des salons de dessin) ----------
 
@@ -319,11 +338,29 @@ const volInput = $<HTMLInputElement>("v-volume");
 watchVolume(me, (v) => {
   if (document.activeElement !== volInput) volInput.value = String(v);
   $("v-volume-out").textContent = `${v} %`;
+  lastVolume = v;
   layer.setVolume(v);
 });
 volInput.addEventListener("input", () => ($("v-volume-out").textContent = `${volInput.value} %`));
 volInput.addEventListener("change", () => setVolume(me, Number(volInput.value)));
 $<HTMLInputElement>("v-listen").addEventListener("change", (e) => layer.setMuted(!(e.target as HTMLInputElement).checked));
+
+const nativeBox = $<HTMLInputElement>("v-native");
+nativeBox.checked = nativeControls;
+nativeBox.addEventListener("change", () => {
+  nativeControls = nativeBox.checked;
+  try {
+    localStorage.setItem(NATIVE_KEY, nativeControls ? "1" : "0");
+  } catch {}
+  // Le lecteur YouTube se crée avec ou sans son interface : on le reconstruit.
+  layer.destroy();
+  $("video-root").replaceChildren();
+  layer = makeLayer();
+  layer.setVolume(lastVolume);
+  if (video) layer.setVideo(video, { color: actors[video.by]?.color, name: actors[video.by]?.name || video.by });
+  // Pour régler sous-titres et qualité, on écoute en général : son activé ici.
+  if (nativeControls && !$<HTMLInputElement>("v-listen").checked) $<HTMLInputElement>("v-listen").click();
+});
 
 // ---------- Données en direct ----------
 

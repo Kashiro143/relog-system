@@ -16,7 +16,7 @@
       .conn { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 8px; align-items: end; }
       @media (max-width: 560px) { .conn { grid-template-columns: 1fr; } }
       .scene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
-      .scard { --m: #b77cff; display: grid; background: var(--panel-bg-alt); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .2s, box-shadow .2s, transform .2s; }
+      .scard { --m: #b77cff; display: grid; background: var(--panel-bg-alt); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; transition: border-color .2s, box-shadow .2s, transform .2s; }
       .scard.with-relog { border-color: color-mix(in srgb, var(--accent-neon) 60%, var(--border)); box-shadow: 0 0 14px color-mix(in srgb, var(--accent-neon) 18%, transparent); }
       .scard.pending { border-style: dashed; border-color: #ffcc33; box-shadow: 0 0 14px rgba(255, 204, 51, 0.15); }
       .scard .thumb { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: linear-gradient(135deg, #0d1117, #05070a); }
@@ -39,7 +39,7 @@
       .scard .meta small { font-size: 11px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .scard.nested .meta b { color: var(--text-dim); }
       .scard .tgs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 10px 10px; }
-      .tg { padding: 6px 4px; font-size: 12px; font-weight: 600; border-radius: 6px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); position: relative; }
+      .tg { padding: 6px 4px; font-size: 12px; font-weight: 600; border-radius: 2px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); position: relative; }
       .tg:hover { color: var(--text-main); border-color: var(--text-dim); }
       .tg.relog.on { background: var(--accent-low); border-color: var(--accent-neon); color: var(--accent-neon); }
       .tg.module.on { background: color-mix(in srgb, var(--m) 18%, transparent); border-color: var(--m); color: var(--m); }

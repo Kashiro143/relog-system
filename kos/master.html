@@ -9,9 +9,10 @@
       .page { max-width: 1400px; }
       /* Voyants */
       .status { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
-      .tile { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: var(--panel-bg); border: 1px solid var(--border); }
+      .tile { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 2px; background: var(--panel-bg); border: 1px solid var(--border); }
       .tile .ico { font-size: 22px; }
-      .tile b { display: block; font: 700 20px var(--font-mono); }
+      .tile { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); background: rgba(3, 8, 52, 0.82) !important; }
+      .tile b { display: block; font: 700 20px var(--font-mono); text-shadow: 0 0 10px currentColor; }
       .tile small { color: var(--text-dim); font-size: 12px; }
       .tile.ok { border-color: color-mix(in srgb, var(--status-online) 45%, var(--border)); }
       .tile.ok b { color: var(--status-online); }
@@ -29,7 +30,7 @@
 
       /* Segments de mode */
       .seg { display: inline-flex; flex-wrap: wrap; gap: 3px; background: #000; border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; }
-      .seg button { border: 0; background: transparent; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text-dim); border-radius: 6px; white-space: nowrap; }
+      .seg button { border: 0; background: transparent; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text-dim); border-radius: 2px; white-space: nowrap; }
       .seg button:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
       .seg button.on { background: var(--accent-low); color: var(--accent-neon); }
       .seg button.on.idle { background: rgba(255,255,255,0.08); color: var(--text-main); }
@@ -49,7 +50,7 @@
       .group-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--radius); background: var(--panel-bg-alt); margin-bottom: 12px; }
       .group-row .lbl { font-size: 12px; color: var(--text-dim); margin-right: 4px; }
       .members { display: grid; gap: 8px; }
-      .member { border: 1px solid var(--border); border-radius: 10px; background: var(--panel-bg-alt); }
+      .member { border: 1px solid var(--border); border-radius: 2px; background: var(--panel-bg-alt); }
       .member .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; }
       .member .who { display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1; }
       .member .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-faint); flex: none; }

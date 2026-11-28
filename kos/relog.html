@@ -13,7 +13,7 @@
       .label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); font-weight: 700; }
 
       /* Barre d'envoi : reste visible pendant qu'on parcourt les GIF */
-      .sendbar { position: sticky; top: var(--shell-h); z-index: 5; background: var(--panel-bg); margin: -14px -14px 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; display: grid; gap: 8px; }
+      .sendbar { position: sticky; top: var(--shell-h); z-index: 5; background: var(--panel-bg); margin: -14px -14px 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); border-radius: 2px 8px 0 0; display: grid; gap: 8px; }
       .targets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
       .targets.pulse { animation: pulse 0.5s ease 2; }
       @keyframes pulse { 50% { filter: drop-shadow(0 0 6px var(--status-offline)); } }
@@ -25,8 +25,8 @@
       .target.all { --c: var(--accent-neon); }
       .row { display: flex; gap: 8px; align-items: center; }
       .row input { flex: 1; min-width: 0; }
-      .mode { display: inline-flex; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 2px; flex: none; }
-      .mode button { border: 0; background: transparent; padding: 6px 10px; border-radius: 6px; color: var(--text-dim); font-size: 12px; }
+      .mode { display: inline-flex; background: #000; border: 1px solid var(--border); border-radius: 2px; padding: 2px; flex: none; }
+      .mode button { border: 0; background: transparent; padding: 6px 10px; border-radius: 2px; color: var(--text-dim); font-size: 12px; }
       .mode button:hover { background: transparent; color: var(--text-main); }
       .mode button.on { background: var(--accent-low); color: var(--accent-neon); }
       .status { font-size: 12px; min-height: 16px; color: var(--text-dim); }
@@ -35,7 +35,7 @@
 
       /* Mode aperçu */
       .preview-bar { display: flex; gap: 10px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-      .preview-bar .thumb { width: 96px; height: 72px; border-radius: 6px; background: #000 center / contain no-repeat; flex: none; border: 1px solid var(--border); overflow: hidden; }
+      .preview-bar .thumb { width: 96px; height: 72px; border-radius: 2px; background: #000 center / contain no-repeat; flex: none; border: 1px solid var(--border); overflow: hidden; }
       .preview-bar .thumb video { width: 100%; height: 100%; object-fit: contain; }
       .preview-bar .grow { flex: 1; font-size: 12px; color: var(--text-dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       #send-btn { background: var(--accent-neon); color: #000; border-color: var(--accent-neon); }
@@ -47,7 +47,7 @@
       details.panel summary::before { content: "▸ "; color: var(--text-dim); }
       details.panel[open] summary::before { content: "▾ "; }
       details.panel[open] summary { margin-bottom: 12px; }
-      .zone-grid { max-width: 260px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; aspect-ratio: 16 / 9; padding: 4px; background: #000; border: 1px solid var(--border); border-radius: 6px; margin: 6px 0 12px; }
+      .zone-grid { max-width: 260px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; aspect-ratio: 16 / 9; padding: 4px; background: #000; border: 1px solid var(--border); border-radius: 2px; margin: 6px 0 12px; }
       .zone-grid button { padding: 0; border-radius: 4px; background: var(--panel-bg-alt); border: 1px solid var(--border); }
       .zone-grid button.on { background: var(--accent-low); border-color: var(--accent-neon); box-shadow: inset 0 0 0 1px var(--accent-neon); }
       .slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; margin-bottom: 10px; font-size: 12px; color: var(--text-dim); }

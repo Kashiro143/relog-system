@@ -123,7 +123,7 @@ describe("membre invité (Reindal)", () => {
     const db = as("r", REINDAL);
     await assertFails(db.ref("live_data/Titou/pokemmo/team/0/status").set(3));
     await assertFails(db.ref("relog/overlay/Titou/muted").set(false));
-    await assertFails(db.ref("registry/users/Reindal/name").set("Boss"));
+    await assertFails(db.ref("registry/users/Titou/name").set("Boss")); // son propre nom : voir « compte et préférences »
     await assertFails(db.ref("users/Reindal/currentMode").set("idle"));
     await assertFails(db.ref("auth/owner").set("reindal,test@gmail,com"));
     await assertFails(db.ref("auth/invites/x@gmail,com").set({ actorId: "Reindal", email: "x@gmail.com" }));
@@ -431,5 +431,24 @@ describe("partage d'écran dans un salon", () => {
     await assertFails(db.ref("relog/roomContent/salon/rtc/Kashiro/bidon").set(1));
     await assertFails(anon().ref("relog/roomContent/salon/rtc/Kashiro/answer").set("v=0"));
     await assertSucceeds(db.ref("relog/roomContent/salon/screen").remove());
+  });
+});
+
+describe("compte et préférences", () => {
+  test("chacun règle ses préférences et son nom / sa couleur, pas ceux des autres", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/prefs/Reindal").set({ theme: "terminal", sound: true, boot: false, motion: "reduced" }));
+    await assertSucceeds(db.ref("relog/prefs/Reindal").get());
+    await assertFails(db.ref("relog/prefs/Reindal/theme").set("rose"));
+    await assertFails(db.ref("relog/prefs/Reindal/bidon").set(1));
+    await assertFails(db.ref("relog/prefs/Titou").set({ theme: "holo" }));
+    await assertFails(db.ref("relog/prefs/Titou").get());
+    await assertFails(anon().ref("relog/prefs/Reindal").get());
+    await assertSucceeds(db.ref("registry/users/Reindal/name").set("Reindal le Grand"));
+    await assertSucceeds(db.ref("registry/users/Reindal/color").set("#ff00aa"));
+    await assertFails(db.ref("registry/users/Reindal/color").set("rouge"));
+    await assertFails(db.ref("registry/users/Reindal/name").set(""));
+    await assertFails(db.ref("registry/users/Titou/name").set("Pirate"));
+    await assertFails(db.ref("registry/users/Reindal/currentMode").set("idle")); // reste au propriétaire
   });
 });

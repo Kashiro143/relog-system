@@ -1,5 +1,6 @@
 import { ref, onValue } from "firebase/database";
 import { db } from "../firebase";
+import { getPrefs, onPrefs, savePrefs, watchPrefs } from "../prefs";
 import { appUrl } from "../appUrl";
 import { watchActors } from "../registry";
 import type { Member } from "../auth";
@@ -16,18 +17,21 @@ interface NavItem {
 }
 
 const STYLE = `
-.kos-shell { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 6px; padding: 0 14px; height: var(--shell-h); background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(0, 212, 255, 0.35); }
+.kos-shell { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 6px; padding: 0 14px; height: var(--shell-h); background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(var(--accent-rgb), 0.35); }
 .kos-shell .brand { font: 400 13px var(--font-display); letter-spacing: 5px; color: #fff; text-decoration: none; padding: 6px 12px 6px 0; margin-right: 6px; white-space: nowrap; }
 .kos-shell .brand b { font-weight: 400; color: var(--accent-neon); letter-spacing: 1px; margin-left: 4px; }
 .kos-shell .links { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .kos-shell .links::-webkit-scrollbar { display: none; }
 .kos-shell .links a { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; color: var(--text-dim); text-decoration: none; font-size: 12.5px; font-weight: 600; white-space: nowrap; clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); transition: color .15s, background .15s; }
-.kos-shell .links a:hover { color: #fff; background: rgba(0, 212, 255, 0.14); }
+.kos-shell .links a:hover { color: #fff; background: rgba(var(--accent-rgb), 0.14); }
 .kos-shell .links a[aria-current="page"] { color: #00102a; background: var(--accent-neon); }
 .kos-shell .links .sep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 8px; flex: none; }
 .kos-shell .links .grp { font: 400 9px var(--font-display); letter-spacing: 2px; text-transform: uppercase; color: var(--text-faint); padding: 0 4px 0 2px; white-space: nowrap; }
 .kos-shell .me { display: flex; align-items: center; gap: 8px; flex: none; font-size: 13px; }
 .kos-shell .me .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--accent-neon)); box-shadow: 0 0 8px var(--c, var(--accent-neon)); }
+.kos-shell .me .acct { color: inherit; text-decoration: none; padding: 4px 6px; }
+.kos-shell .me .acct:hover .name { color: var(--accent-neon); }
+.kos-shell .me .acct[aria-current="page"] .name { color: var(--accent-neon); }
 .kos-shell .me .name { font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kos-shell .me .role { font-size: 11px; color: var(--text-dim); }
 .kos-shell .me button { padding: 6px 10px; font-size: 12px; }
@@ -43,8 +47,8 @@ const STYLE = `
 }
 
 .kos-status { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; height: var(--status-h); display: flex; align-items: center; gap: 16px; padding-right: max(14px, env(safe-area-inset-right, 0px)); background: #000; font: 11px var(--font-mono); color: var(--text-dim); }
-.kos-status .pw { flex: none; display: grid; place-items: center; width: 50px; height: 100%; border-right: 1px solid rgba(0,212,255,0.35); }
-.kos-status .pw svg { width: 17px; height: 17px; fill: none; stroke: var(--accent-neon); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(0,212,255,0.8)); }
+.kos-status .pw { flex: none; display: grid; place-items: center; width: 50px; height: 100%; border-right: 1px solid rgba(var(--accent-rgb), 0.35); }
+.kos-status .pw svg { width: 17px; height: 17px; fill: none; stroke: var(--accent-neon); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), 0.8)); }
 .kos-status .net.ok { color: var(--status-online); }
 .kos-status .net.bad { color: var(--status-offline); }
 .kos-status .push { margin-left: auto; }
@@ -57,7 +61,7 @@ const STYLE = `
 .kos-boot { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(120% 90% at 20% 0%, #0d2cf0, #030a6e 60%, #020652); cursor: pointer; transition: opacity .35s, visibility .35s; }
 .kos-boot.done { opacity: 0; visibility: hidden; }
 .kos-boot .box { position: relative; width: min(460px, calc(100vw - 32px)); background: rgba(3,8,52,0.85); padding: 34px 22px 20px; }
-.kos-boot .box::after { content: ""; position: absolute; inset: 5px -5px -5px 5px; border: 1px solid rgba(0,212,255,0.7); border-left: 0; border-top: 0; }
+.kos-boot .box::after { content: ""; position: absolute; inset: 5px -5px -5px 5px; border: 1px solid rgba(var(--accent-rgb), 0.7); border-left: 0; border-top: 0; }
 .kos-boot .tab { position: absolute; left: 0; top: -14px; background: #000; color: #fff; font: 400 13px var(--font-display); letter-spacing: 7px; padding: 7px 14px; }
 .kos-boot .tab::after { content: ""; display: inline-block; width: 40px; height: 14px; margin-left: 12px; vertical-align: middle; background: var(--stripes); }
 .kos-boot pre { margin: 0; min-height: 118px; font: 12px/1.7 var(--font-mono); color: #9fdcff; white-space: pre-wrap; }
@@ -115,14 +119,16 @@ export function mountShell(member: Member, onSignOut: () => void) {
     </div>
     <div class="me">
       <span class="dot"></span>
-      <span><span class="name"></span> <span class="role"></span></span>
+      <a class="acct" href="${appUrl("compte.html")}" title="Mon compte : profil, style du K-OS, préférences"><span class="name"></span> <span class="role"></span></a>
       <button title="Se déconnecter"><span aria-hidden="true">⏻</span> <span class="out-t">Déconnexion</span></button>
     </div>`;
   const role = member.isOwner ? "propriétaire" : "membre";
   nav.querySelector(".role")!.textContent = `· ${role}`;
   nav.querySelector<HTMLElement>(".me")!.title = member.email;
   nav.querySelector("button")!.addEventListener("click", onSignOut);
+  if (page === "compte") nav.querySelector(".acct")?.setAttribute("aria-current", "page");
   document.body.prepend(nav);
+  if (me) watchPrefs(me);
   mountStatusBar(member);
   bootSequence(member);
 
@@ -154,7 +160,7 @@ function mountStatusBar(member: Member) {
     net.className = `net ${ok ? "ok" : "bad"}`;
     net.textContent = ok ? "● signal stable" : "● signal perdu, reconnexion…";
   });
-  setupSounds(bar.querySelector<HTMLButtonElement>(".snd")!);
+  setupSounds(bar.querySelector<HTMLButtonElement>(".snd")!, member);
   const clock = bar.querySelector<HTMLElement>(".clock")!;
   const tick = () => (clock.textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   tick();
@@ -170,7 +176,8 @@ function bootSequence(member: Member) {
   } catch {
     seen = true;
   }
-  if (seen || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const prefs = getPrefs();
+  if (seen || !prefs.boot || prefs.motion === "reduced" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const who = (member.actorId ?? member.email).toUpperCase().replace(/[<>&"]/g, "");
   const lines = [
     "> K-OS v2 · noyau chargé",
@@ -204,12 +211,8 @@ function bootSequence(member: Member) {
 }
 
 /** Sons d'interface synthétisés (aucun fichier) : coupés par défaut, réglage gardé par navigateur. */
-function setupSounds(btn: HTMLButtonElement) {
-  const KEY = "kos.sound";
-  let on = false;
-  try {
-    on = localStorage.getItem(KEY) === "1";
-  } catch {}
+function setupSounds(btn: HTMLButtonElement, member: Member) {
+  let on = getPrefs().sound;
   let ctx: AudioContext | null = null;
   const beep = (freq: number, dur = 0.05, vol = 0.04, type: OscillatorType = "square") => {
     if (!on) return;
@@ -234,13 +237,16 @@ function setupSounds(btn: HTMLButtonElement) {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     on = !on;
-    try {
-      localStorage.setItem(KEY, on ? "1" : "0");
-    } catch {}
+    if (member.actorId) savePrefs(member.actorId, { sound: on }).catch(() => {});
     render();
     beep(880, 0.07, 0.05);
   });
   render();
+  // Le réglage peut changer ailleurs (page Mon compte, autre appareil).
+  onPrefs((p) => {
+    on = p.sound;
+    render();
+  });
   document.addEventListener(
     "pointerdown",
     (e) => {

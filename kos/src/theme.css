@@ -5,7 +5,7 @@
  * espacé (MADE Outer Sans Alt si installée, sinon Michroma), néon réservé à
  * ce qui est actif. Les overlays OBS n'importent pas ce fichier.
  */
-@import url("https://fonts.googleapis.com/css2?family=Michroma&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Michroma&family=Oxanium:wght@400;600;700&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
 
 :root {
   color-scheme: dark;
@@ -20,8 +20,9 @@
   --ink: #000;
   /* Couleurs */
   --accent-neon: #00d4ff;
-  --accent-low: rgba(0, 212, 255, 0.14);
-  --accent-glow: 0 0 10px rgba(0, 212, 255, 0.55);
+  --accent-rgb: 0, 212, 255;
+  --accent-low: rgba(var(--accent-rgb), 0.14);
+  --accent-glow: 0 0 10px rgba(var(--accent-rgb), 0.55);
   --text-main: #eef2ff;
   /* Texte secondaire : contraste suffisant sur le bleu (lisibilité). */
   --text-dim: #c4cdf3;
@@ -40,6 +41,7 @@
   --cut: 10px;
   --shell-h: 50px;
   --status-h: 30px;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2300d4ff' stroke-width='2'/%3E%3C/svg%3E");
   /* Les trois barres /// de l'overlay. */
   --stripes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 14'%3E%3Cg fill='%2300d4ff'%3E%3Cpath d='M6 0h7L7 14H0z'/%3E%3Cpath d='M19 0h7l-6 14h-7z'/%3E%3Cpath d='M32 0h7l-6 14h-7z'/%3E%3C/g%3E%3C/svg%3E") no-repeat center / contain;
 }
@@ -79,7 +81,7 @@ body::after {
   inset: -20% -60%;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(105deg, transparent 42%, rgba(0, 212, 255, 0.05) 48%, rgba(120, 160, 255, 0.08) 50%, rgba(0, 212, 255, 0.05) 52%, transparent 58%);
+  background: linear-gradient(105deg, transparent 42%, rgba(var(--accent-rgb), 0.05) 48%, rgba(120, 160, 255, 0.08) 50%, rgba(var(--accent-rgb), 0.05) 52%, transparent 58%);
   animation: kos-ambient 18s linear infinite;
 }
 @keyframes kos-ambient { from { transform: translateX(-35%); } to { transform: translateX(35%); } }
@@ -92,7 +94,7 @@ a { color: var(--accent-neon); }
 
 :focus-visible { outline: 2px solid var(--accent-neon); outline-offset: 2px; }
 
-* { scrollbar-width: thin; scrollbar-color: rgba(0, 212, 255, 0.45) transparent; }
+* { scrollbar-width: thin; scrollbar-color: rgba(var(--accent-rgb), 0.45) transparent; }
 
 /* --- Mise en page commune des pages du K-OS --- */
 .page { max-width: 1200px; margin: 0 auto; padding: 22px 16px 28px; display: grid; gap: 22px; }
@@ -129,7 +131,7 @@ a { color: var(--accent-neon); }
   content: "";
   position: absolute;
   inset: 5px -5px -5px 5px;
-  border: 1px solid rgba(0, 212, 255, 0.6);
+  border: 1px solid rgba(var(--accent-rgb), 0.6);
   border-left: 0;
   border-top: 0;
   pointer-events: none;
@@ -212,22 +214,22 @@ button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transfor
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea) {
   color: #eef2ff;
   padding: 9px 12px;
-  border: 1px solid rgba(0, 212, 255, 0.26);
-  border-left: 2px solid rgba(0, 212, 255, 0.75);
+  border: 1px solid rgba(var(--accent-rgb), 0.26);
+  border-left: 2px solid rgba(var(--accent-rgb), 0.75);
   border-radius: 0;
   font-family: var(--font-ui);
   font-size: 13px;
   background:
-    linear-gradient(135deg, transparent calc(100% - 7px), rgba(0, 212, 255, 0.85) calc(100% - 7px)) no-repeat right bottom / 9px 9px,
-    linear-gradient(180deg, rgba(0, 212, 255, 0.07), rgba(0, 212, 255, 0) 60%),
+    linear-gradient(135deg, transparent calc(100% - 7px), rgba(var(--accent-rgb), 0.85) calc(100% - 7px)) no-repeat right bottom / 9px 9px,
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.07), rgba(var(--accent-rgb), 0) 60%),
     rgba(0, 4, 30, 0.88);
   transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
-:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):hover { border-color: rgba(0, 212, 255, 0.5); border-left-color: var(--accent-neon); }
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):hover { border-color: rgba(var(--accent-rgb), 0.5); border-left-color: var(--accent-neon); }
 :where(input, select, textarea):focus {
   outline: none;
   border-color: var(--accent-neon);
-  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.35), 0 0 14px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35), 0 0 14px rgba(var(--accent-rgb), 0.3);
 }
 input::placeholder, textarea::placeholder { color: var(--text-faint); font-style: italic; }
 input[readonly] { color: #d6defb; }
@@ -239,9 +241,9 @@ input[readonly] { color: #d6defb; }
   padding-right: 32px;
   cursor: pointer;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2300d4ff' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 11px center / 11px 8px,
-    linear-gradient(135deg, transparent calc(100% - 7px), rgba(0, 212, 255, 0.85) calc(100% - 7px)) no-repeat right bottom / 9px 9px,
-    linear-gradient(180deg, rgba(0, 212, 255, 0.07), rgba(0, 212, 255, 0) 60%),
+    var(--chevron) no-repeat right 11px center / 11px 8px,
+    linear-gradient(135deg, transparent calc(100% - 7px), rgba(var(--accent-rgb), 0.85) calc(100% - 7px)) no-repeat right bottom / 9px 9px,
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.07), rgba(var(--accent-rgb), 0) 60%),
     rgba(0, 4, 30, 0.88);
 }
 select option { background: var(--panel-solid); color: var(--text-main); }
@@ -256,7 +258,7 @@ select option { background: var(--panel-solid); color: var(--text-main); }
   margin: 0;
   display: inline-grid;
   place-content: center;
-  border: 1px solid rgba(0, 212, 255, 0.7);
+  border: 1px solid rgba(var(--accent-rgb), 0.7);
   background: rgba(0, 0, 0, 0.45);
   cursor: pointer;
   transition: background 0.12s, box-shadow 0.12s;
@@ -270,17 +272,17 @@ input[type="checkbox"]::before {
   transform: scale(0);
   transition: transform 0.12s;
 }
-input[type="checkbox"]:checked { background: var(--accent-neon); box-shadow: 0 0 10px rgba(0, 212, 255, 0.6); }
+input[type="checkbox"]:checked { background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6); }
 input[type="checkbox"]:checked::before { transform: scale(1); }
-input[type="checkbox"]:hover { box-shadow: 0 0 8px rgba(0, 212, 255, 0.45); }
+input[type="checkbox"]:hover { box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.45); }
 
 /* Curseurs : rail fin, poignée rectangulaire lumineuse. */
 :where(input[type="range"]) { appearance: none; -webkit-appearance: none; height: 20px; padding: 0; background: transparent; cursor: pointer; }
 input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: rgba(140, 165, 255, 0.28); border: 0; }
 input[type="range"]::-moz-range-track { height: 4px; background: rgba(140, 165, 255, 0.28); border: 0; }
 input[type="range"]::-moz-range-progress { height: 4px; background: var(--accent-neon); }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 18px; margin-top: -7px; border: 0; background: var(--accent-neon); box-shadow: 0 0 10px rgba(0, 212, 255, 0.8); }
-input[type="range"]::-moz-range-thumb { width: 10px; height: 18px; border: 0; border-radius: 0; background: var(--accent-neon); box-shadow: 0 0 10px rgba(0, 212, 255, 0.8); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 18px; margin-top: -7px; border: 0; background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.8); }
+input[type="range"]::-moz-range-thumb { width: 10px; height: 18px; border: 0; border-radius: 0; background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.8); }
 input[type="range"]:focus { box-shadow: none; }
 input[type="range"]:focus-visible::-webkit-slider-thumb { outline: 2px solid #fff; }
 input[type="color"] { padding: 0; border: 1px solid var(--border-strong); background: transparent; cursor: pointer; }
@@ -366,3 +368,96 @@ details.panel[open] > summary { margin-bottom: 14px; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
 }
+
+/* ======================================================================
+   Styles au choix (page Mon compte) : <html data-kos-theme="…">.
+   « cockpit » est le style de base ci-dessus.
+   ====================================================================== */
+
+/* --- Terminal noyau : le K-OS infecté par le virus, phosphore vert --- */
+:root[data-kos-theme="terminal"] {
+  --bg-dark: #010805;
+  --bg-deep: #000;
+  --bg-hi: #04190f;
+  --panel-bg: rgba(0, 12, 7, 0.92);
+  --panel-bg-alt: rgba(61, 255, 176, 0.05);
+  --panel-solid: #020a06;
+  --ink: #03140c;
+  --accent-neon: #3dffb0;
+  --accent-rgb: 61, 255, 176;
+  --accent-low: rgba(61, 255, 176, 0.12);
+  --accent-glow: 0 0 10px rgba(61, 255, 176, 0.5);
+  --text-main: #d2ffec;
+  --text-dim: #8fdcbc;
+  --text-faint: #5aa184;
+  --border: rgba(61, 255, 176, 0.25);
+  --border-strong: rgba(61, 255, 176, 0.45);
+  --font-ui: "Share Tech Mono", "JetBrains Mono", monospace;
+  --font-display: "Share Tech Mono", "JetBrains Mono", monospace;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%233dffb0' stroke-width='2'/%3E%3C/svg%3E");
+  --stripes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 14'%3E%3Cg fill='%233dffb0'%3E%3Cpath d='M6 0h7L7 14H0z'/%3E%3Cpath d='M19 0h7l-6 14h-7z'/%3E%3Cpath d='M32 0h7l-6 14h-7z'/%3E%3C/g%3E%3C/svg%3E") no-repeat center / contain;
+}
+[data-kos-theme="terminal"] body { background: radial-gradient(120% 100% at 50% 30%, #03170e, #000 72%) fixed; }
+[data-kos-theme="terminal"] body::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(61, 255, 176, 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(130% 110% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.7));
+}
+[data-kos-theme="terminal"] body::after { display: none; }
+[data-kos-theme="terminal"] .panel { border: 1px solid rgba(61, 255, 176, 0.35); background: var(--panel-bg); }
+[data-kos-theme="terminal"] .panel::after { display: none; }
+[data-kos-theme="terminal"] .panel h3, [data-kos-theme="terminal"] .panel h4 { background: rgba(61, 255, 176, 0.12); color: var(--accent-neon); letter-spacing: 1px; text-transform: none; }
+[data-kos-theme="terminal"] .panel h3::before, [data-kos-theme="terminal"] .panel h4::before { content: "K-OS://"; color: var(--text-faint); }
+[data-kos-theme="terminal"] .page-head h1 { letter-spacing: 1px; text-transform: none; }
+[data-kos-theme="terminal"] .page-head h1::before { content: "root@kos:~$ "; color: var(--text-faint); font-size: 0.8em; }
+[data-kos-theme="terminal"] button.primary, [data-kos-theme="terminal"] .btn-primary { clip-path: none; background: transparent; color: var(--accent-neon); border: 1px solid var(--accent-neon); letter-spacing: 1px; text-transform: none; }
+[data-kos-theme="terminal"] button.primary::before { content: "> "; }
+[data-kos-theme="terminal"] button.primary:hover { background: var(--accent-neon); color: #021; }
+[data-kos-theme="terminal"] .kos-shell .links a { clip-path: none; text-transform: lowercase; }
+[data-kos-theme="terminal"] .kos-shell .links a .t::before { content: "./"; opacity: 0.6; }
+
+/* --- Holo verre : panneaux de verre, calme et haut de gamme --- */
+:root[data-kos-theme="holo"] {
+  --bg-dark: #0a1426;
+  --bg-deep: #050913;
+  --bg-hi: #17305a;
+  --panel-bg: rgba(140, 180, 255, 0.08);
+  --panel-bg-alt: rgba(255, 255, 255, 0.05);
+  --panel-solid: #0d1a33;
+  --ink: rgba(0, 0, 0, 0.25);
+  --text-dim: #b4c3df;
+  --text-faint: #8193b5;
+  --border: rgba(170, 205, 255, 0.2);
+  --border-strong: rgba(170, 205, 255, 0.35);
+  --font-display: "Oxanium", "Segoe UI", sans-serif;
+  --radius: 10px;
+}
+[data-kos-theme="holo"] body { background: radial-gradient(90% 70% at 70% -10%, #17305a 0%, #0a1426 50%, #050913 100%) fixed; }
+[data-kos-theme="holo"] body::before {
+  background:
+    linear-gradient(rgba(var(--accent-rgb), 0.07) 1px, transparent 1px) 0 0 / 46px 46px,
+    linear-gradient(90deg, rgba(var(--accent-rgb), 0.07) 1px, transparent 1px) 0 0 / 46px 46px;
+  -webkit-mask-image: linear-gradient(transparent 35%, #000);
+  mask-image: linear-gradient(transparent 35%, #000);
+}
+[data-kos-theme="holo"] .panel { border-radius: 16px; border: 1px solid var(--border); background: linear-gradient(160deg, rgba(150, 190, 255, 0.12), rgba(150, 190, 255, 0.03)); backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); }
+[data-kos-theme="holo"] .panel::after { display: none; }
+[data-kos-theme="holo"] .panel h3, [data-kos-theme="holo"] .panel h4 { background: none; padding: 0; color: var(--accent-neon); letter-spacing: 2.5px; }
+[data-kos-theme="holo"] .panel h3::after, [data-kos-theme="holo"] .panel h4::after { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-neon); box-shadow: 0 0 8px var(--accent-neon); }
+[data-kos-theme="holo"] .page-head h1 { letter-spacing: 2px; text-transform: none; }
+[data-kos-theme="holo"] .page-head h1::after { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-neon); box-shadow: 0 0 10px var(--accent-neon); }
+[data-kos-theme="holo"] button, [data-kos-theme="holo"] .btn { border-radius: 10px; }
+[data-kos-theme="holo"] button.primary, [data-kos-theme="holo"] .btn-primary { clip-path: none; border-radius: 10px; padding: 10px 18px; background: linear-gradient(90deg, #00d4ff, #7af0ff); letter-spacing: 1.5px; box-shadow: 0 6px 22px rgba(0, 212, 255, 0.3); }
+[data-kos-theme="holo"] button.primary:hover { filter: none; transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0, 212, 255, 0.45); }
+[data-kos-theme="holo"] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea) { border-radius: 10px; border: 1px solid var(--border); background-color: rgba(0, 0, 0, 0.3); background-image: none; }
+[data-kos-theme="holo"] :where(select) { background: var(--chevron) no-repeat right 11px center / 11px 8px, rgba(0, 0, 0, 0.3); }
+[data-kos-theme="holo"] input[type="checkbox"] { border-radius: 5px; }
+[data-kos-theme="holo"] .kos-shell { margin: 10px 12px 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(120, 170, 255, 0.08); top: 10px; }
+[data-kos-theme="holo"] .kos-shell .links a { clip-path: none; border-radius: 9px; }
+[data-kos-theme="holo"] .kos-shell .links a[aria-current="page"] { background: rgba(var(--accent-rgb), 0.16); color: #fff; box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.45); }
+[data-kos-theme="holo"] .kos-status { background: rgba(5, 9, 19, 0.85); backdrop-filter: blur(8px); }
+
+/* --- Animations réduites (préférence du compte) : comme le réglage système --- */
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+:root[data-motion="reduced"] body::after { display: none; }
+:root[data-motion="reduced"]::view-transition-old(root), :root[data-motion="reduced"]::view-transition-new(root) { animation: none; }

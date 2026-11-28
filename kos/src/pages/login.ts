@@ -1,3 +1,4 @@
+import "../prefs";
 import "../theme.css";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, authErrorMessage, resolveMember, safeNext, signInWithGoogle, signOut } from "../auth";

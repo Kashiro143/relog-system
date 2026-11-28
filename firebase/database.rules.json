@@ -25,6 +25,14 @@
           "status": {
             ".write": true,
             ".validate": "(newData.val() == 'online' || newData.val() == 'offline') && root.child('registry/users').child($actor).child('name').exists()"
+          },
+          "name": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+          },
+          "color": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+            ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
           }
         }
       },
@@ -427,6 +435,27 @@
             "$other": {
               ".validate": false
             }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "prefs": {
+        "$actor": {
+          ".read": "(auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+          ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() == $actor)",
+          "theme": {
+            ".validate": "newData.val() == 'cockpit' || newData.val() == 'terminal' || newData.val() == 'holo'"
+          },
+          "sound": {
+            ".validate": "newData.isBoolean()"
+          },
+          "boot": {
+            ".validate": "newData.isBoolean()"
+          },
+          "motion": {
+            ".validate": "newData.val() == 'full' || newData.val() == 'reduced'"
           },
           "$other": {
             ".validate": false

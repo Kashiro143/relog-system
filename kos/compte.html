@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K-OS // MON COMPTE</title>
+    <link rel="stylesheet" href="/src/theme.css" />
+    <style>
+      .page { max-width: 980px; }
+      .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+      @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+      .stack { display: grid; gap: 14px; }
+
+      /* Profil */
+      .id-card { display: flex; align-items: center; gap: 14px; }
+      .avatar { width: 54px; height: 54px; flex: none; display: grid; place-items: center; font: 400 20px var(--font-display); color: #00102a; background: var(--c, var(--accent-neon)); box-shadow: 0 0 16px var(--c, var(--accent-neon)); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+      .id-card b { display: block; font-size: 17px; }
+      .id-card small { color: var(--text-dim); font-size: 12px; }
+      .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .swatches button { width: 28px; height: 28px; padding: 0; border: 2px solid transparent; background: var(--c); box-shadow: none; }
+      .swatches button.on { border-color: #fff; box-shadow: 0 0 10px var(--c); }
+      .swatches input[type="color"] { width: 34px; height: 28px; }
+
+      /* Choix du style */
+      .themes { display: grid; gap: 12px; }
+      .theme { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px; text-align: left; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border); color: var(--text-main); }
+      .theme:hover { box-shadow: none; }
+      .theme.on { border-color: var(--accent-neon); box-shadow: 0 0 0 1px var(--accent-neon), var(--accent-glow); background: var(--accent-low); }
+      .theme b { display: block; font: 400 12px var(--font-display); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+      .theme small { color: var(--text-dim); font-size: 12px; font-weight: 400; line-height: 1.4; display: block; }
+      .theme .tag { display: inline-block; margin-left: 6px; font: 600 10px var(--font-ui); letter-spacing: 1px; padding: 1px 6px; background: var(--accent-neon); color: #00102a; vertical-align: 1px; }
+      .mini { position: relative; height: 70px; overflow: hidden; }
+      .mini i { position: absolute; display: block; }
+      .mini.cockpit { background: radial-gradient(120% 100% at 15% 0%, #0d2cf0, #030a6e 70%); }
+      .mini.cockpit .p { left: 12px; top: 18px; width: 64%; height: 38px; background: rgba(3, 8, 50, 0.9); box-shadow: 4px 4px 0 -3px #00d4ff; }
+      .mini.cockpit .t { left: 12px; top: 12px; width: 44px; height: 9px; background: #000; }
+      .mini.cockpit .s { left: 60px; top: 13px; width: 16px; height: 7px; background: repeating-linear-gradient(115deg, #00d4ff 0 3px, transparent 3px 6px); }
+      .mini.terminal { background: #000; }
+      .mini.terminal .p { inset: 10px; border: 1px solid #3dffb0; }
+      .mini.terminal .t { left: 18px; top: 18px; width: 60%; height: 4px; background: #3dffb0; box-shadow: 0 9px 0 #2a8f66, 0 18px 0 #2a8f66, 0 27px 0 #1d5e44; }
+      .mini.holo { background: radial-gradient(90% 80% at 70% 0%, #17305a, #050913 80%); }
+      .mini.holo .p { left: 12px; top: 14px; width: 66%; height: 42px; border-radius: 8px; border: 1px solid rgba(170, 205, 255, 0.3); background: rgba(150, 190, 255, 0.12); }
+      .mini.holo .t { left: 22px; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: #00d4ff; box-shadow: 0 0 6px #00d4ff; }
+
+      /* Options */
+      .opt { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(140, 165, 255, 0.12); }
+      .opt:last-child { border-bottom: 0; }
+      .opt b { display: block; font-size: 13.5px; }
+      .opt small { color: var(--text-dim); font-size: 12px; }
+      .seg { display: inline-flex; gap: 2px; padding: 3px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); flex: none; }
+      .seg button { padding: 6px 12px; font-size: 12px; border: 0; background: transparent; box-shadow: none; }
+      .seg button.on { background: var(--accent-low); color: #fff; box-shadow: inset 0 -2px 0 var(--accent-neon); }
+      .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13px; }
+      .kv span:nth-child(odd) { color: var(--text-dim); }
+      .kv span:nth-child(even) { overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-head">
+        <h1>👤 Mon compte</h1>
+        <p>Ton profil et tes préférences : elles te suivent sur tous tes appareils et dans tes docks OBS.</p>
+      </header>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="panel">
+            <h4>Profil</h4>
+            <div class="stack">
+              <div class="id-card"><span class="avatar" id="avatar"></span><div><b id="id-name"></b><small id="id-sub"></small></div></div>
+              <div class="field"><label for="name">Nom affiché</label><input id="name" maxlength="24" autocomplete="off" /></div>
+              <div class="field"><span class="field-label">Ma couleur (dessins, laser, pastilles)</span><div class="swatches" id="swatches"></div></div>
+              <div class="btn-row"><button class="primary" id="save-profile">Enregistrer le profil</button></div>
+              <div class="feedback" id="profile-fb" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h4>Compte</h4>
+            <div class="kv">
+              <span>Adresse</span><span id="email"></span>
+              <span>Identifiant</span><span id="actor"></span>
+              <span>Rôle</span><span id="role"></span>
+            </div>
+            <div class="btn-row" style="margin-top:14px"><button class="danger btn-sm" id="logout">⏻ Se déconnecter</button></div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <h4>Style du K-OS</h4>
+            <div class="themes" id="themes"></div>
+          </section>
+
+          <section class="panel">
+            <h4>Expérience</h4>
+            <div class="opt"><div><b>Sons d'interface</b><small>Bips discrets au clic et à l'envoi.</small></div><div class="seg" data-pref="sound"><button data-v="false">Muet</button><button data-v="true">Activés</button></div></div>
+            <div class="opt"><div><b>Séquence de démarrage</b><small>« Accès autorisé » à la première page de chaque session.</small></div><div class="seg" data-pref="boot"><button data-v="true">Oui</button><button data-v="false">Non</button></div></div>
+            <div class="opt"><div><b>Animations</b><small>Balayages, transitions entre pages, lueur ambiante.</small></div><div class="seg" data-pref="motion"><button data-v="full">Complètes</button><button data-v="reduced">Réduites</button></div></div>
+            <div class="feedback" id="prefs-fb" aria-live="polite"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/src/pages/compte.ts"></script>
+  </body>
+</html>

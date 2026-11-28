@@ -16,6 +16,7 @@ export default defineConfig({
         module: resolve(root, "module.html"),
         obs: resolve(root, "obs.html"),
         voir: resolve(root, "voir.html"),
+        compte: resolve(root, "compte.html"),
         player: resolve(root, "player.html"),
         login: resolve(root, "login.html"),
         relog: resolve(root, "relog.html"),

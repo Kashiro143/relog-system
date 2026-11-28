@@ -1,4 +1,5 @@
 import "../theme.css";
+import "../prefs";
 import { ref, onValue } from "firebase/database";
 import { db } from "../firebase";
 import { watchActors } from "../registry";

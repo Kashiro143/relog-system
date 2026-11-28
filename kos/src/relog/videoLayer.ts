@@ -364,9 +364,8 @@ const STYLE = `
 .kos-video .pause { position: absolute; inset: 0; z-index: 4; display: none; place-items: center; font: 800 calc(var(--k, 1) * 34px) "JetBrains Mono", Consolas, monospace; letter-spacing: calc(var(--k, 1) * 6px); color: var(--c, #00d4ff); background: rgba(0,0,0,0.9); backdrop-filter: blur(calc(var(--k, 1) * 8px)); text-shadow: 0 0 calc(var(--k, 1) * 14px) var(--c, #00d4ff); }
 /* La pause masque aussi l'interface que YouTube affiche sur une vidéo arrêtée. */
 .kos-video.paused .pause, .kos-video.ended .pause, .kos-video.resuming .pause { display: grid; }
-/* Fichier vidéo en pause : l'image figée reste visible (pour dessiner dessus), simple badge.
-   YouTube et Twitch gardent l'écran opaque : en pause, ils imposent leur interface. */
-.kos-video.src-file.paused:not(.ended):not(.resuming) .pause { inset: auto; top: calc(var(--k, 1) * 14px); right: calc(var(--k, 1) * 14px); padding: calc(var(--k, 1) * 6px) calc(var(--k, 1) * 12px); font-size: calc(var(--k, 1) * 16px); letter-spacing: calc(var(--k, 1) * 3px); background: rgba(0,0,0,0.72); backdrop-filter: none; border: 1px solid var(--c, #00d4ff); border-radius: calc(var(--k, 1) * 4px); }
+/* Pause façon tableau blanc : l'image reste intacte (pour dessiner dessus), simple badge. */
+.kos-video.paused:not(.ended) .pause { inset: auto; top: calc(var(--k, 1) * 14px); right: calc(var(--k, 1) * 14px); padding: calc(var(--k, 1) * 6px) calc(var(--k, 1) * 12px); font-size: calc(var(--k, 1) * 16px); letter-spacing: calc(var(--k, 1) * 3px); background: rgba(0,0,0,0.72); backdrop-filter: none; border: 1px solid var(--c, #00d4ff); border-radius: calc(var(--k, 1) * 4px); }
 /* À la reprise, YouTube réaffiche son titre quelques secondes : on le cache sous un fondu. */
 .kos-video.resuming .pause { animation: kosv-fade 5.5s ease-in forwards; }
 @keyframes kosv-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -462,6 +461,11 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
   let resumeTimer: ReturnType<typeof setTimeout> | undefined;
   /** Début de lecture constaté : l'écran de démarrage reste 2,5 s (titre YouTube). */
   let playingSince = 0;
+  // YouTube n'affiche son interface en pause (titre, « autres vidéos ») que si
+  // la vidéo n'a pas joué quelques secondes. Une vidéo chargée en pause est donc
+  // d'abord lue en muet ~4 s derrière l'écran de démarrage, puis mise en pause.
+  let priming = false;
+  const canPrime = () => driverKind === "youtube" && !opts.nativeControls;
   /** Commandes natives : délai pendant lequel on ne lit pas les gestes de l'utilisateur (chargement, ordre reçu). */
   let graceUntil = 0;
 
@@ -488,7 +492,7 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
 
   function applyAudio() {
     if (!driver || !ready) return;
-    driver.audio(muted || autoMuted, volume);
+    driver.audio(muted || autoMuted || priming, volume);
   }
 
   function showError(msg: string) {
@@ -537,6 +541,7 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
     if (!video) return;
     const kind = sourceOf(video);
     if (driver && driverKind === kind) return;
+    priming = false;
     driver?.destroy();
     ready = false;
     loadedKey = null;
@@ -561,6 +566,7 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
 
   function teardown() {
     clearTimeout(calmTimer);
+    priming = false;
     driver?.destroy();
     driver = null;
     driverKind = null;
@@ -591,17 +597,7 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
     const wasPaused = frame.classList.contains("paused");
     if (paused !== wasPaused) wake();
     frame.classList.toggle("paused", paused);
-    if (wasPaused && !paused && sourceOf(video) === "youtube") {
-      const pause = frame.querySelector<HTMLElement>(".pause")!;
-      pause.textContent = "▶ REPRISE DU SIGNAL";
-      frame.classList.add("resuming");
-      clearTimeout(resumeTimer);
-      const f = frame;
-      resumeTimer = setTimeout(() => {
-        f.classList.remove("resuming");
-        pause.textContent = "❚❚ EN PAUSE";
-      }, 5500);
-    } else if (paused) {
+    if (paused) {
       clearTimeout(resumeTimer);
       frame.classList.remove("resuming");
       frame.querySelector(".pause")!.textContent = "❚❚ EN PAUSE";
@@ -617,7 +613,8 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
     frame.querySelector<HTMLElement>(".bar i")!.style.width = dur ? `${Math.min(100, (cur / dur) * 100)}%` : "0";
     const st = driver.status();
     if (st === "playing") playingSince ||= Date.now();
-    const settled = st === "paused" || st === "ended" || (st === "playing" && (driverKind !== "youtube" || Date.now() - playingSince > 2500));
+    else if (st === "paused" && !priming) playingSince = 0;
+    const settled = !priming && (st === "paused" || st === "ended" || (st === "playing" && (driverKind !== "youtube" || Date.now() - playingSince > 2500)));
     if (settled) frame.classList.add("live");
     const ended = st === "ended" && video?.state === "playing";
     if (ended !== frame.classList.contains("ended")) {
@@ -639,8 +636,9 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
       frame?.classList.remove("live");
       loadAt = Date.now();
       playingSince = 0;
+      priming = video.state !== "playing" && canPrime();
       applyAudio();
-      driver.load(video.videoId, expected, video.state === "playing");
+      driver.load(video.videoId, expected, video.state === "playing" || priming);
       graceUntil = Date.now() + 4000;
       return;
     }
@@ -668,6 +666,10 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
       }
     }
     if (video.state === "playing") {
+      if (priming) {
+        priming = false;
+        applyAudio();
+      }
       if (duration && expected >= duration) return; // vidéo terminée pour tout le monde
       if (Math.abs(current - expected) > DRIFT_S && st !== "buffering") {
         driver.seek(expected);
@@ -682,7 +684,22 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
         }
         driver.play();
       } else stuck = 0;
+    } else if (priming) {
+      // Lecture muette jusqu'à ce que YouTube ait retiré son titre (ou 12 s au plus).
+      if (Date.now() - loadAt < 12000 && !(st === "playing" && playingSince && Date.now() - playingSince > 4000)) return;
+      priming = false;
+      driver.pause();
+      driver.seek(expected);
+      applyAudio();
     } else {
+      // Pause demandée juste après une reprise : YouTube montre encore son titre.
+      // On continue en muet jusqu'à 4 s de lecture, puis on revient figer l'image.
+      if (canPrime() && st === "playing" && playingSince && Date.now() - playingSince < 4000) {
+        priming = true;
+        loadAt = Date.now();
+        applyAudio();
+        return;
+      }
       if (st === "playing" || st === "buffering") driver.pause();
       if (Math.abs(current - expected) > 0.5) driver.seek(expected);
     }

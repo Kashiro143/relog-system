@@ -657,8 +657,8 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
       return;
     }
     renderProgress();
-    // (une pub YouTube en cours « joue » : ce n'est pas une panne)
-    if (frame && !frame.classList.contains("live") && !errorShown && Date.now() - loadAt > 15000 && driver.status() !== "playing") {
+    // Pas pour YouTube : ses vraies erreurs arrivent par onError, et une pub peut durer.
+    if (frame && kind !== "youtube" && !frame.classList.contains("live") && !errorShown && Date.now() - loadAt > 15000) {
       showError(
         kind === "twitch-vod"
           ? "La VOD Twitch ne démarre pas : privée, réservée aux abonnés ou supprimée ?"
@@ -701,7 +701,12 @@ export function createVideoLayer(root: HTMLElement, opts: VideoLayerOptions = {}
       } else stuck = 0;
     } else if (priming) {
       // Lecture muette jusqu'à 4 s sur la vraie vidéo (pubs comprises : 90 s au plus).
-      if (Date.now() - loadAt < 90000 && !(st === "playing" && trackSince && Date.now() - trackSince > 4000)) return;
+      if (Date.now() - loadAt < 90000 && !(st === "playing" && trackSince && Date.now() - trackSince > 4000)) {
+        // Après une pub, YouTube repart du début : on la ramène à l'instant voulu
+        // (pendant la pub, YouTube ignore la demande).
+        if (st === "playing" && (current < expected - 1 || current > expected + 10)) driver.seek(expected);
+        return;
+      }
       priming = false;
       driver.pause();
       driver.seek(expected);

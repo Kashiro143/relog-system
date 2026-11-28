@@ -28,6 +28,8 @@ import {
   type Item,
   type RoomMeta,
   type Stroke,
+  setRoomParty,
+  watchRoomParty,
 } from "../relog/room";
 import { createRoomView } from "../relog/roomView";
 import { mountGifPicker } from "../relog/gifPicker";
@@ -35,7 +37,7 @@ import { pushRecent, type GifMedia } from "../relog/gifs";
 import { serverNow } from "../relog/serverTime";
 import { createVideoLayer } from "../relog/videoLayer";
 import { createScreenShare, type ScreenShare } from "../relog/screenShare";
-import { SOURCE_LABELS, controlVideo, expectedPosition, sourceOf, watchMyParty, watchParties, watchVideo, watchVolume, type PartyMeta, type RoomVideo } from "../relog/watch";
+import { SOURCE_LABELS, controlVideo, expectedPosition, joinParty, sourceOf, watchMyParty, watchParties, watchVideo, watchVolume, type PartyMeta, type RoomVideo } from "../relog/watch";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -199,6 +201,7 @@ function enterRoom(roomId: string | null) {
   $("no-room").hidden = !!roomId;
   $("room-ui").hidden = !roomId;
   setupShare(roomId);
+  followRoomParty(roomId);
   if (!roomId) return;
   roomStops = [
     watchStrokes(roomId, (m) => {
@@ -630,24 +633,42 @@ $("screen-bg").addEventListener("click", async () => {
   renderShareButton();
 });
 
-// ---------- Watch-party (indépendante du salon) ----------
-// En fond de la scène : la vidéo de la watch-party que J'AI rejointe, avec de
-// quoi la mettre en pause pour dessiner dessus (pour tout le monde).
+// ---------- Watch-party attachée au salon ----------
+// Un salon n'affiche une vidéo que si on lui attache une watch-party
+// (roomContent/{salon}/party). Elle sert alors de fond pour dessiner dessus,
+// avec de quoi la mettre en pause pour toute la watch-party.
 
 let parties: Record<string, PartyMeta> = {};
 let myParty: string | null = null;
+let roomParty: string | null = null;
 let partyStop: (() => void) | null = null;
+let roomPartyStop: (() => void) | null = null;
 
 watchParties((data) => {
   parties = data;
+  renderAttach();
   renderVideo();
 });
 watchMyParty(me, (party) => {
   myParty = party;
+  renderVideo();
+});
+
+/** Appelé à chaque changement de salon. */
+function followRoomParty(roomId: string | null) {
+  roomPartyStop?.();
+  roomPartyStop = roomId ? watchRoomParty(roomId, (p) => showParty(p)) : null;
+  if (!roomId) showParty(null);
+}
+
+function showParty(party: string | null) {
+  if (party === roomParty && partyStop) return;
+  roomParty = party;
   partyStop?.();
   partyStop = null;
   video = null;
   stageVideo.setVideo(null);
+  renderAttach();
   renderVideo();
   if (!party) return;
   partyStop = watchVideo(party, (v) => {
@@ -655,27 +676,62 @@ watchMyParty(me, (party) => {
     stageVideo.setVideo(v, v ? { color: actors[v.by]?.color, name: actors[v.by]?.name || v.by } : undefined);
     renderVideo();
   });
+}
+
+function renderAttach() {
+  const sel = $<HTMLSelectElement>("wp-attach");
+  const list = Object.entries(parties).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  sel.replaceChildren();
+  const none = document.createElement("option");
+  none.value = "";
+  none.textContent = "Aucune vidéo";
+  sel.appendChild(none);
+  for (const [id, p] of list) {
+    const o = document.createElement("option");
+    o.value = id;
+    o.textContent = `📺 ${p.name}`;
+    sel.appendChild(o);
+  }
+  sel.value = roomParty && parties[roomParty] ? roomParty : "";
+}
+$("wp-attach").addEventListener("change", async () => {
+  if (!myRoom) return;
+  const id = $<HTMLSelectElement>("wp-attach").value || null;
+  try {
+    await setRoomParty(myRoom, id);
+    // Pour pouvoir la piloter (pause pour dessiner), on la rejoint aussi.
+    if (id && myParty !== id) await joinParty(me, id);
+  } catch {
+    showError("Changement refusé.");
+    renderAttach();
+  }
+});
+$("wp-join").addEventListener("click", () => {
+  if (roomParty) joinParty(me, roomParty).catch(() => showError("Impossible de rejoindre cette watch-party."));
 });
 
 function renderVideo() {
-  const partyName = myParty && parties[myParty]?.name;
-  $("video-status").textContent = !myParty
-    ? "Tu n'as rejoint aucune watch-party."
+  const partyName = roomParty ? parties[roomParty]?.name : null;
+  const joined = !!roomParty && myParty === roomParty;
+  $("video-status").textContent = !roomParty
+    ? "Aucune vidéo dans ce salon : choisis une watch-party pour dessiner dessus."
     : video
-      ? `${partyName ? `${partyName} · ` : ""}${video.state === "playing" ? "▶" : "❚❚"} ${video.title || SOURCE_LABELS[sourceOf(video)]}`
-      : `${partyName || "Watch-party"} · aucune vidéo`;
+      ? `${video.state === "playing" ? "▶" : "❚❚"} ${video.title || SOURCE_LABELS[sourceOf(video)]}`
+      : `${partyName || "Watch-party"} · aucune vidéo pour l'instant`;
   const seekable = !!video && sourceOf(video) !== "twitch-clip";
-  $("wp-ctl").hidden = !video;
+  $("wp-ctl").hidden = !video || !joined;
+  $("wp-join").hidden = !roomParty || joined;
   $("wp-play").textContent = !video ? "" : sourceOf(video) === "twitch-clip" ? "↻ Rejouer" : video.state === "playing" ? "⏸ Pause" : "▶ Lecture";
   $("wp-back").hidden = $("wp-fwd").hidden = !seekable;
+  $("wp-opts").hidden = !video;
   $("video-view").hidden = !$<HTMLInputElement>("wp-show").checked;
 }
 
 const wpNow = () => (video ? expectedPosition(video, serverNow()) : 0);
-const wpRefused = () => showError("Commande refusée : rejoins cette watch-party depuis sa page.");
+const wpRefused = () => showError("Commande refusée : rejoins d'abord cette watch-party.");
 function wpControl(state: RoomVideo["state"], position: number) {
-  if (!myParty || !video) return;
-  controlVideo(myParty, state, position).catch(wpRefused);
+  if (!roomParty || !video || myParty !== roomParty) return;
+  controlVideo(roomParty, state, position).catch(wpRefused);
 }
 $("wp-play").addEventListener("click", () => {
   if (!video) return;

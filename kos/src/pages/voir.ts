@@ -3,7 +3,7 @@ import { ref, onValue } from "firebase/database";
 import { db } from "../firebase";
 import { watchActors } from "../registry";
 import type { Actor } from "../types";
-import { watchRooms, watchStrokes, watchItems, watchCursors } from "../relog/room";
+import { watchRooms, watchRoomParty, watchStrokes, watchItems, watchCursors } from "../relog/room";
 import { createRoomView } from "../relog/roomView";
 import { createVideoLayer } from "../relog/videoLayer";
 import { SOURCE_LABELS, sourceOf, watchParties, watchVideo } from "../relog/watch";
@@ -26,6 +26,8 @@ let actors: Record<string, Actor> = {};
 let overlays: Record<string, { room?: string; party?: string }> = {};
 let drawRoom: string | null = null;
 let drawStops: (() => void)[] = [];
+const attached = new Set<string>();
+const attachStops = new Map<string, () => void>();
 let roomName = "";
 let muted = true;
 let volume = 80;
@@ -62,7 +64,27 @@ function start() {
     renderPeople();
     followDrawings();
   });
-  watchRooms(() => followDrawings());
+  watchRooms((rooms) => {
+    // Quels salons ont cette watch-party attachée ?
+    for (const [r, stop] of attachStops)
+      if (!rooms[r]) {
+        stop();
+        attachStops.delete(r);
+        attached.delete(r);
+      }
+    for (const r of Object.keys(rooms)) {
+      if (attachStops.has(r)) continue;
+      attachStops.set(
+        r,
+        watchRoomParty(r, (p) => {
+          if (p === partyId) attached.add(r);
+          else attached.delete(r);
+          followDrawings();
+        }),
+      );
+    }
+    followDrawings();
+  });
   watchParties((parties) => {
     const r = parties[partyId];
     if (!r) {
@@ -94,11 +116,15 @@ function start() {
   });
 }
 
-/** Dessins affichés : ceux du salon où se trouvent le plus de participants de la watch-party. */
+/** Dessins affichés : ceux du salon où la watch-party est attachée, sinon celui où se trouvent le plus de participants. */
 function followDrawings() {
+  if (attached.size) return showDrawings([...attached][0]);
   const count = new Map<string, number>();
   for (const o of Object.values(overlays)) if (o?.party === partyId && o.room) count.set(o.room, (count.get(o.room) ?? 0) + 1);
-  const best = [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  showDrawings([...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null);
+}
+
+function showDrawings(best: string | null) {
   if (best === drawRoom) return;
   drawRoom = best;
   drawStops.forEach((stop) => stop());

@@ -112,6 +112,15 @@ export function watchMyRoom(actorId: string, callback: (roomId: string | null) =
   return onValue(ref(db, `relog/overlay/${actorId}/room`), (snap) => callback(snap.val() || null));
 }
 
+/** Watch-party attachée au salon (sa vidéo sert de fond pour dessiner), ou null. */
+export function watchRoomParty(roomId: string, callback: (partyId: string | null) => void): Unsubscribe {
+  return onValue(ref(db, `relog/roomContent/${roomId}/party`), (snap) => callback(snap.val() || null));
+}
+
+export function setRoomParty(roomId: string, partyId: string | null) {
+  return set(ref(db, `relog/roomContent/${roomId}/party`), partyId);
+}
+
 export function joinRoom(actorId: string, roomId: string) {
   return set(ref(db, `relog/overlay/${actorId}/room`), roomId);
 }

@@ -393,6 +393,17 @@ describe("watch-party séparée du salon", () => {
     await assertFails(db.ref("relog/parties/soiree").remove()); // créée par Kashiro
     await assertSucceeds(db.ref().update({ "relog/parties/neuve": null, "relog/partyContent/neuve": null }));
   });
+
+  test("un membre du salon y attache une watch-party existante (ou la détache)", async () => {
+    await env.withSecurityRulesDisabled((ctx) => ctx.database().ref("relog/rooms/salon").set({ name: "Débat", by: "Kashiro", createdAt: 1 }));
+    const db = as("r", REINDAL);
+    await assertFails(db.ref("relog/roomContent/salon/party").set("soiree")); // pas dans le salon
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertSucceeds(db.ref("relog/roomContent/salon/party").set("soiree"));
+    await assertFails(db.ref("relog/roomContent/salon/party").set("inexistante"));
+    await assertSucceeds(anon().ref("relog/roomContent/salon/party").get());
+    await assertSucceeds(db.ref("relog/roomContent/salon/party").remove());
+  });
 });
 
 describe("partage d'écran dans un salon", () => {

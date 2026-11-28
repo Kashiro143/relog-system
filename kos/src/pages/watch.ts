@@ -5,7 +5,6 @@ import { db } from "../firebase";
 import { requireMember, blockPage } from "../auth";
 import { watchActors } from "../registry";
 import type { Actor } from "../types";
-import { joinRoom, leaveRoom, watchRooms, type RoomMeta } from "../relog/room";
 import { serverNow } from "../relog/serverTime";
 import { createVideoLayer } from "../relog/videoLayer";
 import { armConfirmDelete } from "../ui/dialogs";
@@ -14,6 +13,12 @@ import {
   SOURCE_LABELS,
   VIDEO_SIZES,
   controlVideo,
+  createParty,
+  deleteParty,
+  joinParty,
+  leaveParty,
+  watchParties,
+  type PartyMeta,
   expectedPosition,
   parseVideoLink,
   setVideoLayout,
@@ -39,8 +44,8 @@ if (!me) {
 }
 
 let actors: Record<string, Actor> = {};
-let rooms: Record<string, RoomMeta> = {};
-let overlays: Record<string, { room?: string }> = {};
+let rooms: Record<string, PartyMeta> = {};
+let overlays: Record<string, { party?: string }> = {};
 let myRoom: string | null = null;
 let video: RoomVideo | null = null;
 let stopVideoWatch: (() => void) | null = null;
@@ -76,7 +81,7 @@ function detect(kind: "ok" | "err" | "", text: string, sticky = true) {
 
 const layer = createVideoLayer($("video-root"), { muted: true, onError: (msg) => detect("err", msg, false) });
 
-// ---------- Salon ----------
+// ---------- Watch-party (indépendante des salons de dessin) ----------
 
 function renderRoomBar() {
   const select = $<HTMLSelectElement>("room-select");
@@ -85,14 +90,14 @@ function renderRoomBar() {
   select.replaceChildren();
   if (!list.length) {
     const o = document.createElement("option");
-    o.textContent = "Aucun salon";
+    o.textContent = "Aucune watch-party";
     o.value = "";
     select.appendChild(o);
   }
   for (const [id, r] of list) {
     const o = document.createElement("option");
     o.value = id;
-    const count = Object.values(overlays).filter((ov) => ov?.room === id).length;
+    const count = Object.values(overlays).filter((ov) => ov?.party === id).length;
     o.textContent = `${r.name}${count ? ` · ${count}` : ""}${id === myRoom ? " (ici)" : ""}`;
     select.appendChild(o);
   }
@@ -100,16 +105,18 @@ function renderRoomBar() {
   select.disabled = !list.length;
   const joinBtn = $<HTMLButtonElement>("room-join");
   joinBtn.hidden = !list.length || select.value === myRoom;
-  joinBtn.textContent = myRoom ? "Changer de salon" : "Rejoindre";
+  joinBtn.textContent = myRoom ? "Changer" : "Rejoindre";
   $("room-leave").hidden = !myRoom;
   $("room-share").hidden = !myRoom;
-  $("room-link").textContent = list.length ? "Gérer les salons →" : "Crée un salon dans 🎨 Salons →";
+  // Supprimer : son créateur ou le propriétaire, et seulement la watch-party affichée.
+  const sel = rooms[select.value];
+  $("party-delete").hidden = !sel || !(sel.by === me || member.isOwner);
 
   const people = $("people");
   people.replaceChildren();
   if (!myRoom) return;
   for (const a of Object.values(actors)) {
-    if (!a?.name || overlays[a.id]?.room !== myRoom) continue;
+    if (!a?.name || overlays[a.id]?.party !== myRoom) continue;
     const chip = document.createElement("span");
     chip.className = `person${a.status === "online" ? " online" : ""}`;
     chip.style.setProperty("--c", a.color || "#00d4ff");
@@ -123,14 +130,31 @@ $("room-select").addEventListener("change", renderRoomBar);
 $("room-join").addEventListener("click", async () => {
   const id = $<HTMLSelectElement>("room-select").value;
   if (!id) return;
-  if (myRoom) await leaveRoom(me, myRoom).catch(() => {});
-  joinRoom(me, id).catch(() => detect("err", "Impossible de rejoindre ce salon.", false));
+  joinParty(me, id).catch(() => detect("err", "Impossible de rejoindre cette watch-party.", false));
 });
-$("room-leave").addEventListener("click", () => leaveRoom(me, myRoom).catch(() => {}));
+$("room-leave").addEventListener("click", () => leaveParty(me).catch(() => {}));
+$("party-new").addEventListener("click", async () => {
+  const name = prompt("Nom de la nouvelle watch-party :", "Soirée vidéo");
+  if (!name?.trim()) return;
+  try {
+    const id = await createParty(name, me);
+    await joinParty(me, id);
+  } catch {
+    detect("err", "Création refusée.", false);
+  }
+});
+armConfirmDelete(
+  $<HTMLButtonElement>("party-delete"),
+  () => {
+    const id = $<HTMLSelectElement>("room-select").value;
+    if (id) deleteParty(id).catch(() => detect("err", "Suppression refusée.", false));
+  },
+  "🗑",
+);
 $("room-share").addEventListener("click", async () => {
   if (!myRoom) return;
   const btn = $<HTMLButtonElement>("room-share");
-  const url = appUrl(`voir.html?salon=${encodeURIComponent(myRoom)}`);
+  const url = appUrl(`voir.html?wp=${encodeURIComponent(myRoom)}`);
   try {
     await navigator.clipboard.writeText(url);
     btn.textContent = "Lien copié ✓";
@@ -173,7 +197,7 @@ function renderLayout() {
   [...$("v-cells").children].forEach((b, i) => b.classList.toggle("on", i === l.cell));
   $("v-cells").style.opacity = l.width >= 1920 ? "0.35" : "";
   $("layout-note").textContent = video
-    ? "Les changements s'appliquent en direct chez tout le salon."
+    ? "Les changements s'appliquent en direct chez toute la watch-party."
     : "Réglages du prochain lancement.";
 }
 
@@ -183,8 +207,8 @@ function renderVideo() {
   const empty = $("empty-msg");
   empty.hidden = has;
   empty.textContent = !myRoom
-    ? "Rejoins un salon pour lancer ou voir une watch-party."
-    : "Aucune vidéo dans ce salon. Colle un lien à droite pour en lancer une.";
+    ? "Rejoins ou crée une watch-party (en haut) pour lancer ou voir une vidéo."
+    : "Aucune vidéo pour l'instant. Colle un lien à droite pour en lancer une.";
   $<HTMLButtonElement>("video-go").disabled = !myRoom;
   renderLayout();
   if (!video) return;
@@ -212,7 +236,7 @@ setInterval(() => {
 }, 500);
 
 const now = () => (video ? expectedPosition(video, serverNow()) : 0);
-const refused = () => detect("err", "Commande refusée : as-tu bien rejoint ce salon ?", false);
+const refused = () => detect("err", "Commande refusée : as-tu bien rejoint cette watch-party ?", false);
 $("v-play").addEventListener("click", () => {
   if (!myRoom || !video) return;
   if (sourceOf(video) === "twitch-clip") return void controlVideo(myRoom, "playing", 0).catch(refused);
@@ -236,7 +260,7 @@ armConfirmDelete($<HTMLButtonElement>("v-stop"), () => myRoom && stopVideo(myRoo
 const urlInput = $<HTMLInputElement>("video-url");
 function updateDetect() {
   const raw = urlInput.value.trim();
-  if (!raw) return detect("", myRoom ? "YouTube, Twitch ou fichier vidéo." : "Rejoins d'abord un salon.");
+  if (!raw) return detect("", myRoom ? "YouTube, Twitch ou fichier vidéo." : "Rejoins d'abord une watch-party.");
   const r = parseVideoLink(raw);
   if ("error" in r) detect("err", r.error);
   else detect("ok", `${SOURCE_LABELS[r.source]} reconnu ✓${r.start ? ` · départ à ${fmt(r.start)}` : ""}`);
@@ -245,14 +269,14 @@ urlInput.addEventListener("input", updateDetect);
 
 $("video-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!myRoom) return detect("err", "Rejoins d'abord un salon.", false);
+  if (!myRoom) return detect("err", "Rejoins d'abord une watch-party.", false);
   const r = parseVideoLink(urlInput.value);
   if ("error" in r) return detect("err", r.error);
   const l = shown();
   try {
     await startVideo(myRoom, { source: r.source, videoId: r.id, by: me, position: r.start, cell: l.cell, width: l.width, style: l.style });
     urlInput.value = "";
-    detect("ok", "Lancée pour tout le salon ✓", false);
+    detect("ok", "Lancée pour toute la watch-party ✓", false);
   } catch {
     refused();
   }
@@ -313,7 +337,7 @@ watchActors((data) => {
 });
 let roomsLoaded = false;
 function syncMyRoom() {
-  let room = overlays[me!]?.room ?? null;
+  let room = overlays[me!]?.party ?? null;
   if (room && roomsLoaded && !rooms[room]) room = null;
   if (room !== myRoom) {
     myRoom = room;
@@ -322,7 +346,7 @@ function syncMyRoom() {
   }
   renderRoomBar();
 }
-watchRooms((data) => {
+watchParties((data) => {
   rooms = data;
   roomsLoaded = true;
   syncMyRoom();

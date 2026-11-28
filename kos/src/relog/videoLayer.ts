@@ -363,6 +363,9 @@ const STYLE = `
 .kos-video .pause { position: absolute; inset: 0; z-index: 4; display: none; place-items: center; font: 800 calc(var(--k, 1) * 34px) "JetBrains Mono", Consolas, monospace; letter-spacing: calc(var(--k, 1) * 6px); color: var(--c, #00d4ff); background: rgba(0,0,0,0.9); backdrop-filter: blur(calc(var(--k, 1) * 8px)); text-shadow: 0 0 calc(var(--k, 1) * 14px) var(--c, #00d4ff); }
 /* La pause masque aussi l'interface que YouTube affiche sur une vidéo arrêtée. */
 .kos-video.paused .pause, .kos-video.ended .pause, .kos-video.resuming .pause { display: grid; }
+/* Fichier vidéo en pause : l'image figée reste visible (pour dessiner dessus), simple badge.
+   YouTube et Twitch gardent l'écran opaque : en pause, ils imposent leur interface. */
+.kos-video.src-file.paused:not(.ended):not(.resuming) .pause { inset: auto; top: calc(var(--k, 1) * 14px); right: calc(var(--k, 1) * 14px); padding: calc(var(--k, 1) * 6px) calc(var(--k, 1) * 12px); font-size: calc(var(--k, 1) * 16px); letter-spacing: calc(var(--k, 1) * 3px); background: rgba(0,0,0,0.72); backdrop-filter: none; border: 1px solid var(--c, #00d4ff); border-radius: calc(var(--k, 1) * 4px); }
 /* À la reprise, YouTube réaffiche son titre quelques secondes : on le cache sous un fondu. */
 .kos-video.resuming .pause { animation: kosv-fade 5.5s ease-in forwards; }
 @keyframes kosv-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -565,6 +568,7 @@ export function createVideoLayer(root: HTMLElement, opts: { muted?: boolean; onE
     if (!frame || !video) return;
     const style = video.style ?? "kos";
     frame.classList.toggle("kos", style === "kos");
+    frame.classList.toggle("src-file", sourceOf(video) === "file");
     frame.classList.toggle("plain", style !== "kos");
     if (meta.color) frame.style.setProperty("--c", meta.color);
     frame.querySelector(".tag")!.textContent = `K-OS // ${SOURCE_LABELS[sourceOf(video)].toUpperCase()}`;

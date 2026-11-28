@@ -75,6 +75,9 @@
           },
           "videoVolume": {
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+          },
+          "party": {
+            ".validate": "newData.isString() && root.child('relog/parties').child(newData.val()).exists()"
           }
         }
       },
@@ -318,6 +321,104 @@
             "$other": {
               ".validate": false
             }
+          },
+          "screen": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room)",
+            ".validate": "newData.hasChildren(['by', 'startedAt'])",
+            "by": {
+              ".validate": "newData.isString() && newData.val().length <= 64 && (newData.val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val() || root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ','))"
+            },
+            "startedAt": {
+              ".validate": "newData.isNumber() && newData.val() <= now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "rtc": {
+            "$viewer": {
+              ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room)",
+              "req": {
+                ".validate": "newData.isNumber() && newData.val() <= now"
+              },
+              "sharer": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              },
+              "offer": {
+                ".validate": "newData.isString() && newData.val().length <= 30000"
+              },
+              "answer": {
+                ".validate": "newData.isString() && newData.val().length <= 30000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
+      },
+      "parties": {
+        ".read": true,
+        "$room": {
+          ".write": "(!data.exists() && (auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && newData.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()) || (!newData.exists() && ((auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || data.child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()))",
+          ".validate": "newData.hasChildren(['name', 'by', 'createdAt'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 40 && newData.val().length >= 1"
+          },
+          "by": {
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "partyContent": {
+        ".read": true,
+        "$party": {
+          ".write": "!newData.exists() && ((auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || root.child('relog/parties').child($party).child('by').val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val())",
+          "video": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('party').val() == $party)",
+            ".validate": "newData.hasChildren(['videoId', 'by', 'state', 'position', 'updatedAt', 'cell', 'width']) && (((!newData.child('source').exists() || newData.child('source').val() == 'youtube') && newData.child('videoId').val().matches(/^[A-Za-z0-9_-]{11}$/)) || (newData.child('source').val() == 'twitch-vod' && newData.child('videoId').val().matches(/^[0-9]{5,12}$/)) || (newData.child('source').val() == 'twitch-clip' && newData.child('videoId').val().matches(/^[A-Za-z0-9_-]{3,100}$/)) || (newData.child('source').val() == 'file' && newData.child('videoId').val().matches(/^https:\\/\\/(video\\.twimg\\.com|cdn\\.discordapp\\.com|media\\.discordapp\\.net|i\\.imgur\\.com)\\//)))",
+            "videoId": {
+              ".validate": "newData.isString() && newData.val().length <= 500"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            },
+            "by": {
+              ".validate": "newData.isString() && (newData.val() == data.val() || newData.val() == root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val())"
+            },
+            "state": {
+              ".validate": "newData.val() == 'playing' || newData.val() == 'paused'"
+            },
+            "position": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400"
+            },
+            "updatedAt": {
+              ".validate": "newData.isNumber() && newData.val() <= now"
+            },
+            "cell": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8"
+            },
+            "width": {
+              ".validate": "newData.isNumber() && newData.val() >= 200 && newData.val() <= 1920"
+            },
+            "source": {
+              ".validate": "newData.val() == 'youtube' || newData.val() == 'twitch-vod' || newData.val() == 'twitch-clip' || newData.val() == 'file'"
+            },
+            "style": {
+              ".validate": "newData.val() == 'kos' || newData.val() == 'plain'"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
           }
         }
       }

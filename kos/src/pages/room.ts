@@ -34,7 +34,7 @@ import { mountGifPicker } from "../relog/gifPicker";
 import { pushRecent, type GifMedia } from "../relog/gifs";
 import { serverNow } from "../relog/serverTime";
 import { createVideoLayer } from "../relog/videoLayer";
-import { SOURCE_LABELS, sourceOf, watchVideo, watchVolume, type RoomVideo } from "../relog/watch";
+import { SOURCE_LABELS, controlVideo, expectedPosition, sourceOf, watchMyParty, watchParties, watchVideo, watchVolume, type PartyMeta, type RoomVideo } from "../relog/watch";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -191,9 +191,6 @@ function enterRoom(roomId: string | null) {
   roomStops.forEach((stop) => stop());
   roomStops = [];
   view.clear();
-  video = null;
-  stageVideo.setVideo(null);
-  renderVideo();
   strokes = new Map();
   items = new Map();
   undoStack.length = 0;
@@ -215,11 +212,6 @@ function enterRoom(roomId: string | null) {
       const others = { ...c };
       delete others[me!];
       view.setCursors(others);
-    }),
-    watchVideo(roomId, (v) => {
-      video = v;
-      stageVideo.setVideo(v, v ? { color: actors[v.by]?.color, name: actors[v.by]?.name || v.by } : undefined);
-      renderVideo();
     }),
   ];
   renderHint();
@@ -585,13 +577,67 @@ $("screen-bg").addEventListener("click", async () => {
   }
 });
 
-// ---------- Watch-party (pilotée depuis sa page) ----------
+// ---------- Watch-party (indépendante du salon) ----------
+// En fond de la scène : la vidéo de la watch-party que J'AI rejointe, avec de
+// quoi la mettre en pause pour dessiner dessus (pour tout le monde).
+
+let parties: Record<string, PartyMeta> = {};
+let myParty: string | null = null;
+let partyStop: (() => void) | null = null;
+
+watchParties((data) => {
+  parties = data;
+  renderVideo();
+});
+watchMyParty(me, (party) => {
+  myParty = party;
+  partyStop?.();
+  partyStop = null;
+  video = null;
+  stageVideo.setVideo(null);
+  renderVideo();
+  if (!party) return;
+  partyStop = watchVideo(party, (v) => {
+    video = v;
+    stageVideo.setVideo(v, v ? { color: actors[v.by]?.color, name: actors[v.by]?.name || v.by } : undefined);
+    renderVideo();
+  });
+});
 
 function renderVideo() {
-  $("video-status").textContent = video
-    ? `${video.state === "playing" ? "▶" : "❚❚"} ${video.title || SOURCE_LABELS[sourceOf(video)]} · lancée par ${actors[video.by]?.name || video.by}`
-    : "Aucune vidéo dans ce salon.";
+  const partyName = myParty && parties[myParty]?.name;
+  $("video-status").textContent = !myParty
+    ? "Tu n'as rejoint aucune watch-party."
+    : video
+      ? `${partyName ? `${partyName} · ` : ""}${video.state === "playing" ? "▶" : "❚❚"} ${video.title || SOURCE_LABELS[sourceOf(video)]}`
+      : `${partyName || "Watch-party"} · aucune vidéo`;
+  const seekable = !!video && sourceOf(video) !== "twitch-clip";
+  $("wp-ctl").hidden = !video;
+  $("wp-play").textContent = !video ? "" : sourceOf(video) === "twitch-clip" ? "↻ Rejouer" : video.state === "playing" ? "⏸ Pause" : "▶ Lecture";
+  $("wp-back").hidden = $("wp-fwd").hidden = !seekable;
+  $("video-view").hidden = !$<HTMLInputElement>("wp-show").checked;
 }
+
+const wpNow = () => (video ? expectedPosition(video, serverNow()) : 0);
+const wpRefused = () => showError("Commande refusée : rejoins cette watch-party depuis sa page.");
+function wpControl(state: RoomVideo["state"], position: number) {
+  if (!myParty || !video) return;
+  controlVideo(myParty, state, position).catch(wpRefused);
+}
+$("wp-play").addEventListener("click", () => {
+  if (!video) return;
+  if (sourceOf(video) === "twitch-clip") return wpControl("playing", 0);
+  wpControl(video.state === "playing" ? "paused" : "playing", wpNow());
+});
+$("wp-back").addEventListener("click", () => video && wpControl(video.state, wpNow() - 10));
+$("wp-fwd").addEventListener("click", () => video && wpControl(video.state, wpNow() + 10));
+$("wp-show").addEventListener("change", renderVideo);
+// Pause automatique au premier trait : pour figer l'image et l'annoter.
+capture.addEventListener("pointerdown", () => {
+  if (!$<HTMLInputElement>("wp-autopause").checked || !video || video.state !== "playing") return;
+  if (state.tool === "move" || sourceOf(video) === "twitch-clip") return;
+  wpControl("paused", wpNow());
+});
 // L'aperçu reste muet ici ; le volume suit quand même celui du membre.
 watchVolume(me, (v) => stageVideo.setVolume(v));
 

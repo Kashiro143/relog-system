@@ -365,3 +365,54 @@ describe("watch-party", () => {
     await assertFails(db.ref("relog/overlay/Titou/videoVolume").set(10));
   });
 });
+
+describe("watch-party séparée du salon", () => {
+  const TS = { ".sv": "timestamp" };
+  const video = (over = {}) => ({ videoId: "dQw4w9WgXcQ", by: "Reindal", state: "playing", position: 0, updatedAt: TS, cell: 4, width: 720, ...over });
+
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.database().ref("relog/parties/soiree").set({ name: "Soirée film", by: "Kashiro", createdAt: 1 });
+    }),
+  );
+
+  test("créer une watch-party, la rejoindre, lancer et piloter la vidéo", async () => {
+    const db = as("r", REINDAL);
+    await assertSucceeds(db.ref("relog/parties/neuve").set({ name: "Neuve", by: "Reindal", createdAt: TS }));
+    await assertFails(db.ref("relog/parties/fausse").set({ name: "Fausse", by: "Kashiro", createdAt: TS }));
+    await assertFails(db.ref("relog/partyContent/soiree/video").set(video())); // pas encore dedans
+    await assertFails(db.ref("relog/overlay/Reindal/party").set("inexistante"));
+    await assertSucceeds(db.ref("relog/overlay/Reindal/party").set("soiree"));
+    await assertSucceeds(db.ref("relog/partyContent/soiree/video").set(video()));
+    await assertSucceeds(db.ref("relog/partyContent/soiree/video").update({ state: "paused", position: 12, updatedAt: TS }));
+    await assertFails(db.ref("relog/partyContent/soiree/video").set(video({ by: "Kashiro" })));
+    await assertFails(db.ref("relog/partyContent/soiree/autre").set({ a: 1 }));
+    await assertSucceeds(anon().ref("relog/partyContent/soiree/video").get()); // overlays et spectateurs
+    await assertFails(anon().ref("relog/partyContent/soiree/video").set(video()));
+    await assertSucceeds(db.ref("relog/partyContent/soiree/video").remove());
+    await assertFails(db.ref("relog/parties/soiree").remove()); // créée par Kashiro
+    await assertSucceeds(db.ref().update({ "relog/parties/neuve": null, "relog/partyContent/neuve": null }));
+  });
+});
+
+describe("partage d'écran dans un salon", () => {
+  const TS = { ".sv": "timestamp" };
+  beforeEach(() =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.database().ref("relog/rooms/salon").set({ name: "Débat", by: "Kashiro", createdAt: 1 });
+    }),
+  );
+
+  test("un membre du salon partage, un autre demande à voir, l'échange WebRTC passe", async () => {
+    const db = as("r", REINDAL);
+    await assertFails(db.ref("relog/roomContent/salon/screen").set({ by: "Reindal", startedAt: TS })); // pas dans le salon
+    await assertSucceeds(db.ref("relog/overlay/Reindal/room").set("salon"));
+    await assertSucceeds(db.ref("relog/roomContent/salon/screen").set({ by: "Reindal", startedAt: TS }));
+    await assertFails(db.ref("relog/roomContent/salon/screen").set({ by: "Titou", startedAt: TS })); // usurpation
+    await assertSucceeds(db.ref("relog/roomContent/salon/rtc/Kashiro").update({ req: TS, sharer: "Reindal", offer: "v=0 offre" }));
+    await assertFails(db.ref("relog/roomContent/salon/rtc/Kashiro/offer").set("x".repeat(40000)));
+    await assertFails(db.ref("relog/roomContent/salon/rtc/Kashiro/bidon").set(1));
+    await assertFails(anon().ref("relog/roomContent/salon/rtc/Kashiro/answer").set("v=0"));
+    await assertSucceeds(db.ref("relog/roomContent/salon/screen").remove());
+  });
+});

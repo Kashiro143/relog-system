@@ -9,7 +9,7 @@ import { requireMember } from "../auth";
 import { IDLE_MODE } from "../kernel";
 import { panic, unmute } from "../relog/overlayControl";
 import { watchRooms, type RoomMeta } from "../relog/room";
-import { SOURCE_LABELS, sourceOf, watchVideo, type RoomVideo } from "../relog/watch";
+import { SOURCE_LABELS, sourceOf, watchParties, watchVideo, type PartyMeta, type RoomVideo } from "../relog/watch";
 import type { Unsubscribe } from "firebase/database";
 
 const member = await requireMember({ ownerOnly: true });
@@ -19,7 +19,8 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 
 let actors: Record<string, Actor> = {};
 let modes: Record<string, ModuleDefinition> = {};
-let overlays: Record<string, { room?: string; muted?: boolean }> = {};
+let overlays: Record<string, { room?: string; party?: string; muted?: boolean }> = {};
+let parties: Record<string, PartyMeta> = {};
 let rooms: Record<string, RoomMeta> = {};
 const videos = new Map<string, RoomVideo>();
 const videoWatches = new Map<string, Unsubscribe>();
@@ -66,8 +67,8 @@ function renderStatus() {
   tile("t-overlays", on.length ? "ok" : "warn", `${on.length} / ${list.length}`, on.map((a) => a.name).join(", ") || "Aucun overlay ouvert");
   const busy = Object.keys(rooms).filter((r) => list.some((a) => roomOf(a.id) === r));
   tile("t-rooms", busy.length ? "ok" : "", String(busy.length), busy.map((r) => rooms[r].name).join(", ") || "Personne dans un salon");
-  const playing = [...videos.entries()].filter(([r]) => rooms[r]);
-  tile("t-videos", playing.length ? "ok" : "", String(playing.length), playing.map(([r, v]) => `${rooms[r].name} : ${v.title || SOURCE_LABELS[sourceOf(v)]}`).join("\n") || "Aucune vidéo");
+  const playing = [...videos.entries()].filter(([p]) => parties[p]);
+  tile("t-videos", playing.length ? "ok" : "", String(playing.length), playing.map(([p, v]) => `${parties[p].name} : ${v.title || SOURCE_LABELS[sourceOf(v)]}`).join("\n") || "Aucune vidéo");
 }
 
 // ---------- Mon stream ----------
@@ -92,8 +93,14 @@ function renderMe() {
     link.textContent = rooms[room].name;
     roomEl.appendChild(link);
   } else roomEl.textContent = "aucun";
-  const v = room ? videos.get(room) : undefined;
-  $("me-video").textContent = v ? `${v.state === "playing" ? "▶" : "❚❚"} ${v.title || SOURCE_LABELS[sourceOf(v)]}` : "—";
+  const party = overlays[me]?.party;
+  const v = party ? videos.get(party) : undefined;
+  const pName = party ? parties[party]?.name : undefined;
+  $("me-video").textContent = v
+    ? `${pName ? `${pName} · ` : ""}${v.state === "playing" ? "▶" : "❚❚"} ${v.title || SOURCE_LABELS[sourceOf(v)]}`
+    : pName
+      ? `${pName} · aucune vidéo`
+      : "—";
   const muted = !!overlays[me]?.muted;
   const btn = $<HTMLButtonElement>("me-panic");
   btn.classList.toggle("muted", muted);
@@ -257,14 +264,18 @@ onValue(ref(db, "relog/overlay"), (snap) => {
 });
 watchRooms((data) => {
   rooms = data;
-  // Une écoute de vidéo par salon existant (pas tout roomContent : les dessins y pèsent lourd).
+  renderAll();
+});
+watchParties((data) => {
+  parties = data;
+  // Une écoute de vidéo par watch-party existante.
   for (const [r, stop] of videoWatches)
-    if (!rooms[r]) {
+    if (!parties[r]) {
       stop();
       videoWatches.delete(r);
       videos.delete(r);
     }
-  for (const r of Object.keys(rooms)) {
+  for (const r of Object.keys(parties)) {
     if (videoWatches.has(r)) continue;
     videoWatches.set(
       r,

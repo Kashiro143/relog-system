@@ -1,10 +1,13 @@
-import { ref, set, update, remove, onValue, serverTimestamp, type Unsubscribe } from "firebase/database";
+import { ref, set, update, remove, push, onValue, serverTimestamp, type Unsubscribe } from "firebase/database";
 import { db } from "../firebase";
 
-// Watch-party : une vidéo partagée dans un salon, synchronisée sur l'overlay
-// de chaque participant. Sources : YouTube, VOD Twitch, clip Twitch, fichier
-// vidéo direct (.mp4 / .webm) sur un hébergeur connu.
-// relog/roomContent/{salon}/video   : { source, videoId, title, by, state, position, updatedAt, cell, width, style }
+// Watch-party : une vidéo partagée, synchronisée sur l'overlay de chaque
+// participant. Indépendante des salons de dessin : on rejoint une watch-party
+// d'un côté, un salon de l'autre. Sources : YouTube, VOD Twitch, clip Twitch,
+// fichier vidéo direct (.mp4 / .webm) sur un hébergeur connu.
+// relog/parties/{id}                : { name, by, createdAt }
+// relog/partyContent/{id}/video     : { source, videoId, title, by, state, position, updatedAt, cell, width, style }
+// relog/overlay/{membre}/party      : watch-party rejointe
 // relog/overlay/{membre}/videoVolume: volume de la vidéo sur SON stream (0..100)
 //
 // "position" est la position (s) au moment "updatedAt" (heure serveur) : chacun
@@ -126,7 +129,41 @@ export function expectedPosition(v: RoomVideo, serverNow: number): number {
   return v.position + Math.max(0, serverNow - v.updatedAt) / 1000;
 }
 
-const videoRef = (room: string) => ref(db, `relog/roomContent/${room}/video`);
+const videoRef = (party: string) => ref(db, `relog/partyContent/${party}/video`);
+
+// --- Liste des watch-parties, rejoindre, quitter ---
+
+export interface PartyMeta {
+  name: string;
+  by: string;
+  createdAt: number;
+}
+
+export function watchParties(callback: (parties: Record<string, PartyMeta>) => void): Unsubscribe {
+  return onValue(ref(db, "relog/parties"), (snap) => callback(snap.val() ?? {}));
+}
+
+export async function createParty(name: string, by: string): Promise<string> {
+  const id = push(ref(db, "relog/parties")).key!;
+  await set(ref(db, `relog/parties/${id}`), { name: name.trim().slice(0, 40) || "Watch-party", by, createdAt: serverTimestamp() });
+  return id;
+}
+
+export function deleteParty(id: string) {
+  return update(ref(db), { [`relog/parties/${id}`]: null, [`relog/partyContent/${id}`]: null });
+}
+
+export function watchMyParty(actorId: string, callback: (partyId: string | null) => void): Unsubscribe {
+  return onValue(ref(db, `relog/overlay/${actorId}/party`), (snap) => callback(snap.val() || null));
+}
+
+export function joinParty(actorId: string, partyId: string) {
+  return set(ref(db, `relog/overlay/${actorId}/party`), partyId);
+}
+
+export function leaveParty(actorId: string) {
+  return remove(ref(db, `relog/overlay/${actorId}/party`));
+}
 
 export function watchVideo(room: string, callback: (video: RoomVideo | null) => void): Unsubscribe {
   return onValue(videoRef(room), (snap) => {

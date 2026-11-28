@@ -67,6 +67,9 @@
       .watch-title small { font-weight: 400; color: var(--text-dim); font-size: 11px; }
       .watch-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
       .watch-row button { padding: 6px 10px; font-size: 12px; }
+      .wp-ctl { display: inline-flex; gap: 4px; }
+      .wp-ctl[hidden] { display: none; }
+      .watch-row .check { font-size: 12px; }
       .watch .time { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-dim); }
       .watch .lbl { font-size: 11px; color: var(--text-dim); display: inline-flex; align-items: center; gap: 4px; }
       #v-seek { width: 100%; }
@@ -129,7 +132,14 @@
 
           <section class="watch" id="watch">
             <div class="watch-row">
-              <span class="watch-title"><span>📺 Watch-party</span><small id="video-status">Aucune vidéo dans ce salon.</small></span>
+              <span class="watch-title"><span>📺 Watch-party</span><small id="video-status">Tu n'as rejoint aucune watch-party.</small></span>
+              <div class="wp-ctl" id="wp-ctl" hidden>
+                <button id="wp-back" title="Reculer de 10 s pour tout le monde">⏪ 10 s</button>
+                <button id="wp-play" class="primary" title="Pause / lecture pour toute la watch-party"></button>
+                <button id="wp-fwd" title="Avancer de 10 s pour tout le monde">10 s ⏩</button>
+              </div>
+              <label class="check" title="Mettre la vidéo en pause dès que tu commences à dessiner"><input type="checkbox" id="wp-autopause" /> Pause auto en dessinant</label>
+              <label class="check" title="Afficher la vidéo en fond de la scène, ici seulement"><input type="checkbox" id="wp-show" checked /> En fond ici</label>
               <a class="btn go" href="watch.html" style="margin-left:auto; text-decoration:none;">Ouvrir la watch-party →</a>
             </div>
           </section>

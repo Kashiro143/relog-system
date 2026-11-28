@@ -58,16 +58,17 @@
     <main class="page">
       <header class="page-head">
         <h1>📺 Watch-party</h1>
-        <p>Une vidéo qui s'invite sur le stream de tout le salon, au même moment.</p>
+        <p>Une vidéo qui s'invite sur le stream de tous ceux qui ont rejoint la watch-party, au même moment. Indépendante des salons de dessin.</p>
       </header>
 
-      <section class="panel roombar" aria-label="Salon">
-        <span class="field-label">Salon</span>
-        <select id="room-select" aria-label="Choisir un salon"></select>
+      <section class="panel roombar" aria-label="Watch-party">
+        <span class="field-label">Watch-party</span>
+        <select id="room-select" aria-label="Choisir une watch-party"></select>
         <button id="room-join" class="primary btn-sm">Rejoindre</button>
         <button id="room-leave" class="btn-sm" hidden>Quitter</button>
         <button id="room-share" class="btn-sm" hidden title="Lien à envoyer à un ami qui ne streame pas : il regarde la vidéo avec vous, sans compte">🔗 Lien spectateur</button>
-        <a id="room-link" class="hint" href="room.html">Gérer les salons →</a>
+        <button id="party-new" class="btn-sm" title="Créer une nouvelle watch-party">+ Nouvelle</button>
+        <button id="party-delete" class="btn-sm danger" hidden title="Supprimer cette watch-party (cliquer deux fois)">🗑</button>
         <div class="people" id="people"></div>
       </section>
 
@@ -96,7 +97,7 @@
             <form class="link-form" id="video-form">
               <input id="video-url" placeholder="Colle un lien…" autocomplete="off" aria-label="Lien de la vidéo" />
               <div class="detect" id="detect" aria-live="polite"></div>
-              <button type="submit" class="primary" id="video-go">▶ Lancer pour le salon</button>
+              <button type="submit" class="primary" id="video-go">▶ Lancer pour la watch-party</button>
             </form>
             <div class="sources" style="margin-top:10px" aria-label="Sources acceptées">
               <span>YouTube</span><span>VOD Twitch</span><span>Clip Twitch</span><span>Fichier .mp4 / .webm</span>

@@ -296,6 +296,12 @@ describe("salons", () => {
     await assertFails(db.ref("relog/roomContent/salon/strokes/s4").set({ ...stroke(), width: 500 }));
     await assertFails(db.ref("relog/roomContent/salon/cursors/Kashiro").set({ ...cursor, name: "Kashiro" }));
     await assertFails(db.ref("relog/roomContent/salon/bidon").set({ a: 1 }));
+    // Tableau blanc : formes et fond du salon.
+    await assertSucceeds(db.ref("relog/roomContent/salon/strokes/f1").set({ ...stroke(), pts: "100,100,900,900", shape: "arrow" }));
+    await assertFails(db.ref("relog/roomContent/salon/strokes/f2").set({ ...stroke(), shape: "star" }));
+    await assertSucceeds(db.ref("relog/roomContent/salon/board").set("paper"));
+    await assertFails(db.ref("relog/roomContent/salon/board").set("rainbow"));
+    await assertSucceeds(db.ref("relog/roomContent/salon/strokes/k1").remove()); // gomme : efface aussi le trait d'un autre
   });
 
   test("un participant peut effacer ce qu'il y a dans le salon ; le contenu est public en lecture", async () => {

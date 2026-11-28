@@ -3,7 +3,7 @@ import { ref, onValue } from "firebase/database";
 import { db } from "../firebase";
 import { watchActors } from "../registry";
 import type { Actor } from "../types";
-import { watchRooms, watchRoomParty, watchStrokes, watchItems, watchCursors } from "../relog/room";
+import { watchBoard, watchRooms, watchRoomParty, watchStrokes, watchItems, watchCursors } from "../relog/room";
 import { createRoomView } from "../relog/roomView";
 import { createVideoLayer } from "../relog/videoLayer";
 import { SOURCE_LABELS, sourceOf, watchParties, watchVideo } from "../relog/watch";
@@ -132,6 +132,7 @@ function showDrawings(best: string | null) {
   view.clear();
   if (!best) return;
   drawStops = [
+    watchBoard(best, (b) => view.setBoard(b)),
     watchStrokes(best, (m) => view.setStrokes(m)),
     watchItems(best, (m) => view.setItems(m)),
     watchCursors(best, (c) => view.setCursors(c)),

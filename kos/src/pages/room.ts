@@ -28,10 +28,15 @@ import {
   type Item,
   type RoomMeta,
   type Stroke,
+  type Shape,
+  type Board,
+  BOARDS,
+  setBoard,
+  watchBoard,
   setRoomParty,
   watchRoomParty,
 } from "../relog/room";
-import { createRoomView } from "../relog/roomView";
+import { createRoomView, strokeHit } from "../relog/roomView";
 import { mountGifPicker } from "../relog/gifPicker";
 import { pushRecent, type GifMedia } from "../relog/gifs";
 import { serverNow } from "../relog/serverTime";
@@ -48,7 +53,7 @@ if (!me) {
   throw new Error("[K-OS] membre non lié");
 }
 
-type Tool = "pen" | "laser" | "text" | "gif" | "move";
+type Tool = "pen" | "shape" | "eraser" | "laser" | "text" | "gif" | "move";
 const SIZES: Record<"pen" | "text" | "gif", number[]> = { pen: [4, 8, 16], text: [36, 60, 96], gif: [200, 320, 480] };
 const PALETTE = ["#ffffff", "#ffd34d", "#ff4757", "#00e58a", "#a46bff", "#00d4ff"];
 
@@ -62,6 +67,7 @@ let roomStops: Unsubscribe[] = [];
 
 const state = {
   tool: "pen" as Tool,
+  shape: "arrow" as Shape,
   color: "",
   size: 1,
   fade: 15,
@@ -204,6 +210,10 @@ function enterRoom(roomId: string | null) {
   followRoomParty(roomId);
   if (!roomId) return;
   roomStops = [
+    watchBoard(roomId, (b) => {
+      view.setBoard(b);
+      $<HTMLSelectElement>("board").value = b;
+    }),
     watchStrokes(roomId, (m) => {
       strokes = m;
       view.setStrokes(m);
@@ -255,13 +265,17 @@ function renderTools() {
   capture.className = `capture ${state.tool}${state.tool === "move" ? " off" : ""}`;
   $("view").querySelector(".kos-room-items")?.classList.toggle("movable", state.tool === "move");
   $("gif-panel").hidden = state.tool !== "gif";
-  $("sizes").hidden = state.tool === "laser" || state.tool === "move";
+  $("sizes").hidden = state.tool === "laser" || state.tool === "move" || state.tool === "eraser";
+  $("shapes").hidden = state.tool !== "shape";
+  $("shapes").querySelectorAll<HTMLButtonElement>("button").forEach((b) => b.classList.toggle("on", b.dataset.shape === state.shape));
   renderHint();
 }
 
 function renderHint() {
   const hints: Record<Tool, string> = {
     pen: "Dessine sur le tableau : chaque participant le voit sur son stream.",
+    shape: "Clique-glisse pour tracer la forme choisie (flèche, ligne, rectangle, cercle).",
+    eraser: "Passe la gomme sur ce que tu veux effacer (traits, formes, textes, GIF de tout le monde).",
     laser: "Maintiens le clic pour pointer : rien n'est conservé.",
     text: "Clique où écrire, tape ton texte puis Entrée.",
     gif: state.gif ? "Clique sur le tableau pour poser le GIF choisi." : "Choisis un GIF ci-dessous, puis clique sur le tableau pour le poser.",
@@ -278,6 +292,13 @@ $("tools").addEventListener("click", (e) => {
   state.selectedItem = null;
   markSelection();
   renderTools();
+});
+$("shapes").addEventListener("click", (e) => {
+  const sh = (e.target as HTMLElement).closest("button")?.dataset.shape as Shape | undefined;
+  if (sh) {
+    state.shape = sh;
+    renderTools();
+  }
 });
 $("sizes").addEventListener("click", (e) => {
   const s = (e.target as HTMLElement).dataset.size;
@@ -354,6 +375,85 @@ function endStroke() {
   drawing = null;
   // Le trait local reste affiché jusqu'à ce que le serveur renvoie la version finale.
   setTimeout(() => view.setLocalStroke(null), 150);
+}
+
+// --- Formes (flèche, ligne, rectangle, cercle) ---
+
+let shaping: { id: string; points: number[]; timer: ReturnType<typeof setTimeout> | null } | null = null;
+
+function shapeStroke(): Stroke | null {
+  if (!shaping) return null;
+  return { id: shaping.id, by: me!, color: currentColor(), width: SIZES.pen[state.size], points: shaping.points, fade: state.fade, done: false, shape: state.shape };
+}
+
+function beginShape(x: number, y: number) {
+  const id = newStrokeId(myRoom!);
+  shaping = { id, points: [x, y, x, y], timer: null };
+  startStroke(myRoom!, id, { by: me!, color: currentColor(), width: SIZES.pen[state.size], points: shaping.points, fade: state.fade, shape: state.shape }).catch(() =>
+    showError("Dessin refusé : as-tu bien rejoint le salon ?"),
+  );
+  undoStack.push(`strokes/${id}`);
+  view.setLocalStroke(shapeStroke());
+}
+
+function moveShape(x: number, y: number) {
+  if (!shaping) return;
+  shaping.points = [shaping.points[0], shaping.points[1], x, y];
+  view.setLocalStroke(shapeStroke());
+  if (!shaping.timer)
+    shaping.timer = setTimeout(() => {
+      if (!shaping) return;
+      shaping.timer = null;
+      updateStroke(myRoom!, shaping.id, shaping.points).catch(() => {});
+    }, 60);
+}
+
+function endShape() {
+  if (!shaping) return;
+  if (shaping.timer) clearTimeout(shaping.timer);
+  const [x0, y0, x1, y1] = shaping.points;
+  // Simple clic sans glisser : on n'en garde rien.
+  if (Math.abs(x1 - x0) + Math.abs(y1 - y0) < 60) removeContent(myRoom!, [`strokes/${shaping.id}`]).catch(() => {});
+  else finishStroke(myRoom!, shaping.id, shaping.points).catch(() => {});
+  shaping = null;
+  setTimeout(() => view.setLocalStroke(null), 150);
+}
+
+// --- Fond du tableau ---
+
+for (const b of BOARDS) {
+  const o = document.createElement("option");
+  o.value = b.id;
+  o.textContent = `🗒 ${b.label}`;
+  $("board").appendChild(o);
+}
+$("board").addEventListener("change", () => {
+  if (!myRoom) return;
+  setBoard(myRoom, $<HTMLSelectElement>("board").value as Board).catch(() => showError("Changement de fond refusé."));
+});
+
+// --- Gomme ---
+
+let erasing = false;
+const erased = new Set<string>();
+
+function eraseAt(e: PointerEvent) {
+  if (!myRoom) return;
+  const r = stage.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  const paths: string[] = [];
+  for (const s of strokes.values()) {
+    const path = `strokes/${s.id}`;
+    if (!erased.has(path) && strokeHit(s, px, py, r.width, r.height, 10)) paths.push(path);
+  }
+  for (const it of items.values()) {
+    const path = `items/${it.id}`;
+    const box = view.itemElement(it.id)?.getBoundingClientRect();
+    if (!erased.has(path) && box && e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom) paths.push(path);
+  }
+  if (!paths.length) return;
+  paths.forEach((p) => erased.add(p));
+  removeContent(myRoom, paths).catch(() => showError("Effacement refusé."));
 }
 
 // --- Laser ---
@@ -448,6 +548,14 @@ capture.addEventListener("pointerdown", (e) => {
   if (state.tool === "pen") {
     capture.setPointerCapture(e.pointerId);
     beginStroke(x, y);
+  } else if (state.tool === "shape") {
+    capture.setPointerCapture(e.pointerId);
+    beginShape(x, y);
+  } else if (state.tool === "eraser") {
+    capture.setPointerCapture(e.pointerId);
+    erasing = true;
+    erased.clear();
+    eraseAt(e);
   } else if (state.tool === "laser") {
     capture.setPointerCapture(e.pointerId);
     lasering = true;
@@ -466,12 +574,16 @@ capture.addEventListener("pointermove", (e) => {
   for (const ev of events.length ? events : [e]) {
     const { x, y } = toBoard(ev);
     if (drawing) addPoint(x, y);
+    else if (shaping) moveShape(x, y);
+    else if (erasing) eraseAt(ev);
     else if (lasering) moveLaser(x, y);
   }
 });
 
 const release = () => {
   if (drawing) endStroke();
+  if (shaping) endShape();
+  erasing = false;
   if (lasering) {
     lasering = false;
     view.setLocalCursor(me!, null);

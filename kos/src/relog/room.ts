@@ -35,8 +35,21 @@ export interface RoomMeta {
   createdAt: number;
 }
 
+/** Forme du tableau blanc : deux points (départ, arrivée) au lieu d'un tracé libre. */
+export type Shape = "line" | "arrow" | "rect" | "ellipse";
+/** Fond du salon : aucun (transparent), grille transparente, tableau noir, tableau blanc, papier quadrillé. */
+export type Board = "none" | "grid" | "dark" | "light" | "paper";
+export const BOARDS: { id: Board; label: string }[] = [
+  { id: "none", label: "Transparent" },
+  { id: "grid", label: "Grille" },
+  { id: "dark", label: "Tableau noir" },
+  { id: "light", label: "Tableau blanc" },
+  { id: "paper", label: "Papier quadrillé" },
+];
+
 export interface Stroke {
   id: string;
+  shape?: Shape;
   by: string;
   color: string;
   /** Épaisseur en pixels sur un écran 1080p. */
@@ -157,7 +170,7 @@ function watchMap<T>(base: DatabaseReference, parse: (id: string, raw: any) => T
 export function watchStrokes(room: string, onChange: (strokes: Map<string, Stroke>) => void): Unsubscribe {
   return watchMap(content(room, "strokes"), (id, r) =>
     r && typeof r.pts === "string"
-      ? { id, by: r.by, color: r.color, width: r.width, points: decodePoints(r.pts), fade: r.fade || 0, end: r.end, done: !!r.done }
+      ? { id, by: r.by, color: r.color, width: r.width, points: decodePoints(r.pts), fade: r.fade || 0, end: r.end, done: !!r.done, ...(r.shape ? { shape: r.shape } : {}) }
       : null,
   onChange);
 }
@@ -174,8 +187,21 @@ export function watchCursors(room: string, callback: (cursors: Record<string, Cu
 
 export const newStrokeId = (room: string) => push(content(room, "strokes")).key!;
 
-export function startStroke(room: string, id: string, s: Pick<Stroke, "by" | "color" | "width" | "points" | "fade">) {
-  return set(content(room, `strokes/${id}`), { by: s.by, color: s.color, width: s.width, pts: encodePoints(s.points), fade: s.fade, ts: serverTimestamp(), done: false });
+export function startStroke(room: string, id: string, s: Pick<Stroke, "by" | "color" | "width" | "points" | "fade" | "shape">) {
+  const record: Record<string, unknown> = { by: s.by, color: s.color, width: s.width, pts: encodePoints(s.points), fade: s.fade, ts: serverTimestamp(), done: false };
+  if (s.shape) record.shape = s.shape;
+  return set(content(room, `strokes/${id}`), record);
+}
+
+export function watchBoard(room: string, callback: (board: Board) => void): Unsubscribe {
+  return onValue(content(room, "board"), (snap) => {
+    const v = snap.val();
+    callback(BOARDS.some((b) => b.id === v) ? v : "none");
+  });
+}
+
+export function setBoard(room: string, board: Board) {
+  return set(content(room, "board"), board === "none" ? null : board);
 }
 
 export function updateStroke(room: string, id: string, points: number[]) {

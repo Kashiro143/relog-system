@@ -1,4 +1,4 @@
-import { watchMyRoom, watchStrokes, watchItems, watchCursors } from "./room";
+import { watchMyRoom, watchBoard, watchStrokes, watchItems, watchCursors } from "./room";
 import { createRoomView } from "./roomView";
 import { createVideoLayer } from "./videoLayer";
 import { watchMyParty, watchVideo, watchVolume } from "./watch";
@@ -27,6 +27,7 @@ export function mountRoomDisplay(root: HTMLElement, videoRoot: HTMLElement, acto
     view.clear();
     if (!room) return;
     roomStops = [
+      watchBoard(room, (b) => view.setBoard(b)),
       watchStrokes(room, (m) => view.setStrokes(m)),
       watchItems(room, (m) => view.setItems(m)),
       watchCursors(room, (c) => view.setCursors(c)),

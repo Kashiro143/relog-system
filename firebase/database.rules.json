@@ -207,6 +207,9 @@
               },
               "$other": {
                 ".validate": false
+              },
+              "shape": {
+                ".validate": "newData.val() == 'line' || newData.val() == 'arrow' || newData.val() == 'rect' || newData.val() == 'ellipse'"
               }
             }
           },
@@ -358,6 +361,10 @@
           "party": {
             ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room)",
             ".validate": "newData.isString() && root.child('relog/parties').child(newData.val()).exists()"
+          },
+          "board": {
+            ".write": "(auth != null && auth.token.email_verified == true && root.child('auth/owner').val() == auth.token.email.toLowerCase().replace('.', ',')) || ((auth != null && auth.token.email_verified == true && root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && root.child('relog/overlay').child(root.child('auth/invites').child(auth.token.email.toLowerCase().replace('.', ',')).child('actorId').val()).child('room').val() == $room)",
+            ".validate": "newData.val() == 'none' || newData.val() == 'grid' || newData.val() == 'dark' || newData.val() == 'light' || newData.val() == 'paper'"
           }
         }
       },

@@ -107,17 +107,26 @@
         <div id="room-ui" hidden>
           <div class="toolbar">
             <div class="group" id="tools">
-              <button data-tool="pen" title="Dessiner">✏️ Stylo</button>
+              <button data-tool="pen" title="Dessiner à main levée">✏️ Stylo</button>
+              <button data-tool="shape" title="Flèche, ligne, rectangle ou cercle : clique-glisse">⬚ Formes</button>
+              <button data-tool="eraser" title="Passe sur un trait, une forme, un texte ou un GIF pour l'effacer">🧽 Gomme</button>
               <button data-tool="laser" title="Pointer sans laisser de trace">◉ Laser</button>
               <button data-tool="text" title="Cliquer pour écrire">T Texte</button>
               <button data-tool="gif" title="Choisir un GIF puis cliquer pour le poser">🎞 GIF</button>
               <button data-tool="move" title="Déplacer ses textes et GIF, sélectionner pour supprimer">✥ Déplacer</button>
+            </div>
+            <div class="group" id="shapes" hidden>
+              <button data-shape="arrow" title="Flèche">↗</button>
+              <button data-shape="line" title="Ligne">／</button>
+              <button data-shape="rect" title="Rectangle">▭</button>
+              <button data-shape="ellipse" title="Cercle / ellipse">◯</button>
             </div>
             <div class="swatches" id="swatches"></div>
             <div class="group" id="sizes"><button data-size="0">S</button><button data-size="1">M</button><button data-size="2">L</button></div>
             <div class="group" id="fades" title="Durée avant disparition"><button data-fade="5">5 s</button><button data-fade="15">15 s</button><button data-fade="0">∞</button></div>
             <div class="actions">
               <button id="undo" title="Ctrl + Z">↶ Annuler</button>
+              <select id="board" aria-label="Fond du tableau" title="Fond du salon, visible aussi sur les streams (un fond plein cache la vidéo et le jeu)"></select>
               <button id="clear-mine">Effacer les miens</button>
               <button id="clear-all">Tout effacer</button>
               <button id="screen-bg" title="Les membres du salon voient ton écran en fond (pas sur les streams)">🖥 Partager mon écran</button>

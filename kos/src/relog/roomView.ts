@@ -1,4 +1,4 @@
-import { SCALE, fadeAlpha, type Cursor, type Item, type Stroke } from "./room";
+import { SCALE, fadeAlpha, type Board, type Cursor, type Item, type Stroke } from "./room";
 import { serverNow } from "./serverTime";
 import { isAllowedMediaUrl, isVideoUrl } from "./gifs";
 
@@ -8,6 +8,11 @@ import { isAllowedMediaUrl, isVideoUrl } from "./gifs";
 
 const STYLE = `
 .kos-room { position: absolute; inset: 0; overflow: hidden; --k: 1; }
+.kos-room-board { position: absolute; inset: 0; pointer-events: none; transition: background-color .3s; }
+.kos-room-board.grid { background-image: linear-gradient(rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px); background-size: calc(var(--k) * 60px) calc(var(--k) * 60px); }
+.kos-room-board.dark { background: radial-gradient(ellipse at 50% 40%, #1f2d2a, #0f1715 75%); box-shadow: inset 0 0 calc(var(--k) * 80px) rgba(0,0,0,0.6); }
+.kos-room-board.light { background: #f6f7f9; }
+.kos-room-board.paper { background-color: #fbfbf8; background-image: linear-gradient(rgba(40,90,160,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(40,90,160,0.16) 1px, transparent 1px); background-size: calc(var(--k) * 40px) calc(var(--k) * 40px); }
 .kos-room-items, .kos-room-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .kos-room-canvas { pointer-events: none; }
 .kos-room-items { pointer-events: none; }
@@ -42,6 +47,8 @@ export interface RoomView {
   setLocalStroke(stroke: Stroke | null): void;
   /** Laser de l'utilisateur, affiché sans attendre le serveur. */
   setLocalCursor(actorId: string, cursor: Cursor | null): void;
+  /** Fond du salon (tableau noir, blanc, grille…), sous les dessins. */
+  setBoard(board: Board): void;
   itemElement(id: string): HTMLElement | undefined;
   clear(): void;
 }
@@ -50,11 +57,13 @@ export function createRoomView(root: HTMLElement, opts: { editable?: boolean } =
   injectStyleOnce();
   root.classList.add("kos-room");
   if (opts.editable) root.classList.add("editable");
+  const boardLayer = document.createElement("div");
+  boardLayer.className = "kos-room-board";
   const itemsLayer = document.createElement("div");
   itemsLayer.className = "kos-room-items";
   const canvas = document.createElement("canvas");
   canvas.className = "kos-room-canvas";
-  root.append(itemsLayer, canvas);
+  root.append(boardLayer, itemsLayer, canvas);
   const ctx = canvas.getContext("2d")!;
 
   let strokes = new Map<string, Stroke>();
@@ -100,6 +109,7 @@ export function createRoomView(root: HTMLElement, opts: { editable?: boolean } =
     ctx.lineJoin = "round";
     ctx.shadowColor = color;
     ctx.shadowBlur = 6 * k;
+    if (s.shape && p.length >= 4) return drawShape(s.shape, X(0), Y(0), X(p.length - 2), Y(p.length - 2));
     if (p.length < 4) {
       ctx.beginPath();
       ctx.arc(X(0), Y(0), ctx.lineWidth / 2, 0, Math.PI * 2);
@@ -113,6 +123,29 @@ export function createRoomView(root: HTMLElement, opts: { editable?: boolean } =
     }
     ctx.lineTo(X(p.length - 2), Y(p.length - 2));
     ctx.stroke();
+  }
+
+  function drawShape(shape: NonNullable<Stroke["shape"]>, x0: number, y0: number, x1: number, y1: number) {
+    ctx.beginPath();
+    if (shape === "rect") ctx.rect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+    else if (shape === "ellipse") ctx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.abs(x1 - x0) / 2, Math.abs(y1 - y0) / 2, 0, 0, Math.PI * 2);
+    else {
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+    }
+    ctx.stroke();
+    if (shape === "arrow") {
+      // Pointe proportionnelle à l'épaisseur, jamais plus longue que la flèche.
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      const head = Math.min(len * 0.6, Math.max(14 * k, ctx.lineWidth * 4));
+      const a = Math.atan2(y1 - y0, x1 - x0);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 - head * Math.cos(a - 0.45), y1 - head * Math.sin(a - 0.45));
+      ctx.lineTo(x1 - head * Math.cos(a + 0.45), y1 - head * Math.sin(a + 0.45));
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 
   function draw() {
@@ -247,8 +280,12 @@ export function createRoomView(root: HTMLElement, opts: { editable?: boolean } =
       } else localCursors.delete(id);
       schedule();
     },
+    setBoard(board) {
+      boardLayer.className = `kos-room-board${board === "none" ? "" : ` ${board}`}`;
+    },
     itemElement: (id) => itemEls.get(id),
     clear() {
+      boardLayer.className = "kos-room-board";
       strokes = new Map();
       items = new Map();
       cursors = {};
@@ -259,4 +296,41 @@ export function createRoomView(root: HTMLElement, opts: { editable?: boolean } =
       schedule();
     },
   };
+}
+
+/** Distance (px) d'un point au segment [a, b]. */
+function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax, dy = by - ay;
+  const l2 = dx * dx + dy * dy;
+  const t = l2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2)) : 0;
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+/**
+ * Le point (px, py), en pixels d'une scène w x h, touche-t-il ce trait ou cette
+ * forme ? Sert à la gomme. tol : marge en pixels en plus de l'épaisseur.
+ */
+export function strokeHit(s: Stroke, px: number, py: number, w: number, h: number, tol: number): boolean {
+  const p = s.points;
+  if (p.length < 2) return false;
+  const X = (i: number) => (p[i] / SCALE) * w, Y = (i: number) => (p[i + 1] / SCALE) * h;
+  const k = h / 1080 || 1;
+  const reach = (s.width * k) / 2 + tol;
+  if (s.shape && p.length >= 4) {
+    const x0 = X(0), y0 = Y(0), x1 = X(p.length - 2), y1 = Y(p.length - 2);
+    if (s.shape === "rect") {
+      const l = Math.min(x0, x1), r = Math.max(x0, x1), t = Math.min(y0, y1), b = Math.max(y0, y1);
+      return [segDist(px, py, l, t, r, t), segDist(px, py, r, t, r, b), segDist(px, py, r, b, l, b), segDist(px, py, l, b, l, t)].some((d) => d <= reach);
+    }
+    if (s.shape === "ellipse") {
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.abs(x1 - x0) / 2 || 1, ry = Math.abs(y1 - y0) / 2 || 1;
+      // Distance approchée au contour : écart du rayon normalisé, ramené en pixels.
+      const n = Math.hypot((px - cx) / rx, (py - cy) / ry);
+      return Math.abs(n - 1) * Math.min(rx, ry) <= reach;
+    }
+    return segDist(px, py, x0, y0, x1, y1) <= reach;
+  }
+  if (p.length < 4) return Math.hypot(px - X(0), py - Y(0)) <= reach;
+  for (let i = 0; i < p.length - 2; i += 2) if (segDist(px, py, X(i), Y(i), X(i + 2), Y(i + 2)) <= reach) return true;
+  return false;
 }

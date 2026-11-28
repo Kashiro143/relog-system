@@ -26,7 +26,20 @@ function feedback(id: string, kind: "ok" | "err", text: string) {
 
 // ---------- Compte ----------
 
-$("email").textContent = member.email;
+// Adresse masquée par défaut (elle pourrait passer en stream), visible 8 s sur demande.
+const masked = member.email.replace(/^(.).*(@.*)$/, (_, a: string, b: string) => `${a}${"•".repeat(6)}${b.replace(/^@(.).*(\.[^.]+)$/, (_m: string, c: string, d: string) => `@${c}•••${d}`)}`);
+const emailEl = $("email");
+const revealBtn = $<HTMLButtonElement>("reveal");
+let hideTimer: ReturnType<typeof setTimeout> | undefined;
+function showEmail(visible: boolean) {
+  emailEl.textContent = visible ? member.email : masked;
+  revealBtn.textContent = visible ? "Masquer" : "Afficher";
+  revealBtn.setAttribute("aria-pressed", String(visible));
+  clearTimeout(hideTimer);
+  if (visible) hideTimer = setTimeout(() => showEmail(false), 8000);
+}
+revealBtn.addEventListener("click", () => showEmail(emailEl.textContent === masked));
+showEmail(false);
 $("actor").textContent = me;
 $("role").textContent = member.isOwner ? "Propriétaire du K-OS" : "Membre Re:log";
 $("logout").addEventListener("click", () => signOut());

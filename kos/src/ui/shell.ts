@@ -124,7 +124,6 @@ export function mountShell(member: Member, onSignOut: () => void) {
     </div>`;
   const role = member.isOwner ? "propriétaire" : "membre";
   nav.querySelector(".role")!.textContent = `· ${role}`;
-  nav.querySelector<HTMLElement>(".me")!.title = member.email;
   nav.querySelector("button")!.addEventListener("click", onSignOut);
   if (page === "compte") nav.querySelector(".acct")?.setAttribute("aria-current", "page");
   document.body.prepend(nav);
@@ -133,7 +132,8 @@ export function mountShell(member: Member, onSignOut: () => void) {
   bootSequence(member);
 
   const name = nav.querySelector<HTMLElement>(".name")!;
-  name.textContent = me ?? member.email;
+  // Jamais l'adresse e-mail à l'écran : elle pourrait passer en stream.
+  name.textContent = me ?? "compte non relié";
   if (me) {
     watchActors((actors) => {
       const a = actors[me];
@@ -152,7 +152,7 @@ function mountStatusBar(member: Member) {
   bar.className = "kos-status";
   bar.setAttribute("aria-label", "État du K-OS");
   bar.innerHTML = `<span class="pw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg></span><span class="net">● connexion…</span><span class="who"></span><span class="ver">K-OS v2</span><button class="snd push" type="button" title="Sons d'interface (bips discrets au clic)"></button><span class="clock"></span>`;
-  bar.querySelector(".who")!.textContent = member.actorId ? `membre · ${member.actorId}` : member.email;
+  bar.querySelector(".who")!.textContent = member.actorId ? `membre · ${member.actorId}` : "compte non relié";
   document.body.appendChild(bar);
   const net = bar.querySelector<HTMLElement>(".net")!;
   onValue(ref(db, ".info/connected"), (snap) => {
@@ -178,7 +178,7 @@ function bootSequence(member: Member) {
   }
   const prefs = getPrefs();
   if (seen || !prefs.boot || prefs.motion === "reduced" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const who = (member.actorId ?? member.email).toUpperCase().replace(/[<>&"]/g, "");
+  const who = (member.actorId ?? "invité").toUpperCase().replace(/[<>&"]/g, "");
   const lines = [
     "> K-OS v2 · noyau chargé",
     `> identification ........ <b>${who}</b>`,
